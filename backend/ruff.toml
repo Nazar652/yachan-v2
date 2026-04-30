@@ -1,0 +1,38 @@
+line-length = 120
+target-version = "py314"
+
+exclude = [
+    "src/tests",
+    "src/__init__.py",
+    "**/__pycache__"
+]
+
+[lint]
+select = [
+    "E",
+    "F",
+    "UP",
+    "B",
+    "SIM",
+    "N",
+    "S",
+    "A",
+    "DTZ",
+    "RUF"
+]
+
+ignore = [
+    "N818",
+    "RUF012",
+    "SIM108",
+    "B904",
+    "E722"
+]
+
+[lint.per-file-ignores]
+"__init__.py" = [
+    "F401"
+]
+
+[lint.isort]
+combine-as-imports = true
