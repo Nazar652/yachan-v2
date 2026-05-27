@@ -43,12 +43,12 @@ def request_scoped(dependency_class: Any) -> Callable[[], Any]:
 
 
 def setup_container() -> None:
-    """Initialise a fresh kink Container for the current request context."""
+    """Initialize a fresh kink Container for the current request context."""
     _request_container.set(Container())
 
 
 class ContainerMiddleware(BaseHTTPMiddleware):
-    """Middleware that initialises a fresh kink DI container for every request."""
+    """Middleware that initializes a fresh kink DI container for every request."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         setup_container()

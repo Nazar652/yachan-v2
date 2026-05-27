@@ -8,7 +8,7 @@
   "venv": ".venv",
   "useLibraryCodeForTypes": true,
 
-  "extraPaths": ["src", "."],
+  "extraPaths": ["backend", "backend/src", "."],
 
   "reportImplicitStringConcatenation": "error",
 

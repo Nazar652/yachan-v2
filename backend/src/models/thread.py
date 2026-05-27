@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from src.models.board import Board
     from src.models.mediafile import MediaFile
     from src.models.post import Post
-    from src.models.user import User
 
 
 class Thread(SQLModel, table=True):
@@ -22,7 +21,6 @@ class Thread(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), nullable=False)
 
     board: Board = Relationship(back_populates="threads")
-    author: User | None = Relationship(back_populates="threads")
     posts: list[Post] = Relationship(back_populates="thread")
 
     @staticmethod
