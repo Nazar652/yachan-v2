@@ -1,6 +1,6 @@
 {
-  "include": ["src"],
-  "exclude": ["**/__pycache__", ".venv", "venv", "tests"],
+  "include": ["backend/src"],
+  "exclude": ["**/__pycache__", "**/.venv", "**/venv", "**/tests"],
 
   "pythonVersion": "3.14",
   "typeCheckingMode": "standard",
@@ -15,15 +15,8 @@
   "reportUnusedImport": "none",
   "reportUnusedVariable": "none",
   "reportMissingTypeStubs": false,
+  "reportIncompatibleVariableOverride": "none",
+  "reportIncompatibleMethodOverride": "none",
 
-  "executionEnvironments": [
-    {
-      "root": "src",
-
-      "reportCallInDefaultInitializer": "error",
-
-      "reportIncompatibleMethodOverride": "none",
-      "reportIncompatibleVariableOverride": "none"
-    }
-  ]
+  "reportCallInDefaultInitializer": "error"
 }
