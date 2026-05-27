@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class User(SQLModel, table=True):
-    __tablename__ = "user"
+    __tablename__: ClassVar[str] = "user"
 
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True, max_length=50)

@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Board(SQLModel, table=True):
-    __tablename__ = "board"
+    __tablename__: ClassVar[str] = "board"
 
     id: int | None = Field(default=None, primary_key=True)
     code: str = Field(index=True, unique=True, max_length=20)

@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class Post(SQLModel, table=True):
-    __tablename__ = "post"
+    __tablename__: ClassVar[str] = "post"
 
     id: int | None = Field(default=None, primary_key=True)
     thread_id: int = Field(foreign_key="threads.id", nullable=False, index=True)

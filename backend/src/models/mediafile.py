@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -15,7 +15,7 @@ class MediaType(StrEnum):
 
 
 class MediaFile(SQLModel, table=True):
-    __tablename__ = "media_file"
+    __tablename__: ClassVar[str] = "media_file"
 
     id: int | None = Field(default=None, primary_key=True)
     post_id: int = Field(foreign_key="posts.id", nullable=False, index=True)
