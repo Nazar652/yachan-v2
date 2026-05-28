@@ -16,7 +16,7 @@ class MediaType(StrEnum):
 class Attachment(SQLModel, table=True):
     __tablename__: ClassVar[str] = "attachment"
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     post_id: int = Field(foreign_key="post.id", index=True)
     media_type: MediaType
     original_name: str = Field(max_length=255)

@@ -9,7 +9,7 @@ from src.core.clock import utcnow
 class Ban(SQLModel, table=True):
     __tablename__: ClassVar[str] = "ban"
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     ip_hash: str = Field(index=True, max_length=64)
     board_id: int | None = Field(default=None, foreign_key="board.id")  # null = global ban
     reason: str | None = Field(default=None, max_length=500)

@@ -1,0 +1,37 @@
+from kink import inject
+
+from src.core.exceptions import BoardAlreadyExistsError, BoardNotFoundError
+from src.models.board import Board
+from src.repositories.board_repo import BoardRepository
+from src.schemas.board import BoardCreate
+
+
+@inject
+class BoardService:
+    def __init__(self, board_repo: BoardRepository) -> None:
+        self.board_repo = board_repo
+
+    async def create_board(self, data: BoardCreate) -> Board:
+        if await self.board_repo.get_by_slug(data.slug) is not None:
+            raise BoardAlreadyExistsError(data.slug)
+
+        board = await self.board_repo.create(
+            Board(
+                slug=data.slug,
+                title=data.title,
+                description=data.description,
+                bump_limit=data.bump_limit,
+            )
+        )
+        # each board owns a sequence that numbers its posts from 1
+        await self.board_repo.create_post_number_sequence(board.slug)
+        return board
+
+    async def list_boards(self) -> list[Board]:
+        return await self.board_repo.list_all()
+
+    async def get_board(self, slug: str) -> Board:
+        board = await self.board_repo.get_by_slug(slug)
+        if board is None:
+            raise BoardNotFoundError(slug)
+        return board

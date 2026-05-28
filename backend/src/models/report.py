@@ -9,7 +9,7 @@ from src.core.clock import utcnow
 class Report(SQLModel, table=True):
     __tablename__: ClassVar[str] = "report"
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     post_id: int = Field(foreign_key="post.id", index=True)
     board_id: int | None = Field(default=None, foreign_key="board.id")
     reason: str | None = Field(default=None, max_length=500)

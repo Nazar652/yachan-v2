@@ -13,7 +13,7 @@ class Post(SQLModel, table=True):
         UniqueConstraint("board_id", "post_number", name="uq_post_board_number"),
     )
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     post_number: int  # per-board counter, unique within a board
     thread_id: int = Field(foreign_key="thread.id", index=True)
     board_id: int = Field(foreign_key="board.id", index=True)

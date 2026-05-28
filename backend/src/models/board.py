@@ -9,7 +9,7 @@ from src.core.clock import utcnow
 class Board(SQLModel, table=True):
     __tablename__: ClassVar[str] = "board"
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     slug: str = Field(index=True, unique=True, max_length=20)
     title: str = Field(max_length=100)
     description: str | None = Field(default=None, max_length=500)

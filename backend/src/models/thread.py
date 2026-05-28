@@ -9,7 +9,7 @@ from src.core.clock import utcnow
 class Thread(SQLModel, table=True):
     __tablename__: ClassVar[str] = "thread"
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
     title: str | None = Field(default=None, max_length=150)
     is_locked: bool = Field(default=False)
