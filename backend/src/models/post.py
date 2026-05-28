@@ -6,7 +6,6 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from src.models.mediafile import MediaFile
     from src.models.thread import Thread
-    from src.models.user import User
 
 
 class Post(SQLModel, table=True):
@@ -20,5 +19,4 @@ class Post(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), nullable=False)
 
     thread: Thread = Relationship(back_populates="posts")
-    author: User | None = Relationship(back_populates="posts")
     media_files: list[MediaFile] = Relationship(back_populates="post")
