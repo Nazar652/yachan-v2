@@ -13,14 +13,14 @@ os.environ.setdefault("IP_HASH_SALT", "test-salt")
 @pytest.fixture
 def session() -> MagicMock:
     """A mock AsyncSession: async io methods are awaitable, add/add_all are sync."""
-    s = MagicMock()
-    s.execute = AsyncMock()
-    s.flush = AsyncMock()
-    s.refresh = AsyncMock()
-    s.commit = AsyncMock()
-    s.rollback = AsyncMock()
-    s.close = AsyncMock()
-    return s
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock()
+    mock_session.flush = AsyncMock()
+    mock_session.refresh = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.rollback = AsyncMock()
+    mock_session.close = AsyncMock()
+    return mock_session
 
 
 @pytest.fixture

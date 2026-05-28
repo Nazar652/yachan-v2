@@ -30,6 +30,9 @@ class Settings(BaseSettings):
 
     ip_hash_salt: str
 
+    storage_dir: str = "storage"
+    storage_base_url: str = "/media"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -34,9 +34,9 @@ def test_resolve_without_scope_calls_factory_every_time():
         calls.append(1)
         return Dummy()
 
-    a = resolve_scoped(Dummy, factory)
-    b = resolve_scoped(Dummy, factory)
-    assert a is not b
+    first = resolve_scoped(Dummy, factory)
+    second = resolve_scoped(Dummy, factory)
+    assert first is not second
     assert len(calls) == 2
 
 
@@ -48,9 +48,9 @@ def test_resolve_with_scope_caches_instance():
         calls.append(1)
         return Dummy()
 
-    a = resolve_scoped(Dummy, factory)
-    b = resolve_scoped(Dummy, factory)
-    assert a is b
+    first = resolve_scoped(Dummy, factory)
+    second = resolve_scoped(Dummy, factory)
+    assert first is second
     assert len(calls) == 1
 
 

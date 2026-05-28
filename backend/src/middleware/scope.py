@@ -26,8 +26,8 @@ class ScopeMiddleware:
 
     @staticmethod
     async def _session() -> AsyncSession | None:
-        s = current_scope()
-        return s.get(AsyncSession) if s else None
+        scope = current_scope()
+        return scope.get(AsyncSession) if scope else None
 
     async def _commit(self) -> None:
         if session := await self._session():

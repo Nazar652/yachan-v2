@@ -2,39 +2,39 @@ from src.repositories.attachment_repo import AttachmentRepository
 
 
 async def test_get_by_id(session, make_result):
-    att = object()
-    session.execute.return_value = make_result(one_or_none=att)
+    attachment = object()
+    session.execute.return_value = make_result(one_or_none=attachment)
     repo = AttachmentRepository(session=session)
 
-    assert await repo.get_by_id(1) is att
+    assert await repo.get_by_id(1) is attachment
 
 
 async def test_get_by_md5(session, make_result):
-    att = object()
-    session.execute.return_value = make_result(one_or_none=att)
+    attachment = object()
+    session.execute.return_value = make_result(one_or_none=attachment)
     repo = AttachmentRepository(session=session)
 
-    assert await repo.get_by_md5("d41d8cd98f00b204e9800998ecf8427e") is att
+    assert await repo.get_by_md5("d41d8cd98f00b204e9800998ecf8427e") is attachment
 
 
 async def test_list_by_post(session, make_result):
-    atts = [object()]
-    session.execute.return_value = make_result(all_=atts)
+    attachments = [object()]
+    session.execute.return_value = make_result(all_=attachments)
     repo = AttachmentRepository(session=session)
 
-    assert await repo.list_by_post(5) == atts
+    assert await repo.list_by_post(5) == attachments
 
 
 async def test_create(session):
-    att = object()
+    attachment = object()
     repo = AttachmentRepository(session=session)
 
-    result = await repo.create(att)
+    result = await repo.create(attachment)
 
-    assert result is att
-    session.add.assert_called_once_with(att)
+    assert result is attachment
+    session.add.assert_called_once_with(attachment)
     session.flush.assert_awaited_once()
-    session.refresh.assert_awaited_once_with(att)
+    session.refresh.assert_awaited_once_with(attachment)
 
 
 async def test_set_media_info(session):

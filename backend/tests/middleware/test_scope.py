@@ -16,12 +16,12 @@ def _clean_scope():
 
 async def test_non_http_passes_through(session):
     app = AsyncMock()
-    mw = ScopeMiddleware(app)
-    recv, send = AsyncMock(), AsyncMock()
+    middleware = ScopeMiddleware(app)
+    receive, send = AsyncMock(), AsyncMock()
 
-    await mw({"type": "lifespan"}, recv, send)
+    await middleware({"type": "lifespan"}, receive, send)
 
-    app.assert_awaited_once_with({"type": "lifespan"}, recv, send)
+    app.assert_awaited_once_with({"type": "lifespan"}, receive, send)
     session.commit.assert_not_called()
 
 
@@ -29,8 +29,8 @@ async def test_http_success_commits_and_closes(session):
     async def app(scope, receive, send):
         current_scope()[AsyncSession] = session
 
-    mw = ScopeMiddleware(app)
-    await mw({"type": "http"}, AsyncMock(), AsyncMock())
+    middleware = ScopeMiddleware(app)
+    await middleware({"type": "http"}, AsyncMock(), AsyncMock())
 
     session.commit.assert_awaited_once()
     session.rollback.assert_not_called()
@@ -43,9 +43,9 @@ async def test_http_exception_rolls_back_and_reraises(session):
         current_scope()[AsyncSession] = session
         raise ValueError("boom")
 
-    mw = ScopeMiddleware(app)
+    middleware = ScopeMiddleware(app)
     with pytest.raises(ValueError, match="boom"):
-        await mw({"type": "http"}, AsyncMock(), AsyncMock())
+        await middleware({"type": "http"}, AsyncMock(), AsyncMock())
 
     session.rollback.assert_awaited_once()
     session.commit.assert_not_called()
@@ -57,8 +57,8 @@ async def test_http_without_session_in_scope_does_not_touch_db(session):
     async def app(scope, receive, send):
         pass  # no session created during the request
 
-    mw = ScopeMiddleware(app)
-    await mw({"type": "http"}, AsyncMock(), AsyncMock())
+    middleware = ScopeMiddleware(app)
+    await middleware({"type": "http"}, AsyncMock(), AsyncMock())
 
     session.commit.assert_not_called()
     session.close.assert_not_called()
