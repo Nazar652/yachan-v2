@@ -1,8 +1,8 @@
 from kink import di
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import Settings
-from src.core.database import AsyncSessionLocal
+from src.core.config import Settings, get_settings
+from src.core.database import new_session
 from src.repositories.attachment_repo import AttachmentRepository
 from src.repositories.ban_repo import BanRepository
 from src.repositories.board_repo import BoardRepository
@@ -17,12 +17,11 @@ from .scope import resolve_scoped
 
 
 def setup_di() -> None:
-    settings = Settings()  # type: ignore[call-arg]
-    di[Settings] = settings
+    di[Settings] = get_settings()
 
     # one AsyncSession per request, shared by every repository in that request
     # so they all run inside the same transaction
-    di[AsyncSession] = lambda di: resolve_scoped(AsyncSession, factory=AsyncSessionLocal)
+    di[AsyncSession] = lambda di: resolve_scoped(AsyncSession, factory=new_session)
 
     # passing the class itself as factory works because kink's @inject fires when
     # the factory is called, injecting AsyncSession from the scope above

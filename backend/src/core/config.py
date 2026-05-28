@@ -1,9 +1,16 @@
+from functools import lru_cache
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# absolute path to backend/.env so it is found regardless of the current
+# working directory (app, alembic and pre-push hooks run from different cwds)
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -22,3 +29,8 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24
 
     ip_hash_salt: str
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()  # type: ignore[call-arg]

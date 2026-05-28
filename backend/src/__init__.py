@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from src.bootstrap.container import setup_di
-from src.core.config import Settings
+from src.core.config import get_settings
 from src.core.exceptions import (
     ConflictError,
     ForbiddenError,
@@ -14,7 +14,7 @@ from src.middleware.scope import ScopeMiddleware
 
 def create_app() -> FastAPI:
     setup_di()
-    settings = Settings()  # type: ignore[call-arg]
+    settings = get_settings()
 
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     # noinspection PyTypeChecker
