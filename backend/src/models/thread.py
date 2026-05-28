@@ -5,7 +5,6 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from src.models.board import Board
-    from src.models.mediafile import MediaFile
     from src.models.post import Post
 
 
@@ -22,10 +21,3 @@ class Thread(SQLModel, table=True):
 
     board: Board = Relationship(back_populates="threads")
     posts: list[Post] = Relationship(back_populates="thread")
-
-    @staticmethod
-    def ensure_op_has_image(media_files: list[MediaFile]) -> None:
-        from src.models.mediafile import MediaType
-
-        if not any(media.media_type in {MediaType.IMAGE, MediaType.GIF} for media in media_files):
-            raise ValueError("Thread starter post requires an image or gif attachment")

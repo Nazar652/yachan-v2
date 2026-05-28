@@ -1,11 +1,62 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: yachan-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yachan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yachan}
+      POSTGRES_DB: ${POSTGRES_DB:-yachan}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yachan}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: yachan-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: yachan-backend
-    ports:
-      - "8000:8000"
     environment:
       PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-yachan}:${POSTGRES_PASSWORD:-yachan}@postgres:5432/${POSTGRES_DB:-yachan}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
     restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: yachan-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
