@@ -35,3 +35,12 @@ ignore = [
 
 [lint.isort]
 combine-as-imports = true
+
+[lint.flake8-bugbear]
+# fastapi uses these calls in argument defaults by design
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Header",
+    "fastapi.Query",
+    "fastapi.Path",
+]

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import Settings, get_settings
 from src.core.database import new_session
 from src.core.markup import MarkupRenderer
+from src.core.rate_limit import RateLimiter
 from src.core.redis import get_redis
 from src.core.storage import LocalStorage
 from src.repositories.attachment_repo import AttachmentRepository
@@ -36,7 +37,9 @@ def setup_di() -> None:
     # stateless singletons, shared across all requests
     di[MarkupRenderer] = MarkupRenderer()
     di[LocalStorage] = LocalStorage(settings)
-    di[Redis] = get_redis()
+    redis = get_redis()
+    di[Redis] = redis
+    di[RateLimiter] = RateLimiter(redis)
 
     # one AsyncSession per request, shared by every repository in that request
     # so they all run inside the same transaction

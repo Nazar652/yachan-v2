@@ -18,5 +18,19 @@
   "reportIncompatibleVariableOverride": "none",
   "reportIncompatibleMethodOverride": "none",
 
-  "reportCallInDefaultInitializer": "error"
+  "reportCallInDefaultInitializer": "error",
+
+  "executionEnvironments": [
+    {
+      "root": "backend/src/routers",
+      "comment": "fastapi puts Depends()/Header() in arg defaults; views are built by kink injection",
+      "reportCallInDefaultInitializer": "none",
+      "reportCallIssue": "none"
+    },
+    {
+      "root": "backend/src/views",
+      "comment": "fastapi Header() lives in dependency arg defaults",
+      "reportCallInDefaultInitializer": "none"
+    }
+  ]
 }
