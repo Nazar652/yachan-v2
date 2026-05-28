@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class Thread(SQLModel, table=True):
@@ -13,5 +15,5 @@ class Thread(SQLModel, table=True):
     is_locked: bool = Field(default=False)
     is_sticky: bool = Field(default=False)
     reply_count: int = Field(default=0)
-    bump_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    bump_at: datetime = Field(default_factory=utcnow, index=True)
+    created_at: datetime = Field(default_factory=utcnow)

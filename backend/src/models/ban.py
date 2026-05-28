@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class Ban(SQLModel, table=True):
@@ -14,4 +16,4 @@ class Ban(SQLModel, table=True):
     created_by: int | None = Field(default=None, foreign_key="mod_account.id")
     expires_at: datetime | None = Field(default=None)  # null = permanent
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=utcnow)

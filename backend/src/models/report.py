@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class Report(SQLModel, table=True):
@@ -14,4 +16,4 @@ class Report(SQLModel, table=True):
     ip_hash: str = Field(max_length=64)  # reporter ip, never exposed
     is_resolved: bool = Field(default=False)
     resolved_by: int | None = Field(default=None, foreign_key="mod_account.id")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=utcnow)

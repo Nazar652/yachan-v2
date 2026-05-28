@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class Board(SQLModel, table=True):
@@ -13,4 +15,4 @@ class Board(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=500)
     bump_limit: int = Field(default=300)
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=utcnow)

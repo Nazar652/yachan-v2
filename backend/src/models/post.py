@@ -1,8 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import ClassVar
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class Post(SQLModel, table=True):
@@ -26,4 +28,4 @@ class Post(SQLModel, table=True):
     ip_hash: str = Field(max_length=64)  # never exposed in the api
     deleted: bool = Field(default=False)
     deleted_by: int | None = Field(default=None, foreign_key="mod_account.id")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=utcnow)

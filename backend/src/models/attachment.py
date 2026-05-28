@@ -1,8 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar
 
 from sqlmodel import Field, SQLModel
+
+from src.core.clock import utcnow
 
 
 class MediaType(StrEnum):
@@ -27,4 +29,4 @@ class Attachment(SQLModel, table=True):
     width: int | None = Field(default=None)
     height: int | None = Field(default=None)
     duration_seconds: float | None = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=utcnow)

@@ -22,7 +22,7 @@ def current_scope() -> dict[type, Any] | None:
 
 def resolve_scoped[T](
     cls: type[T],
-    factory: Callable[[], T],
+    factory: Callable[..., T],
     *,
     force_new: bool = False,
 ) -> T:
