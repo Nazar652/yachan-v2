@@ -30,12 +30,14 @@ httpx = "^0.28.1"
 prek = "^0.3.8"
 pyright = "^1.1.409"
 ruff = "^0.15.14"
+pytest-asyncio = "^1.4.0"
 
 [tool.poetry]
 package-mode = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_mode = "auto"
 
 
 [build-system]
