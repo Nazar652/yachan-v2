@@ -1,22 +1,29 @@
-from datetime import datetime, UTC
-from typing import TYPE_CHECKING, ClassVar
+from datetime import UTC, datetime
+from typing import ClassVar
 
-from sqlmodel import Field, Relationship, SQLModel
-
-if TYPE_CHECKING:
-    from src.models.mediafile import MediaFile
-    from src.models.thread import Thread
+from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
 
 
 class Post(SQLModel, table=True):
     __tablename__: ClassVar[str] = "post"
+    __table_args__: ClassVar = (
+        UniqueConstraint("board_id", "post_number", name="uq_post_board_number"),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
-    thread_id: int = Field(foreign_key="threads.id", nullable=False, index=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
-    content: str | None = Field(default=None, max_length=5000)
-    is_op: bool = Field(default=False, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), nullable=False)
-
-    thread: Thread = Relationship(back_populates="posts")
-    media_files: list[MediaFile] = Relationship(back_populates="post")
+    post_number: int  # per-board counter, unique within a board
+    thread_id: int = Field(foreign_key="thread.id", index=True)
+    board_id: int = Field(foreign_key="board.id", index=True)
+    name: str = Field(default="Anonymous", max_length=100)
+    tripcode: str | None = Field(default=None, max_length=50)
+    body: str | None = Field(default=None, max_length=5000)  # raw markdown
+    body_html: str | None = Field(default=None)  # rendered html sent to clients
+    sage: bool = Field(default=False)
+    is_op: bool = Field(default=False)
+    is_edited: bool = Field(default=False)
+    edited_at: datetime | None = Field(default=None)
+    ip_hash: str = Field(max_length=64)  # never exposed in the api
+    deleted: bool = Field(default=False)
+    deleted_by: int | None = Field(default=None, foreign_key="mod_account.id")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

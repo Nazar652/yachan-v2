@@ -1,21 +1,16 @@
-from datetime import datetime, UTC
-from typing import TYPE_CHECKING, ClassVar
+from datetime import UTC, datetime
+from typing import ClassVar
 
-from sqlmodel import Field, Relationship, SQLModel
-
-if TYPE_CHECKING:
-    from src.models.thread import Thread
+from sqlmodel import Field, SQLModel
 
 
 class Board(SQLModel, table=True):
     __tablename__: ClassVar[str] = "board"
 
     id: int | None = Field(default=None, primary_key=True)
-    code: str = Field(index=True, unique=True, max_length=20)
+    slug: str = Field(index=True, unique=True, max_length=20)
     title: str = Field(max_length=100)
     description: str | None = Field(default=None, max_length=500)
-    is_active: bool = Field(default=True, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), nullable=False)
-
-    threads: list[Thread] = Relationship(back_populates="board")
-
+    bump_limit: int = Field(default=300)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
