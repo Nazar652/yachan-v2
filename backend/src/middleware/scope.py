@@ -25,18 +25,18 @@ class ScopeMiddleware:
             close_scope()
 
     @staticmethod
-    async def _session() -> AsyncSession | None:
+    def _session() -> AsyncSession | None:
         scope = current_scope()
         return scope.get(AsyncSession) if scope else None
 
     async def _commit(self) -> None:
-        if session := await self._session():
+        if session := self._session():
             await session.commit()
 
     async def _rollback(self) -> None:
-        if session := await self._session():
+        if session := self._session():
             await session.rollback()
 
     async def _close(self) -> None:
-        if session := await self._session():
+        if session := self._session():
             await session.close()
