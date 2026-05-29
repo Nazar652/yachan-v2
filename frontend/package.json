@@ -10,13 +10,19 @@
     "test:unit": "vitest",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
+    "gen:api": "openapi-typescript ../openapi.json -o src/api/schema.d.ts",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/vue-query": "^5.100.14",
+    "openapi-fetch": "^0.17.0",
     "pinia": "^3.0.4",
+    "tailwind-variants": "^3.2.2",
+    "tailwindcss": "^4.3.0",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4"
   },
@@ -37,6 +43,7 @@
     "jiti": "^2.6.1",
     "jsdom": "^29.0.1",
     "npm-run-all2": "^8.0.4",
+    "openapi-typescript": "^7.13.0",
     "oxlint": "~1.57.0",
     "prettier": "3.8.1",
     "typescript": "~6.0.0",

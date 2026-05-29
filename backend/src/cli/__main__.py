@@ -1,11 +1,11 @@
 import argparse
 
 from src.bootstrap.container import setup_di
-from src.cli import create_admin
+from src.cli import create_admin, dump_openapi
 
 # register a command module here to expose it; each module provides
 # COMMAND, HELP, configure(parser) and handle(args)
-COMMANDS = [create_admin]
+COMMANDS = [create_admin, dump_openapi]
 
 
 def main() -> None:
