@@ -12,7 +12,7 @@ from src.core.exceptions import (
     UnauthorizedError,
 )
 from src.middleware.scope import ScopeMiddleware
-from src.routers import attachments, boards, captcha, mod, posts, reports, threads
+from src.routers import attachments, boards, captcha, mod, posts, reports, threads, ws
 
 
 def create_app() -> FastAPI:
@@ -54,5 +54,6 @@ def create_app() -> FastAPI:
     app.include_router(reports.router, prefix="/api")
     app.include_router(captcha.router, prefix="/api")
     app.include_router(mod.router, prefix="/api")
+    app.include_router(ws.router, prefix="/api")
 
     return app

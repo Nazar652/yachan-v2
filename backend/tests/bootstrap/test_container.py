@@ -4,6 +4,7 @@ from src.core.config import Settings
 from src.core.storage import LocalStorage
 from src.repositories.board_repo import BoardRepository
 from src.repositories.post_repo import PostRepository
+from src.utils.events import EventPublisher
 from src.utils.markup import MarkupRenderer
 
 
@@ -20,6 +21,7 @@ def test_setup_di_registers_core_singletons():
 
     assert isinstance(di[MarkupRenderer], MarkupRenderer)
     assert isinstance(di[LocalStorage], LocalStorage)
+    assert isinstance(di[EventPublisher], EventPublisher)
 
 
 def test_setup_di_registers_session_and_repo_factories():

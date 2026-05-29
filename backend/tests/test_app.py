@@ -24,3 +24,5 @@ def test_app_registers_expected_routes():
     assert "/api/captcha" in paths
     assert "/api/mod/login" in paths
     assert "/api/mod/boards" in paths
+    assert "/api/{board_slug}/threads/{thread_id}/ws" in paths
+    assert "/api/{board_slug}/ws" in paths

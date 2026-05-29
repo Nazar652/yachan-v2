@@ -7,6 +7,7 @@ from src.schemas.post import PostResponse
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.thread_service import ThreadService
+from src.utils.events import NEW_THREAD, EventPublisher, board_channel
 from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
 
@@ -21,11 +22,13 @@ class ThreadsView:
         thread_service: ThreadService,
         captcha_service: CaptchaService,
         rate_limiter: RateLimiter,
+        events: EventPublisher,
         settings: Settings,
     ) -> None:
         self.thread_service = thread_service
         self.captcha_service = captcha_service
         self.rate_limiter = rate_limiter
+        self.events = events
         self.settings = settings
 
     async def list_threads(
@@ -56,4 +59,8 @@ class ThreadsView:
             raise RateLimitedError("too many threads, slow down")
 
         thread, _op_post = await self.thread_service.create_thread(board_slug, data, ip_hash)
-        return ThreadResponse.model_validate(thread)
+        response = ThreadResponse.model_validate(thread)
+        await self.events.publish(
+            board_channel(board_slug), NEW_THREAD, response.model_dump(mode="json")
+        )
+        return response

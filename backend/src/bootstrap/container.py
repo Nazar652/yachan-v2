@@ -24,6 +24,7 @@ from src.services.mod_service import ModService
 from src.services.post_service import PostService
 from src.services.report_service import ReportService
 from src.services.thread_service import ThreadService
+from src.utils.events import EventPublisher
 from src.utils.markup import MarkupRenderer
 from src.utils.rate_limit import RateLimiter
 
@@ -40,6 +41,7 @@ def setup_di() -> None:
     redis = get_redis()
     di[Redis] = redis
     di[RateLimiter] = RateLimiter(redis)
+    di[EventPublisher] = EventPublisher(redis)
 
     # one AsyncSession per request, shared by every repository in that request
     # so they all run inside the same transaction

@@ -18,16 +18,20 @@ def build(*, allowed=True):
     captcha_service.validate = AsyncMock()
     rate_limiter = MagicMock()
     rate_limiter.is_allowed = AsyncMock(return_value=allowed)
+    events = MagicMock()
+    events.publish = AsyncMock()
     view = PostsView(
         post_service=post_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
+        events=events,
         settings=settings_ns(),
     )
     return view, SimpleNamespace(
         post_service=post_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
+        events=events,
     )
 
 
@@ -39,6 +43,7 @@ async def test_create_reply_validates_captcha_and_delegates():
     assert isinstance(result, PostResponse)
     mocks.captcha_service.validate.assert_awaited_once_with("tok", "ans")
     mocks.post_service.create_reply.assert_awaited_once()
+    mocks.events.publish.assert_awaited_once()
 
 
 async def test_create_reply_rate_limited():
@@ -53,6 +58,7 @@ async def test_edit_post_delegates_with_ip_hash():
     result = await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
     assert isinstance(result, PostResponse)
     mocks.post_service.edit_post.assert_awaited_once()
+    mocks.events.publish.assert_awaited_once()
 
 
 async def test_get_post_history_none():

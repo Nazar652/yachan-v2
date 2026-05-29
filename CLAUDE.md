@@ -35,7 +35,7 @@ backend/
       scope.py             ScopeMiddleware: opens scope, commits/rolls back/closes per request
     core/                  infrastructure: config, database, redis, storage, exceptions
     utils/                  standalone helpers: clock, ip, names, tripcode, sequences,
-                           markup, captcha, auth, rate_limit
+                           markup, captcha, auth, rate_limit, events
     models/                SQLModel tables, pure data, no logic
     repositories/          all SQL, one class per model, @inject
     schemas/               pydantic request/response, no db awareness
@@ -200,11 +200,24 @@ docker the backend talks to `postgres:5432`.
   `executionEnvironments` relax DI-only diagnostics for `routers`/`views`/`tasks`.
   Prefer these over scattering `# type: ignore`.
 
+## Realtime (websocket)
+
+- `utils/events.py` — `EventPublisher` publishes JSON envelopes
+  (`{"type", "data"}`) to redis pub/sub. Channels: `ws:thread:{thread_id}` and
+  `ws:board:{board_slug}`. Event types: `new_post`, `post_edited`, `new_thread`.
+- Publishing happens in the **views** (presentation side-effect) right after the
+  service call, using the response schema as the payload.
+- `WsView` (`views/ws_view.py`) subscribes a socket to a channel and forwards
+  messages; a drain task detects client disconnect. Endpoints:
+  `GET /api/{board_slug}/threads/{thread_id}/ws` and `GET /api/{board_slug}/ws`.
+- nginx already passes the `Upgrade`/`Connection` headers for ws.
+
 ## Not yet built
 
-- **WebSocket** (`ws` real-time `new_post`/`post_edited`): needs services to
-  publish events to a Redis channel; not implemented.
 - File uploads are a **separate endpoint**
   (`POST /api/{board_slug}/posts/{post_number}/attachments`), not part of the
   JSON post/thread create bodies. The OP-must-have-image rule is not enforced yet.
+- Events are published **before** the request transaction commits (a rolled-back
+  write would still have notified). Acceptable today because services validate
+  before writing; revisit if writes can fail post-validation.
 - No integration tests against a real database/redis — units only so far.

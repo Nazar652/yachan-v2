@@ -17,16 +17,20 @@ def build(*, allowed=True):
     captcha_service.validate = AsyncMock()
     rate_limiter = MagicMock()
     rate_limiter.is_allowed = AsyncMock(return_value=allowed)
+    events = MagicMock()
+    events.publish = AsyncMock()
     view = ThreadsView(
         thread_service=thread_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
+        events=events,
         settings=settings_ns(),
     )
     return view, SimpleNamespace(
         thread_service=thread_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
+        events=events,
     )
 
 
@@ -51,6 +55,7 @@ async def test_create_thread_validates_captcha_and_delegates():
     assert isinstance(result, ThreadResponse)
     mocks.captcha_service.validate.assert_awaited_once_with("tok", "ans")
     mocks.thread_service.create_thread.assert_awaited_once()
+    mocks.events.publish.assert_awaited_once()
 
 
 async def test_create_thread_rate_limited():
