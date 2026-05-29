@@ -3,8 +3,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from src.core.clock import utcnow
 from src.core.exceptions import (
     BoardNotFoundError,
     EditWindowExpiredError,
@@ -17,6 +15,7 @@ from src.core.exceptions import (
 )
 from src.schemas.post import PostCreate, PostEditCreate
 from src.services.post_service import PostService
+from src.utils.clock import utcnow
 
 _UNSET = object()
 

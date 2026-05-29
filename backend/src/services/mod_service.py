@@ -1,7 +1,6 @@
 import jwt
 from kink import inject
 
-from src.core.auth import create_access_token, decode_access_token, verify_password
 from src.core.config import Settings
 from src.core.exceptions import (
     BoardNotFoundError,
@@ -20,6 +19,7 @@ from src.repositories.post_repo import PostRepository
 from src.repositories.thread_repo import ThreadRepository
 from src.schemas.mod import BanCreate
 from src.services.ban_service import BanService
+from src.utils.auth import create_access_token, decode_access_token, verify_password
 
 
 @inject

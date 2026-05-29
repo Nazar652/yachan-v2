@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import BoardAlreadyExistsError, BoardNotFoundError
 from src.schemas.board import BoardCreate
 from src.services.board_service import BoardService

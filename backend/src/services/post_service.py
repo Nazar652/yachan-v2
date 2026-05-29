@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from kink import inject
 
-from src.core.clock import utcnow
 from src.core.exceptions import (
     BoardNotFoundError,
     EditWindowExpiredError,
@@ -12,7 +11,6 @@ from src.core.exceptions import (
     ThreadLockedError,
     ThreadNotFoundError,
 )
-from src.core.names import parse_name
 from src.models.post import Post
 from src.models.post_backlink import PostBacklink
 from src.models.post_edit import PostEdit
@@ -24,6 +22,8 @@ from src.repositories.thread_repo import ThreadRepository
 from src.schemas.post import PostCreate, PostEditCreate
 from src.services.ban_service import BanService
 from src.services.markup_service import MarkupService
+from src.utils.clock import utcnow
+from src.utils.names import parse_name
 
 EDIT_WINDOW = timedelta(minutes=30)
 

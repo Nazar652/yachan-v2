@@ -1,7 +1,6 @@
 from kink import inject
 
 from src.core.exceptions import BoardNotFoundError, ThreadNotFoundError
-from src.core.names import parse_name
 from src.models.post import Post
 from src.models.thread import Thread
 from src.repositories.board_repo import BoardRepository
@@ -10,6 +9,7 @@ from src.repositories.thread_repo import ThreadRepository
 from src.schemas.thread import ThreadCreate
 from src.services.ban_service import BanService
 from src.services.markup_service import MarkupService
+from src.utils.names import parse_name
 
 
 @inject

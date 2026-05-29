@@ -1,5 +1,4 @@
 import pytest
-
 from src.repositories.board_repo import BoardRepository
 
 

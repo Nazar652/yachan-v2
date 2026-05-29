@@ -2,10 +2,10 @@ from datetime import datetime
 
 from kink import inject
 
-from src.core.clock import utcnow
 from src.core.exceptions import IpBannedError
 from src.models.ban import Ban
 from src.repositories.ban_repo import BanRepository
+from src.utils.clock import utcnow
 
 
 @inject

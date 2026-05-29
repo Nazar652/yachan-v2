@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.bootstrap.scope import close_scope, current_scope
 from src.middleware.scope import ScopeMiddleware
 

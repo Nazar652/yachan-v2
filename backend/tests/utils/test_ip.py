@@ -1,4 +1,4 @@
-from src.core.ip import hash_ip
+from src.utils.ip import hash_ip
 
 
 def test_hash_is_deterministic():

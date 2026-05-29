@@ -1,6 +1,5 @@
 import pytest
-
-from src.core.sequences import post_number_sequence_name
+from src.utils.sequences import post_number_sequence_name
 
 
 def test_valid_slug_builds_name():

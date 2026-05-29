@@ -1,4 +1,4 @@
-from src.core.markup import MarkupRenderer, extract_post_refs
+from src.utils.markup import MarkupRenderer, extract_post_refs
 
 
 def test_renders_post_reference_as_link():

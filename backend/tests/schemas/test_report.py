@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
-
 from src.schemas.report import ReportCreate, ReportResponse
 
 

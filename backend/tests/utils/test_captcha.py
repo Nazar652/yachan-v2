@@ -1,4 +1,4 @@
-from src.core.captcha import (
+from src.utils.captcha import (
     _ALPHABET,
     generate_answer,
     new_token,

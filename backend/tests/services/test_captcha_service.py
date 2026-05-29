@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import InvalidCaptchaError
 from src.services.captcha_service import CaptchaService
 

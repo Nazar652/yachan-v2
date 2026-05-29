@@ -1,4 +1,4 @@
-from src.core.tripcode import compute_tripcode
+from src.utils.tripcode import compute_tripcode
 
 
 def test_starts_with_bang_and_has_expected_length():

@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from PIL import Image
-
 from src.core.exceptions import FileTooLargeError, UnsupportedMediaTypeError
 from src.models.attachment import MediaType
 from src.services.file_service import MAX_UPLOAD_BYTES, FileService

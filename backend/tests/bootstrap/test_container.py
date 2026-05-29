@@ -1,11 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.bootstrap.container import setup_di
 from src.core.config import Settings
-from src.core.markup import MarkupRenderer
 from src.core.storage import LocalStorage
 from src.repositories.board_repo import BoardRepository
 from src.repositories.post_repo import PostRepository
+from src.utils.markup import MarkupRenderer
 
 
 def test_setup_di_registers_settings_singleton():

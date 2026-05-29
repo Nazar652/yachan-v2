@@ -1,7 +1,6 @@
 import pytest
-
 from src.core.exceptions import UnauthorizedError
-from src.core.ip import hash_ip
+from src.utils.ip import hash_ip
 from src.views.dependencies import bearer_token, client_ip_hash
 from tests.views._factories import request_ns, settings_ns
 

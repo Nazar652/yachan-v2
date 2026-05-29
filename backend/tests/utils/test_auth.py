@@ -1,13 +1,12 @@
 import jwt
 import pytest
-
-from src.core.auth import (
+from src.core.config import get_settings
+from src.utils.auth import (
     create_access_token,
     decode_access_token,
     hash_password,
     verify_password,
 )
-from src.core.config import get_settings
 
 
 def test_hash_then_verify_succeeds():

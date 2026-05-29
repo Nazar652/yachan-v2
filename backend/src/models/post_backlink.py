@@ -4,7 +4,7 @@ from typing import ClassVar
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from src.core.clock import utcnow
+from src.utils.clock import utcnow
 
 
 class PostBacklink(SQLModel, table=True):

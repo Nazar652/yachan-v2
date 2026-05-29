@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import RateLimitedError
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.views.threads_view import ThreadsView

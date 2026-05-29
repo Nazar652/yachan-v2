@@ -1,5 +1,4 @@
 import pytest
-
 from src.bootstrap.scope import (
     close_scope,
     current_scope,

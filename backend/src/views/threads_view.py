@@ -3,11 +3,11 @@ from starlette.requests import Request
 
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
-from src.core.rate_limit import RateLimiter
 from src.schemas.post import PostResponse
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.thread_service import ThreadService
+from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
 
 THREAD_RATE_LIMIT = 3

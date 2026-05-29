@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import BoardNotFoundError, PostNotFoundError
 from src.schemas.report import ReportCreate
 from src.services.report_service import ReportService

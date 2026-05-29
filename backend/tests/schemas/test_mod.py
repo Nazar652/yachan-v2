@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
-
 from src.models.mod_account import ModRole
 from src.schemas.mod import BanCreate, ModAccountResponse, ModLogin, TokenResponse
 

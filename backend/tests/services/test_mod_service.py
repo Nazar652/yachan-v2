@@ -2,8 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from src.core.auth import create_access_token, hash_password
 from src.core.config import get_settings
 from src.core.exceptions import (
     InvalidCredentialsError,
@@ -12,6 +10,7 @@ from src.core.exceptions import (
 )
 from src.schemas.mod import BanCreate
 from src.services.mod_service import ModService
+from src.utils.auth import create_access_token, hash_password
 
 
 def build(**repos):

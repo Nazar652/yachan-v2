@@ -1,6 +1,6 @@
 from kink import inject
 
-from src.core.markup import MarkupRenderer, extract_post_refs
+from src.utils.markup import MarkupRenderer, extract_post_refs
 
 
 @inject

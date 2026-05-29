@@ -3,8 +3,8 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from src.core.sequences import post_number_sequence_name
 from src.models.board import Board
+from src.utils.sequences import post_number_sequence_name
 
 from .base import BaseRepository
 

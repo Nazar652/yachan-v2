@@ -12,7 +12,7 @@ guide for agents — read it before changing code.
   (`_ALPHABET`), private functions (`_post_ref_plugin`), and private methods
   (`_full_path`).
   - Exception: a name dictated by an external typed API stays as required, e.g.
-    the mistune plugin parameter must be `md` (see `core/markup.py`).
+    the mistune plugin parameter must be `md` (see `utils/markup.py`).
 - **Comments:** sparse, only for non-obvious logic. Natural prose, lowercase, no
   decorative separators.
 - **Every method gets a unit test.** Tests are pure unit tests — mock the
@@ -33,7 +33,9 @@ backend/
       container.py         setup_di(): all di registrations (called once at startup)
     middleware/
       scope.py             ScopeMiddleware: opens scope, commits/rolls back/closes per request
-    core/                  framework-free helpers (config, db, redis, auth, markup, ...)
+    core/                  infrastructure: config, database, redis, storage, exceptions
+    utils/                  standalone helpers: clock, ip, names, tripcode, sequences,
+                           markup, captcha, auth, rate_limit
     models/                SQLModel tables, pure data, no logic
     repositories/          all SQL, one class per model, @inject
     schemas/               pydantic request/response, no db awareness
@@ -52,10 +54,12 @@ docker-compose.yml         postgres, redis, backend, celery-worker, celery-beat,
 
 ```
 views/        -> services/                  (never repositories, models, or SQL)
-services/     -> repositories/, other services/, models/, core/
+services/     -> repositories/, other services/, models/, core/, utils/
                  (never HTTP, never raises HTTPException — raises domain errors)
-repositories/ -> models/, core/database     (only AsyncSession; all SQL lives here)
+repositories/ -> models/, core/database, utils/  (only AsyncSession; all SQL lives here)
 tasks/        -> services/                   (same rules as views)
+core/         -> config/connections/exceptions (infrastructure, no domain logic)
+utils/        -> stdlib + a single resource at most (pure, reusable helpers)
 models/       -> nothing but their own fields (pure data)
 ```
 
@@ -108,7 +112,7 @@ Anonymous imageboard — no user accounts for posters.
 
 - `Board` — `slug` (unique, `^[a-z0-9_]{1,20}$`), `title`, `bump_limit`.
   Each board owns a Postgres sequence `post_number_seq_{slug}` for per-board post
-  numbering (see `core/sequences.py`, created in `BoardService.create_board`).
+  numbering (see `utils/sequences.py`, created in `BoardService.create_board`).
 - `Thread` — belongs to a board; `is_locked`, `is_sticky`, `reply_count`,
   `bump_at` (catalog ordering).
 - `Post` — `post_number` (unique per board), `name`, `tripcode`, `ip_hash`
@@ -123,15 +127,15 @@ Anonymous imageboard — no user accounts for posters.
 - `Report`, `ModAccount` (role admin/moderator, JWT auth).
 
 Identity:
-- **Poster IP** is hashed (`core/ip.hash_ip`, salted) and never returned.
+- **Poster IP** is hashed (`utils/ip.hash_ip`, salted) and never returned.
 - **Tripcode**: a `#password` suffix in the name field becomes a tripcode
-  (`core/names.parse_name` + `core/tripcode`).
-- **Mod auth**: username/password (PBKDF2 in `core/auth`) -> JWT bearer token.
+  (`utils/names.parse_name` + `utils/tripcode`).
+- **Mod auth**: username/password (PBKDF2 in `utils/auth`) -> JWT bearer token.
 
 ## Important technical decisions
 
 - **Timestamps are naive UTC.** Columns are `TIMESTAMP WITHOUT TIME ZONE`;
-  asyncpg rejects tz-aware values for them. Always use `core/clock.utcnow()`
+  asyncpg rejects tz-aware values for them. Always use `utils/clock.utcnow()`
   (naive UTC) for defaults and comparisons, never `datetime.utcnow()` (deprecated)
   or tz-aware `datetime.now(UTC)`.
 - **Model primary keys are typed `id: int`** (not `int | None`) even though the
@@ -151,7 +155,7 @@ Identity:
   `asyncio.run`. Therefore task tests must be **synchronous** (calling a task from
   an async test would nest event loops).
 - **Per-board sequence names** are built only via
-  `core/sequences.post_number_sequence_name(slug)`, which validates the slug
+  `utils/sequences.post_number_sequence_name(slug)`, which validates the slug
   because it is interpolated into raw DDL.
 
 ## Commands

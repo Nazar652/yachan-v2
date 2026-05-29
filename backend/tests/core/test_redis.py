@@ -1,5 +1,4 @@
 from redis.asyncio import Redis
-
 from src.core.redis import get_redis
 
 

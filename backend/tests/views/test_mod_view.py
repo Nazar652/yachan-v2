@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import ForbiddenError
 from src.models.mod_account import ModRole
 from src.schemas.board import BoardCreate, BoardResponse

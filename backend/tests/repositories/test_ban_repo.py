@@ -1,5 +1,5 @@
-from src.core.clock import utcnow
 from src.repositories.ban_repo import BanRepository
+from src.utils.clock import utcnow
 
 
 async def test_get_active_for_ip_returns_first(session, make_result):

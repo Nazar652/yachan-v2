@@ -3,10 +3,10 @@ from starlette.requests import Request
 
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
-from src.core.rate_limit import RateLimiter
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.services.captcha_service import CaptchaService
 from src.services.post_service import PostService
+from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
 
 REPLY_RATE_LIMIT = 10

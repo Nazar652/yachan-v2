@@ -3,8 +3,8 @@ from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from src.core.sequences import post_number_sequence_name
 from src.models.post import Post
+from src.utils.sequences import post_number_sequence_name
 
 from .base import BaseRepository
 

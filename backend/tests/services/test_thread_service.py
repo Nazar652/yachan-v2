@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import BoardNotFoundError, IpBannedError, ThreadNotFoundError
 from src.schemas.thread import ThreadCreate
 from src.services.thread_service import ThreadService

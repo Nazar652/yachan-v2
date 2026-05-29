@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.bootstrap.scope import current_scope
 from src.celery_app import celery
 from src.tasks.base import ScopedTask

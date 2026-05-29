@@ -3,8 +3,8 @@ import base64
 from kink import inject
 from redis.asyncio import Redis
 
-from src.core import captcha
 from src.core.exceptions import InvalidCaptchaError
+from src.utils import captcha
 
 CAPTCHA_TTL_SECONDS = 300
 

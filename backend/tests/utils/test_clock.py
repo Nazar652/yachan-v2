@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from src.core.clock import utcnow
+from src.utils.clock import utcnow
 
 
 def test_utcnow_is_naive():

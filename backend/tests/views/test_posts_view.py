@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.exceptions import RateLimitedError
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView

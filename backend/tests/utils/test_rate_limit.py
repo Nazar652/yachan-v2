@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
-from src.core.rate_limit import RateLimiter
+from src.utils.rate_limit import RateLimiter
 
 
 def _make_redis(count: int) -> MagicMock:

@@ -1,4 +1,4 @@
-from src.core.tripcode import compute_tripcode
+from src.utils.tripcode import compute_tripcode
 
 
 def parse_name(raw: str | None) -> tuple[str, str | None]:

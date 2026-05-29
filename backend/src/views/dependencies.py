@@ -3,7 +3,7 @@ from starlette.requests import Request
 
 from src.core.config import Settings
 from src.core.exceptions import UnauthorizedError
-from src.core.ip import hash_ip
+from src.utils.ip import hash_ip
 
 
 def client_ip_hash(request: Request, settings: Settings) -> str:

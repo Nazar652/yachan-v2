@@ -4,8 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import Settings, get_settings
 from src.core.database import new_session
-from src.core.markup import MarkupRenderer
-from src.core.rate_limit import RateLimiter
 from src.core.redis import get_redis
 from src.core.storage import LocalStorage
 from src.repositories.attachment_repo import AttachmentRepository
@@ -26,6 +24,8 @@ from src.services.mod_service import ModService
 from src.services.post_service import PostService
 from src.services.report_service import ReportService
 from src.services.thread_service import ThreadService
+from src.utils.markup import MarkupRenderer
+from src.utils.rate_limit import RateLimiter
 
 from .scope import resolve_scoped
 
