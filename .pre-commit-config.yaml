@@ -27,3 +27,11 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+
+      - id: lint
+        name: lint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
