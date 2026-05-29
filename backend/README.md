@@ -1,15 +1,19 @@
 # yachan-v2 backend
 
-Simple FastAPI template with two starter endpoints:
+FastAPI application powering the yachan imageboard. All endpoints are served
+under the `/api` prefix:
 
-- `GET /` returns a basic service message
-- `GET /health` returns health status
+- `/api/boards` – board listing and details
+- `/api/{board_slug}/threads` – thread management
+- `/api/{board_slug}` – posts, reports, and WebSocket connections
+- `/api/captcha` – CAPTCHA generation/validation
+- `/api/mod` – moderator authentication and actions
 
 ## Quick start
 
 ```bash
 poetry install
-poetry run uvicorn app.main:app --reload
+poetry run uvicorn main:app --reload
 ```
 
 Open http://127.0.0.1:8000/docs for interactive API docs.
