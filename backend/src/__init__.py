@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.bootstrap.container import setup_di
@@ -22,6 +23,16 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     # noinspection PyTypeChecker
     app.add_middleware(ScopeMiddleware)
+    # added last so it wraps ScopeMiddleware: cors preflight is answered before
+    # a db scope is opened
+    # noinspection PyTypeChecker
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.exception_handler(NotFoundError)
     async def _not_found(request, exc: NotFoundError):

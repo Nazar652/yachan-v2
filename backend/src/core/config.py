@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     storage_dir: str = "storage"
     storage_base_url: str = "/media"
 
+    # browser origins allowed to call the api, comma-separated
+    cors_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:

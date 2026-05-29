@@ -8,6 +8,25 @@ def test_protected_mod_endpoint_requires_auth():
     assert response.status_code == 401
 
 
+def test_cors_preflight_allows_configured_origin():
+    client = TestClient(create_app())
+    response = client.options(
+        "/api/boards",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_cors_headers_on_actual_response():
+    client = TestClient(create_app())
+    response = client.get("/api/mod/reports", headers={"Origin": "http://localhost:5173"})
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
 def test_app_registers_expected_routes():
     app = create_app()
     paths = {getattr(route, "path", None) for route in app.routes}

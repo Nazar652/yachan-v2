@@ -106,6 +106,11 @@ domain errors become responses and the middleware then **commits**. Services
 validate before writing, so a domain error means nothing was written. Keep that
 ordering: validate first, write last.
 
+`CORSMiddleware` is added last so it is the **outermost** middleware — cors
+preflight is answered before a db scope is opened. Allowed origins come from
+`Settings.cors_origins` (comma-separated env `CORS_ORIGINS`), exposed as the
+`cors_origin_list` property.
+
 ## Domain model
 
 Anonymous imageboard — no user accounts for posters.
