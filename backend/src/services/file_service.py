@@ -78,6 +78,10 @@ class FileService:
         )
 
     @staticmethod
+    def media_type_for(content_type: str) -> MediaType:
+        return FileService._classify(content_type)[0]
+
+    @staticmethod
     def _classify(content_type: str) -> tuple[MediaType, str]:
         if content_type not in _EXTENSIONS:
             raise UnsupportedMediaTypeError(content_type)

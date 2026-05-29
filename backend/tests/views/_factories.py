@@ -82,6 +82,35 @@ def ban_ns(**overrides):
     return SimpleNamespace(**data)
 
 
+def attachment_ns(**overrides):
+    from src.models.attachment import MediaType
+
+    data = dict(
+        id=7,
+        media_type=MediaType.IMAGE,
+        original_name="cat.png",
+        file_path="abc.png",
+        thumbnail_path=None,
+        mime_type="image/png",
+        width=None,
+        height=None,
+        duration_seconds=None,
+        size_bytes=100,
+    )
+    data.update(overrides)
+    return SimpleNamespace(**data)
+
+
+def upload_ns(filename="cat.png", content=b"bytes", content_type="image/png"):
+    from unittest.mock import AsyncMock, MagicMock
+
+    upload = MagicMock()
+    upload.filename = filename
+    upload.content_type = content_type
+    upload.read = AsyncMock(return_value=content)
+    return upload
+
+
 def request_ns(host="1.2.3.4"):
     return SimpleNamespace(client=SimpleNamespace(host=host))
 

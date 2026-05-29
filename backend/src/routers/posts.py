@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Header, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView
@@ -14,14 +16,15 @@ def _view() -> PostsView:
 async def create_reply(
     board_slug: str,
     thread_id: int,
-    data: PostCreate,
     request: Request,
+    data: Annotated[PostCreate, Form()],
+    files: list[UploadFile] = File(default=[]),
     captcha_token: str = Header(alias="X-Captcha-Token"),
     captcha_answer: str = Header(alias="X-Captcha-Answer"),
     view: PostsView = Depends(_view),
 ) -> PostResponse:
     return await view.create_reply(
-        board_slug, thread_id, data, request, captcha_token, captcha_answer
+        board_slug, thread_id, data, files, request, captcha_token, captcha_answer
     )
 
 

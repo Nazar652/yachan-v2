@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Header, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.views.threads_view import ThreadsView
@@ -27,13 +29,16 @@ async def get_thread(
     return await view.get_thread(board_slug, thread_id)
 
 
-@router.post("", response_model=ThreadResponse, status_code=201)
+@router.post("", response_model=ThreadDetailResponse, status_code=201)
 async def create_thread(
     board_slug: str,
-    data: ThreadCreate,
     request: Request,
+    data: Annotated[ThreadCreate, Form()],
+    files: list[UploadFile] = File(default=[]),
     captcha_token: str = Header(alias="X-Captcha-Token"),
     captcha_answer: str = Header(alias="X-Captcha-Answer"),
     view: ThreadsView = Depends(_view),
-) -> ThreadResponse:
-    return await view.create_thread(board_slug, data, request, captcha_token, captcha_answer)
+) -> ThreadDetailResponse:
+    return await view.create_thread(
+        board_slug, data, files, request, captcha_token, captcha_answer
+    )

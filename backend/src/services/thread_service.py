@@ -1,8 +1,14 @@
 from kink import inject
 
-from src.core.exceptions import BoardNotFoundError, ThreadNotFoundError
+from src.core.exceptions import (
+    BoardNotFoundError,
+    OpRequiresImageError,
+    ThreadNotFoundError,
+)
+from src.models.attachment import Attachment
 from src.models.post import Post
 from src.models.thread import Thread
+from src.repositories.attachment_repo import AttachmentRepository
 from src.repositories.board_repo import BoardRepository
 from src.repositories.post_repo import PostRepository
 from src.repositories.thread_repo import ThreadRepository
@@ -19,18 +25,24 @@ class ThreadService:
         thread_repo: ThreadRepository,
         post_repo: PostRepository,
         board_repo: BoardRepository,
+        attachment_repo: AttachmentRepository,
         markup: MarkupService,
         ban_service: BanService,
     ) -> None:
         self.thread_repo = thread_repo
         self.post_repo = post_repo
         self.board_repo = board_repo
+        self.attachment_repo = attachment_repo
         self.markup = markup
         self.ban_service = ban_service
 
     async def create_thread(
-        self, board_slug: str, data: ThreadCreate, ip_hash: str
+        self, board_slug: str, data: ThreadCreate, ip_hash: str, has_image: bool
     ) -> tuple[Thread, Post]:
+        # the opening post of a thread must carry at least one image
+        if not has_image:
+            raise OpRequiresImageError("a new thread requires an image")
+
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
@@ -61,7 +73,7 @@ class ThreadService:
 
     async def get_thread_detail(
         self, board_slug: str, thread_id: int
-    ) -> tuple[Thread, list[Post]]:
+    ) -> tuple[Thread, list[Post], dict[int, list[Attachment]]]:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
@@ -71,7 +83,10 @@ class ThreadService:
             raise ThreadNotFoundError(thread_id)
 
         posts = await self.post_repo.get_thread_posts(thread_id)
-        return thread, posts
+        attachments_by_post = {
+            post.id: await self.attachment_repo.list_by_post(post.id) for post in posts
+        }
+        return thread, posts, attachments_by_post
 
     async def list_threads(
         self, board_slug: str, limit: int = 50, offset: int = 0

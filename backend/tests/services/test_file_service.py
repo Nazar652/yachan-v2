@@ -15,6 +15,17 @@ def _png_bytes(size=(20, 10)) -> bytes:
     return buffer.getvalue()
 
 
+def test_media_type_for_maps_known_types():
+    assert FileService.media_type_for("image/png") is MediaType.IMAGE
+    assert FileService.media_type_for("image/gif") is MediaType.GIF
+    assert FileService.media_type_for("video/mp4") is MediaType.VIDEO
+
+
+def test_media_type_for_rejects_unknown():
+    with pytest.raises(UnsupportedMediaTypeError):
+        FileService.media_type_for("text/plain")
+
+
 async def test_store_attachment_saves_new_file():
     attachment_repo = MagicMock()
     attachment_repo.get_by_md5 = AsyncMock(return_value=None)

@@ -212,11 +212,26 @@ docker the backend talks to `postgres:5432`.
   `GET /api/{board_slug}/threads/{thread_id}/ws` and `GET /api/{board_slug}/ws`.
 - nginx already passes the `Upgrade`/`Connection` headers for ws.
 
+## Attachments (uploads)
+
+- Threads and replies are created with **multipart** requests: form fields map to
+  `ThreadCreate`/`PostCreate` via `Annotated[Model, Form()]`, files come as
+  `files: list[UploadFile]`. Up to 10 attachments per post (`MAX_ATTACHMENTS`).
+- `views/uploads.py` — `read_uploads` reads non-empty files and validates type
+  (`FileService.media_type_for`) and count up front, before any db write;
+  `contains_image` decides the OP-image rule; `store_uploads` stores each via
+  `FileService` and enqueues `process_attachment.delay`.
+- `views/serializers.py` — builds `AttachmentResponse`/`PostResponse` with public
+  URLs from `LocalStorage`. Used by thread and post views.
+- Rule: a **new thread's OP must include an image** (`ThreadService` raises
+  `OpRequiresImageError` when `has_image` is false). Replies may have no image.
+- `create_thread` returns a `ThreadDetailResponse` (the OP post + its attachments);
+  `create_reply` returns the `PostResponse` with attachments.
+
 ## Not yet built
 
-- File uploads are a **separate endpoint**
-  (`POST /api/{board_slug}/posts/{post_number}/attachments`), not part of the
-  JSON post/thread create bodies. The OP-must-have-image rule is not enforced yet.
+- Files are written to storage inside the request; on a later rollback they are
+  **not** cleaned up (orphaned blobs). Acceptable today; add a sweep task if needed.
 - Events are published **before** the request transaction commits (a rolled-back
   write would still have notified). Acceptable today because services validate
   before writing; revisit if writes can fail post-validation.
