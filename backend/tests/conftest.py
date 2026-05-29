@@ -6,7 +6,7 @@ import pytest
 
 # required settings must exist before importing anything that builds Settings at
 # import time; setdefault keeps real env values when they are present
-os.environ.setdefault("JWT_SECRET", "test-secret")
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-change-me-in-tests")
 os.environ.setdefault("IP_HASH_SALT", "test-salt")
 
 

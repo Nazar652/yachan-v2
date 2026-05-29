@@ -5,12 +5,14 @@ import pytest
 from src.core.config import get_settings
 from src.core.exceptions import (
     InvalidCredentialsError,
+    ModAccountExistsError,
     ModInactiveError,
     PostNotFoundError,
 )
+from src.models.mod_account import ModRole
 from src.schemas.mod import BanCreate
 from src.services.mod_service import ModService
-from src.utils.auth import create_access_token, hash_password
+from src.utils.auth import create_access_token, hash_password, verify_password
 
 
 def build(**repos):
@@ -24,6 +26,34 @@ def build(**repos):
     defaults.update(repos)
     service = ModService(settings=get_settings(), **defaults)
     return service, SimpleNamespace(**defaults)
+
+
+async def test_create_account_hashes_password_and_persists():
+    created = SimpleNamespace(id=1, username="root")
+    mod_account_repo = MagicMock()
+    mod_account_repo.get_by_username = AsyncMock(return_value=None)
+    mod_account_repo.create = AsyncMock(return_value=created)
+    service, _ = build(mod_account_repo=mod_account_repo)
+
+    result = await service.create_account("root", "pw", ModRole.ADMIN)
+
+    assert result is created
+    stored = mod_account_repo.create.await_args.args[0]
+    assert stored.username == "root"
+    assert stored.role is ModRole.ADMIN
+    assert stored.password_hash != "pw"
+    assert verify_password("pw", stored.password_hash)
+
+
+async def test_create_account_rejects_duplicate_username():
+    mod_account_repo = MagicMock()
+    mod_account_repo.get_by_username = AsyncMock(return_value=SimpleNamespace(id=1))
+    mod_account_repo.create = AsyncMock()
+    service, _ = build(mod_account_repo=mod_account_repo)
+
+    with pytest.raises(ModAccountExistsError):
+        await service.create_account("root", "pw", ModRole.ADMIN)
+    mod_account_repo.create.assert_not_called()
 
 
 async def test_authenticate_returns_token():

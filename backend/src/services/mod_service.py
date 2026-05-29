@@ -5,12 +5,13 @@ from src.core.config import Settings
 from src.core.exceptions import (
     BoardNotFoundError,
     InvalidCredentialsError,
+    ModAccountExistsError,
     ModInactiveError,
     PostNotFoundError,
     ThreadNotFoundError,
 )
 from src.models.ban import Ban
-from src.models.mod_account import ModAccount
+from src.models.mod_account import ModAccount, ModRole
 from src.models.post import Post
 from src.models.thread import Thread
 from src.repositories.board_repo import BoardRepository
@@ -19,7 +20,12 @@ from src.repositories.post_repo import PostRepository
 from src.repositories.thread_repo import ThreadRepository
 from src.schemas.mod import BanCreate
 from src.services.ban_service import BanService
-from src.utils.auth import create_access_token, decode_access_token, verify_password
+from src.utils.auth import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 
 
 @inject
@@ -39,6 +45,15 @@ class ModService:
         self.board_repo = board_repo
         self.ban_service = ban_service
         self.settings = settings
+
+    async def create_account(
+        self, username: str, password: str, role: ModRole
+    ) -> ModAccount:
+        if await self.mod_account_repo.get_by_username(username) is not None:
+            raise ModAccountExistsError(username)
+        return await self.mod_account_repo.create(
+            ModAccount(username=username, password_hash=hash_password(password), role=role)
+        )
 
     async def authenticate(self, username: str, password: str) -> str:
         account = await self.mod_account_repo.get_by_username(username)

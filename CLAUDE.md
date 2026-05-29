@@ -178,10 +178,23 @@ docker compose up -d postgres redis     # local infra (postgres published on :54
 docker compose up --build               # full stack behind nginx on :80
 celery -A src.celery_app.celery worker --loglevel=info   # from backend/
 celery -A src.celery_app.celery beat   --loglevel=info
+cd backend && poetry run python -m src.cli create-admin <username>   # seed an admin (prompts for password)
 ```
 
 Local dev DB URL uses port **5433** (host has another Postgres on 5432). Inside
 docker the backend talks to `postgres:5432`.
+
+`JWT_SECRET` should be **at least 32 bytes** in production (pyjwt warns otherwise).
+
+## Admin CLI
+
+`src/cli/` is a small argparse package: `__main__.py` registers command modules
+(each exposes `COMMAND`, `HELP`, `configure(parser)`, `handle(args)`),
+`scope.py` provides `run_in_scope()` (opens a di scope, commits/rolls back/closes
+like the http middleware), and one file per command (e.g. `create_admin.py`).
+Add a command by creating a module and listing it in `__main__.COMMANDS`.
+Account creation logic lives in `ModService.create_account` (hashes the password,
+rejects duplicate usernames), not in the cli.
 
 ## Testing
 
