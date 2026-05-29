@@ -21,6 +21,7 @@ dependencies = [
     "mistune (>=3.2.1,<4.0.0)",
     "pyjwt (>=2.13.0,<3.0.0)",
     "pillow (>=12.2.0,<13.0.0)",
+    "python-multipart (>=0.0.29,<0.0.30)",
 ]
 
 

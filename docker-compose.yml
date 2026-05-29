@@ -1,3 +1,10 @@
+x-app-env: &app-env
+  PYTHONUNBUFFERED: "1"
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-yachan}:${POSTGRES_PASSWORD:-yachan}@postgres:5432/${POSTGRES_DB:-yachan}
+  REDIS_URL: redis://redis:6379/0
+  JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
+  IP_HASH_SALT: ${IP_HASH_SALT:-dev-ip-salt-change-me}
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -35,9 +42,7 @@ services:
       dockerfile: Dockerfile
     container_name: yachan-backend
     environment:
-      PYTHONUNBUFFERED: "1"
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-yachan}:${POSTGRES_PASSWORD:-yachan}@postgres:5432/${POSTGRES_DB:-yachan}
-      REDIS_URL: redis://redis:6379/0
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +50,34 @@ services:
         condition: service_healthy
     expose:
       - "8000"
+    restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yachan-celery-worker
+    command: celery -A src.celery_app.celery worker --loglevel=info
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yachan-celery-beat
+    command: celery -A src.celery_app.celery beat --loglevel=info
+    environment:
+      <<: *app-env
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   nginx:

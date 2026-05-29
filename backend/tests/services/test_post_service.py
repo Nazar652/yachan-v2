@@ -175,6 +175,44 @@ def _edit_service(post):
     return service, SimpleNamespace(post_repo=post_repo, post_edit_repo=post_edit_repo)
 
 
+async def test_get_post_returns_post():
+    post = SimpleNamespace(id=10)
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
+    post_repo = MagicMock()
+    post_repo.get_by_board_and_number = AsyncMock(return_value=post)
+    service = PostService(
+        post_repo=post_repo,
+        post_edit_repo=MagicMock(),
+        thread_repo=MagicMock(),
+        board_repo=board_repo,
+        backlink_repo=MagicMock(),
+        markup=MagicMock(),
+        ban_service=MagicMock(),
+    )
+
+    assert await service.get_post("b", 1) is post
+
+
+async def test_get_post_missing_raises():
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
+    post_repo = MagicMock()
+    post_repo.get_by_board_and_number = AsyncMock(return_value=None)
+    service = PostService(
+        post_repo=post_repo,
+        post_edit_repo=MagicMock(),
+        thread_repo=MagicMock(),
+        board_repo=board_repo,
+        backlink_repo=MagicMock(),
+        markup=MagicMock(),
+        ban_service=MagicMock(),
+    )
+
+    with pytest.raises(PostNotFoundError):
+        await service.get_post("b", 1)
+
+
 async def test_edit_post_happy_path_saves_original():
     post = SimpleNamespace(
         id=10, ip_hash="me", is_edited=False, created_at=utcnow(), body="old", body_html="<p>old</p>"

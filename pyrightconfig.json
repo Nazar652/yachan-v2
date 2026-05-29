@@ -31,6 +31,11 @@
       "root": "backend/src/views",
       "comment": "fastapi Header() lives in dependency arg defaults",
       "reportCallInDefaultInitializer": "none"
+    },
+    {
+      "root": "backend/src/tasks",
+      "comment": "services are built by kink injection inside task bodies",
+      "reportCallIssue": "none"
     }
   ]
 }

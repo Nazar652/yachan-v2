@@ -117,6 +117,16 @@ class PostService:
             post.id, data.new_body, self.markup.render(data.new_body)
         )
 
+    async def get_post(self, board_slug: str, post_number: int) -> Post:
+        board = await self.board_repo.get_by_slug(board_slug)
+        if board is None:
+            raise BoardNotFoundError(board_slug)
+
+        post = await self.post_repo.get_by_board_and_number(board.id, post_number)
+        if post is None:
+            raise PostNotFoundError(post_number)
+        return post
+
     async def get_post_history(self, board_slug: str, post_number: int) -> PostEdit | None:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:

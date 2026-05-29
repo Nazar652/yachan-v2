@@ -21,6 +21,7 @@ def test_app_registers_expected_routes():
     assert "/api/{board_slug}/posts/{post_number}" in paths
     assert "/api/{board_slug}/posts/{post_number}/history" in paths
     assert "/api/{board_slug}/posts/{post_number}/report" in paths
+    assert "/api/{board_slug}/posts/{post_number}/attachments" in paths
     assert "/api/captcha" in paths
     assert "/api/mod/login" in paths
     assert "/api/mod/boards" in paths
