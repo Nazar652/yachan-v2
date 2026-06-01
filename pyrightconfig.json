@@ -1,0 +1,42 @@
+{
+  "include": ["backend/src"],
+  "exclude": ["**/__pycache__", "**/.venv", "**/venv", "**/tests"],
+
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "standard",
+  "venvPath": ".",
+  "venv": ".venv",
+  "useLibraryCodeForTypes": true,
+
+  "extraPaths": ["backend", "backend/src", "."],
+
+  "reportImplicitStringConcatenation": "error",
+
+  "reportUnusedImport": "none",
+  "reportUnusedVariable": "none",
+  "reportMissingTypeStubs": false,
+  "reportIncompatibleVariableOverride": "none",
+  "reportIncompatibleMethodOverride": "none",
+
+  "reportCallInDefaultInitializer": "error",
+
+  "executionEnvironments": [
+    {
+      "root": "backend/src/routers",
+      "reportCallInDefaultInitializer": "none",
+      "reportCallIssue": "none"
+    },
+    {
+      "root": "backend/src/views",
+      "reportCallInDefaultInitializer": "none"
+    },
+    {
+      "root": "backend/src/tasks",
+      "reportCallIssue": "none"
+    },
+    {
+      "root": "backend/src/cli",
+      "reportCallIssue": "none"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+line-length = 120
+target-version = "py314"
+
+exclude = [
+    'tests/*',
+    "**/__pycache__"
+]
+
+[lint]
+select = [
+    "E",
+    "F",
+    "UP",
+    "B",
+    "SIM",
+    "N",
+    "S",
+    "A",
+    "DTZ",
+    "RUF"
+]
+
+ignore = [
+    "N818",
+    "RUF012",
+    "SIM108",
+    "B904",
+    "E722"
+]
+
+[lint.per-file-ignores]
+"__init__.py" = [
+    "F401"
+]
+
+[lint.isort]
+combine-as-imports = true
+
+[lint.flake8-bugbear]
+# fastapi uses these calls in argument defaults by design
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Header",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.File",
+]
