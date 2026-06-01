@@ -1,5 +1,5 @@
-import {apiClient} from '@/api/client'
-import type {PostResponse, ThreadDetailResponse, ThreadResponse} from '@/api/types'
+import { apiClient } from '@/api/client'
+import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -57,7 +57,7 @@ export async function createThread(
   })
 
   if (!response.ok) {
-    throw await response.json().catch(() => ({detail: response.statusText}))
+    throw await response.json().catch(() => ({ detail: response.statusText }))
   }
 
   return await response.json() as Promise<ThreadDetailResponse>
@@ -97,7 +97,7 @@ export async function createReply(
   })
 
   if (!response.ok) {
-    throw await response.json().catch(() => ({detail: response.statusText}))
+    throw await response.json().catch(() => ({ detail: response.statusText }))
   }
 
   return await response.json() as Promise<PostResponse>

@@ -50,5 +50,3 @@ const { data: threads, isPending, isError } = useThreads(slug)
   </section>
 </template>
 
-
-
