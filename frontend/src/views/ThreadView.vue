@@ -25,12 +25,6 @@ function formatSize(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// render post body_html: highlight >>N backlinks and greentext
-function processHtml(html: string | null | undefined): string {
-  if (!html) return ''
-  return html
-}
-
 function isImage(attachment: AttachmentResponse): boolean {
   return attachment.media_type === 'image'
 }
@@ -105,11 +99,11 @@ function isImage(attachment: AttachmentResponse): boolean {
             </a>
           </div>
 
-          <!-- body -->
+          <!-- body: server-rendered html (backlinks/greentext) styled via scoped css -->
           <div
             v-if="post.body_html"
             class="prose prose-sm post-body"
-            v-html="processHtml(post.body_html)"
+            v-html="post.body_html"
           />
           <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
         </article>
