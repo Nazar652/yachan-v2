@@ -24,6 +24,9 @@ export function useThreadWs(
         if (!old) return old
         const posts = old.posts ?? []
         if (posts.some((existing) => existing.id === post.id)) return old
+        if (typeof old.reply_count === 'number') {
+          return { ...old, reply_count: old.reply_count + 1, posts: [...posts, post] }
+        }
         return { ...old, posts: [...posts, post] }
       })
     } else if (envelope.type === WS_EVENT.POST_EDITED) {
