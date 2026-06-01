@@ -57,7 +57,7 @@ export async function createThread(
   })
 
   if (!response.ok) {
-    throw await response.json().catch(() => ({detail: response.statusText}))
+    throw await response.json().catch(() => ({ detail: response.statusText }))
   }
 
   return await response.json() as Promise<ThreadDetailResponse>
