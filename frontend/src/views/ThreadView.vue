@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import type { AttachmentResponse } from '@/api/types'
+import ReplyForm from '@/components/ReplyForm.vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -112,6 +113,13 @@ function isImage(attachment: AttachmentResponse): boolean {
           />
           <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
         </article>
+      </div>
+
+      <div class="mt-6">
+        <p v-if="thread.is_locked" class="text-sm text-secondary italic py-4 text-center">
+          🔒 This thread is locked.
+        </p>
+        <ReplyForm v-else :slug="slug" :thread-id="threadId" />
       </div>
     </template>
   </div>

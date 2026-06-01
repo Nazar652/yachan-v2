@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { apiClient } from '@/api/client'
-import { listThreads, getThread, createThread } from '@/api/threads'
+import { listThreads, getThread, createThread, createReply } from '@/api/threads'
 
 vi.mock('@/api/client', () => ({
   apiClient: { GET: vi.fn() },
@@ -81,6 +81,38 @@ describe('createThread', () => {
     fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve(error), statusText: 'Bad Request' })
 
     await expect(createThread('b', {}, [], 'tok', 'wrong')).rejects.toEqual(error)
+  })
+})
+
+describe('createReply', () => {
+  const fetchMock = vi.fn()
+  beforeEach(() => {
+    fetchMock.mockReset()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  it('posts multipart form data to the thread posts endpoint and returns the post', async () => {
+    const post = { id: 7, post_number: 102, thread_id: 42, board_id: 1, name: 'Anon', tripcode: null, body: 'Hi', body_html: '<p>Hi</p>', sage: false, is_op: false, is_edited: false, edited_at: null, created_at: '', attachments: [] }
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve(post) })
+
+    const result = await createReply('b', 42, { name: 'Anon', body: 'Hi', sage: true }, [], 'tok', 'ans')
+
+    expect(result).toBe(post)
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toContain('/api/b/threads/42/posts')
+    expect(options.method).toBe('POST')
+    expect((options.headers as Record<string, string>)['X-Captcha-Token']).toBe('tok')
+    expect((options.headers as Record<string, string>)['X-Captcha-Answer']).toBe('ans')
+    expect(options.body).toBeInstanceOf(FormData)
+  })
+
+  it('throws the parsed error body when response is not ok', async () => {
+    const error = { detail: 'thread is locked' }
+    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve(error), statusText: 'Forbidden' })
+
+    await expect(createReply('b', 42, {}, [], 'tok', 'wrong')).rejects.toEqual(error)
   })
 })
 

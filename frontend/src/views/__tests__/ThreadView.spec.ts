@@ -20,7 +20,10 @@ function stubThread(state: Record<string, unknown>) {
   useThreadMock.mockReturnValue(state as ReturnType<typeof useThread>)
 }
 
-const globalStubs = { RouterLink: { template: '<a><slot /></a>' } }
+const globalStubs = {
+  RouterLink: { template: '<a><slot /></a>' },
+  ReplyForm: { template: '<form class="reply-form-stub" />' },
+}
 
 describe('ThreadView', () => {
   it('shows loading state while pending', () => {
@@ -110,6 +113,27 @@ describe('ThreadView', () => {
     })
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('edited')
+  })
+
+  it('shows the reply form when the thread is not locked', () => {
+    stubThread({
+      data: ref({ id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 0, bump_at: '', created_at: '', posts: [] }),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.find('.reply-form-stub').exists()).toBe(true)
+  })
+
+  it('hides the reply form and shows a locked message when the thread is locked', () => {
+    stubThread({
+      data: ref({ id: 42, board_id: 1, title: 'T', is_locked: true, is_sticky: false, reply_count: 0, bump_at: '', created_at: '', posts: [] }),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.find('.reply-form-stub').exists()).toBe(false)
+    expect(wrapper.text()).toContain('locked')
   })
 
   it('renders an image attachment', () => {
