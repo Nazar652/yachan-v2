@@ -119,7 +119,7 @@ async function onSubmit() {
         <input
           id="files"
           type="file"
-          accept="image/*,video/*"
+          accept="image/*"
           multiple
           class="text-sm"
           @change="onFileChange"
@@ -154,4 +154,3 @@ async function onSubmit() {
     </form>
   </div>
 </template>
-
