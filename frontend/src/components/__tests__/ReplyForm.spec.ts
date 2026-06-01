@@ -118,9 +118,10 @@ describe('ReplyForm', () => {
     await flushPromises()
 
     const [, updater] = setQueryDataMock.mock.calls[0] as [unknown, (old: unknown) => unknown]
-    const existing = { id: 42, posts: [{ id: 1, post_number: 1 }] }
+    const existing = { id: 42, reply_count: 1, posts: [{ id: 1, post_number: 1 }] }
     expect(updater(existing)).toEqual({
       id: 42,
+      reply_count: 2,
       posts: [{ id: 1, post_number: 1 }, { id: 7, post_number: 102 }],
     })
     expect(updater(undefined)).toBeUndefined()

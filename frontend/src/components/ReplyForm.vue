@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { createReply } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
-import { threadQueryKey } from '@/composables/useThread'
+import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
 import type { ThreadDetailResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -77,7 +77,7 @@ async function onSubmit() {
     // append the new post to the cached thread so it shows without a refetch
     queryClient.setQueryData<ThreadDetailResponse>(
       threadQueryKey(props.slug, props.threadId),
-      (old) => (old ? { ...old, posts: [...(old.posts ?? []), post] } : old),
+      (old) => appendPostToThread(old, post),
     )
     resetForm()
     await refreshCaptcha()

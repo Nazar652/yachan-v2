@@ -1,7 +1,7 @@
 import { onScopeDispose, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { threadQueryKey } from '@/composables/useThread'
+import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
 import { wsUrl, WS_EVENT, type WsEnvelope } from '@/api/ws'
 import type { PostResponse, ThreadDetailResponse } from '@/api/types'
 
@@ -20,15 +20,7 @@ export function useThreadWs(
 
     if (envelope.type === WS_EVENT.NEW_POST) {
       const post = envelope.data as PostResponse
-      queryClient.setQueryData<ThreadDetailResponse>(key, (old) => {
-        if (!old) return old
-        const posts = old.posts ?? []
-        if (posts.some((existing) => existing.id === post.id)) return old
-        if (typeof old.reply_count === 'number') {
-          return { ...old, reply_count: old.reply_count + 1, posts: [...posts, post] }
-        }
-        return { ...old, posts: [...posts, post] }
-      })
+      queryClient.setQueryData<ThreadDetailResponse>(key, (old) => appendPostToThread(old, post))
     } else if (envelope.type === WS_EVENT.POST_EDITED) {
       const post = envelope.data as PostResponse
       queryClient.setQueryData<ThreadDetailResponse>(key, (old) => {
