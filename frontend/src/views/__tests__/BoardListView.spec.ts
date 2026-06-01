@@ -9,6 +9,9 @@ vi.mock('@/composables/useBoards', () => ({
   useBoards: vi.fn(),
 }))
 
+// RouterLink is provided globally by vue-router; stub it so tests run without a router.
+const globalStubs = { RouterLink: { template: '<a><slot /></a>' } }
+
 const useBoardsMock = vi.mocked(useBoards)
 
 // the composable returns a tanstack query result; we only need the few
@@ -20,19 +23,19 @@ function stubBoards(state: Record<string, unknown>) {
 describe('BoardListView', () => {
   it('shows a loading message while pending', () => {
     stubBoards({ data: ref(undefined), isPending: ref(true), isError: ref(false) })
-    const wrapper = mount(BoardListView)
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Loading')
   })
 
   it('shows an error message on failure', () => {
     stubBoards({ data: ref(undefined), isPending: ref(false), isError: ref(true) })
-    const wrapper = mount(BoardListView)
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Failed to load boards')
   })
 
   it('shows an empty state when there are no boards', () => {
     stubBoards({ data: ref([]), isPending: ref(false), isError: ref(false) })
-    const wrapper = mount(BoardListView)
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('No boards yet')
   })
 
@@ -42,7 +45,7 @@ describe('BoardListView', () => {
       isPending: ref(false),
       isError: ref(false),
     })
-    const wrapper = mount(BoardListView)
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('/a/')
     expect(wrapper.text()).toContain('Anime')
     expect(wrapper.text()).toContain('weeb stuff')

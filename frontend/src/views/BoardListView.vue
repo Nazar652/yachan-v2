@@ -13,18 +13,19 @@ const { data: boards, isPending, isError } = useBoards()
     <p v-else-if="!boards?.length" class="mt-2 text-text-muted">No boards yet.</p>
 
     <ul v-else class="mt-4 space-y-2">
-      <li
-        v-for="board in boards"
-        :key="board.id"
-        class="rounded-card border border-border bg-surface p-4"
-      >
-        <div class="flex items-baseline gap-2">
-          <span class="font-mono text-accent">/{{ board.slug }}/</span>
-          <span class="font-medium">{{ board.title }}</span>
-        </div>
-        <p v-if="board.description" class="mt-1 text-sm text-text-muted">
-          {{ board.description }}
-        </p>
+      <li v-for="board in boards" :key="board.id">
+        <RouterLink
+          :to="`/${board.slug}`"
+          class="block rounded-card border border-border bg-surface p-4 transition-colors hover:border-accent"
+        >
+          <div class="flex items-baseline gap-2">
+            <span class="font-mono text-accent">/{{ board.slug }}/</span>
+            <span class="font-medium">{{ board.title }}</span>
+          </div>
+          <p v-if="board.description" class="mt-1 text-sm text-text-muted">
+            {{ board.description }}
+          </p>
+        </RouterLink>
       </li>
     </ul>
   </section>

@@ -8,6 +8,11 @@ const router = createRouter({
       name: 'boards',
       component: () => import('@/views/BoardListView.vue'),
     },
+    {
+      path: '/:slug',
+      name: 'catalog',
+      component: () => import('@/views/CatalogView.vue'),
+    },
   ],
 })
 
