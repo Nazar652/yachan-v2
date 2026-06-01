@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useThreads } from '@/composables/useThreads'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 
 const route = useRoute()
@@ -13,9 +14,14 @@ const { data: threads, isPending, isError } = useThreads(slug)
 
 <template>
   <section>
-    <h1 class="text-xl font-bold">
-      <span class="font-mono text-accent">/{{ slug }}/</span>
-    </h1>
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <h1 class="text-xl font-bold">
+        <span class="font-mono text-accent">/{{ slug }}/</span>
+      </h1>
+      <RouterLink :to="`/${slug}/new`">
+        <BaseButton variant="primary" size="sm">+ New thread</BaseButton>
+      </RouterLink>
+    </div>
 
     <p v-if="isPending" class="mt-2 text-text-muted">Loading…</p>
     <p v-else-if="isError" class="mt-2 text-danger">Failed to load threads.</p>
@@ -43,4 +49,6 @@ const { data: threads, isPending, isError } = useThreads(slug)
     </ul>
   </section>
 </template>
+
+
 

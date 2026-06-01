@@ -12,6 +12,12 @@
     "lib": [],
     "types": ["node", "jsdom"],
 
+    // Explicit path alias so JetBrains resolves @/* in test files
+    // (the IDE does not always follow the extends chain for paths).
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.
     // Specified here to keep it out of the root directory.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo"
