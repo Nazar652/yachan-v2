@@ -13,6 +13,16 @@ const router = createRouter({
       name: 'catalog',
       component: () => import('@/views/CatalogView.vue'),
     },
+    {
+      path: '/:slug/new',
+      name: 'create-thread',
+      component: () => import('@/views/CreateThreadView.vue'),
+    },
+    {
+      path: '/:slug/thread/:id',
+      name: 'thread',
+      component: () => import('@/views/ThreadView.vue'),
+    },
   ],
 })
 
