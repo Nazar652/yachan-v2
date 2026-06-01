@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
+import { useThreadWs } from '@/composables/useThreadWs'
 import type { AttachmentResponse } from '@/api/types'
 import ReplyForm from '@/components/ReplyForm.vue'
 
@@ -13,6 +14,9 @@ const { data: thread, isPending, isError } = useThread(
   toRef(slug),
   toRef(threadId),
 )
+
+// stream live new_post / post_edited events into the thread cache
+useThreadWs(slug, threadId)
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()

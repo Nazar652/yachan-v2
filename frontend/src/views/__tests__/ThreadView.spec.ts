@@ -14,6 +14,10 @@ vi.mock('@/composables/useThread', () => ({
   useThread: vi.fn(),
 }))
 
+vi.mock('@/composables/useThreadWs', () => ({
+  useThreadWs: vi.fn(),
+}))
+
 const useThreadMock = vi.mocked(useThread)
 
 function stubThread(state: Record<string, unknown>) {

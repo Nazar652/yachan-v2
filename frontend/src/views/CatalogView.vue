@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useThreads } from '@/composables/useThreads'
+import { useBoardWs } from '@/composables/useBoardWs'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 
@@ -10,6 +11,9 @@ const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
 const { data: threads, isPending, isError } = useThreads(slug)
+
+// stream live new_thread events into the catalog cache
+useBoardWs(slug)
 </script>
 
 <template>
