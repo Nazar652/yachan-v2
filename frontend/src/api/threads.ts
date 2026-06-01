@@ -1,5 +1,5 @@
-import {apiClient} from '@/api/client'
-import type {PostResponse, ThreadDetailResponse, ThreadResponse} from '@/api/types'
+import { apiClient } from '@/api/client'
+import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
