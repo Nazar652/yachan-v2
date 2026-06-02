@@ -32,6 +32,12 @@ class BoardRepository(BaseRepository):
         await self.session.refresh(board)
         return board
 
+    async def update(self, board: Board) -> Board:
+        self.session.add(board)
+        await self.session.flush()
+        await self.session.refresh(board)
+        return board
+
     async def create_post_number_sequence(self, slug: str) -> None:
         seq = post_number_sequence_name(slug)
         await self.session.execute(text(f"CREATE SEQUENCE IF NOT EXISTS {seq}"))

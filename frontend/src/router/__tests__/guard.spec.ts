@@ -20,7 +20,7 @@ describe('authGuard', () => {
   })
 
   it('allows a protected route when authenticated', () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     expect(authGuard(route({ requiresAuth: true }))).toBe(true)
   })
 

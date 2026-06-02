@@ -6,7 +6,15 @@ from src.core.config import get_settings
 
 settings = get_settings()
 
-celery = Celery("yachan", broker=settings.redis_url, backend=settings.redis_url)
+# include so worker processes import (and thus register) the task modules;
+# without it the worker only knows tasks reachable from src.celery_app and beat's
+# "expire_bans" / enqueued "process_attachment" arrive unregistered.
+celery = Celery(
+    "yachan",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
+    include=["src.tasks.attachments", "src.tasks.bans"],
+)
 celery.conf.update(
     task_serializer="json",
     result_serializer="json",

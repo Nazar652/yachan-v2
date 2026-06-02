@@ -38,6 +38,18 @@ async def test_create(session):
     session.refresh.assert_awaited_once_with(board)
 
 
+async def test_update(session):
+    board = object()
+    repo = BoardRepository(session=session)
+
+    result = await repo.update(board)
+
+    assert result is board
+    session.add.assert_called_once_with(board)
+    session.flush.assert_awaited_once()
+    session.refresh.assert_awaited_once_with(board)
+
+
 async def test_create_post_number_sequence(session):
     repo = BoardRepository(session=session)
 

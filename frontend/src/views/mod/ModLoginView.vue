@@ -26,7 +26,7 @@ async function onSubmit() {
   isSubmitting.value = true
   try {
     const token = await modLogin(username.value, password.value)
-    auth.login(token.access_token)
+    auth.login(token.access_token, token.role)
     await router.push('/mod')
   } catch (err: unknown) {
     const detail = (err as Record<string, unknown>)?.detail

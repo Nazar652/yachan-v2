@@ -1,5 +1,13 @@
 import { apiClient } from '@/api/client'
-import type { BanCreate, BanResponse, ReportResponse, TokenResponse } from '@/api/types'
+import type {
+  BanCreate,
+  BanResponse,
+  BoardCreate,
+  BoardResponse,
+  BoardUpdate,
+  ReportResponse,
+  TokenResponse,
+} from '@/api/types'
 
 export async function modLogin(username: string, password: string): Promise<TokenResponse> {
   const { data, error } = await apiClient.POST('/api/mod/login', {
@@ -7,6 +15,21 @@ export async function modLogin(username: string, password: string): Promise<Toke
   })
   if (error) throw error
   return data
+}
+
+export async function createBoard(data: BoardCreate): Promise<BoardResponse> {
+  const { data: board, error } = await apiClient.POST('/api/mod/boards', { body: data })
+  if (error) throw error
+  return board
+}
+
+export async function updateBoard(slug: string, data: BoardUpdate): Promise<BoardResponse> {
+  const { data: board, error } = await apiClient.PATCH('/api/mod/boards/{board_slug}', {
+    params: { path: { board_slug: slug } },
+    body: data,
+  })
+  if (error) throw error
+  return board
 }
 
 export async function listReports(): Promise<ReportResponse[]> {

@@ -56,16 +56,17 @@ async def test_create_account_rejects_duplicate_username():
     mod_account_repo.create.assert_not_called()
 
 
-async def test_authenticate_returns_token():
+async def test_authenticate_returns_token_and_role():
     account = SimpleNamespace(
-        id=1, password_hash=hash_password("pw"), is_active=True
+        id=1, password_hash=hash_password("pw"), is_active=True, role=ModRole.ADMIN
     )
     mod_account_repo = MagicMock()
     mod_account_repo.get_by_username = AsyncMock(return_value=account)
     service, _ = build(mod_account_repo=mod_account_repo)
 
-    token = await service.authenticate("admin", "pw")
+    token, role = await service.authenticate("admin", "pw")
     assert isinstance(token, str) and token
+    assert role is ModRole.ADMIN
 
 
 async def test_authenticate_wrong_password():

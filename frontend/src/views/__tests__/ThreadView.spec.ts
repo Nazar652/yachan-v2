@@ -222,7 +222,7 @@ describe('ThreadView', () => {
   })
 
   it('shows mod controls when authenticated', () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubAuthedThread()
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Lock')
@@ -232,7 +232,7 @@ describe('ThreadView', () => {
   })
 
   it('toggles the thread lock', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubAuthedThread({ is_locked: false })
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Lock')
@@ -240,7 +240,7 @@ describe('ThreadView', () => {
   })
 
   it('toggles the thread sticky', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubAuthedThread({ is_sticky: false })
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')
@@ -248,7 +248,7 @@ describe('ThreadView', () => {
   })
 
   it('deletes a post', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubAuthedThread()
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Delete')
@@ -256,7 +256,7 @@ describe('ThreadView', () => {
   })
 
   it('bans a poster through the inline ban form', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     banMock.mockResolvedValue(undefined)
     stubAuthedThread()
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
