@@ -11,8 +11,8 @@ const ROLE_KEY = 'yachan_mod_role'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
-  const role = ref<ModRole | null>(localStorage.getItem(ROLE_KEY) as ModRole | null)
-
+  const storedRole = localStorage.getItem(ROLE_KEY)
+  const role = ref<ModRole | null>(storedRole === 'admin' || storedRole === 'moderator' ? storedRole : null)
   const isAuthenticated = computed(() => token.value !== null)
   const isAdmin = computed(() => role.value === 'admin')
 
