@@ -30,7 +30,5 @@ export default defineConfig({
       '/api': { target: proxyTarget, changeOrigin: true, ws: true },
       '/media': { target: proxyTarget, changeOrigin: true },
     },
-    // bind-mounted file events don't fire reliably on docker/windows -> poll
-    ...(process.env.VITE_USE_POLLING ? { watch: { usePolling: true } } : {}),
-  },
+    ...(env.VITE_USE_POLLING ? { watch: { usePolling: true } } : {}),
 })
