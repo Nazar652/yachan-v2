@@ -638,6 +638,74 @@
         }
       }
     },
+    "/api/mod/boards/{board_slug}": {
+      "patch": {
+        "tags": [
+          "mod"
+        ],
+        "summary": "Update Board",
+        "operationId": "update_board_api_mod_boards__board_slug__patch",
+        "parameters": [
+          {
+            "name": "board_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Slug"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mod/{board_slug}/posts/{post_number}": {
       "delete": {
         "tags": [
@@ -1322,6 +1390,60 @@
         ],
         "title": "BoardResponse"
       },
+      "BoardUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "bump_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bump Limit"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "BoardUpdate"
+      },
       "Body_create_reply_api__board_slug__threads__thread_id__posts_post": {
         "properties": {
           "data": {
@@ -1424,6 +1546,14 @@
           "password"
         ],
         "title": "ModLogin"
+      },
+      "ModRole": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "moderator"
+        ],
+        "title": "ModRole"
       },
       "PostCreate": {
         "properties": {
@@ -1880,11 +2010,15 @@
             "type": "string",
             "title": "Token Type",
             "default": "bearer"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ModRole"
           }
         },
         "type": "object",
         "required": [
-          "access_token"
+          "access_token",
+          "role"
         ],
         "title": "TokenResponse"
       },

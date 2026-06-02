@@ -13,7 +13,7 @@ def test_mod_login_requires_non_empty():
 
 
 def test_token_response_defaults_bearer():
-    assert TokenResponse(access_token="abc").token_type == "bearer"
+    assert TokenResponse(access_token="abc", role=ModRole.ADMIN).token_type == "bearer"
 
 
 def test_mod_account_response_hides_password_hash():

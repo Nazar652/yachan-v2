@@ -3,7 +3,7 @@ from kink import inject
 from src.core.exceptions import BoardAlreadyExistsError, BoardNotFoundError
 from src.models.board import Board
 from src.repositories.board_repo import BoardRepository
-from src.schemas.board import BoardCreate
+from src.schemas.board import BoardCreate, BoardUpdate
 
 
 @inject
@@ -26,6 +26,14 @@ class BoardService:
         # each board owns a sequence that numbers its posts from 1
         await self.board_repo.create_post_number_sequence(board.slug)
         return board
+
+    async def update_board(self, slug: str, data: BoardUpdate) -> Board:
+        board = await self.board_repo.get_by_slug(slug)
+        if board is None:
+            raise BoardNotFoundError(slug)
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(board, field, value)
+        return await self.board_repo.update(board)
 
     async def list_boards(self) -> list[Board]:
         return await self.board_repo.list_all()

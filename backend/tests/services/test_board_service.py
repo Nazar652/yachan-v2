@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from src.core.exceptions import BoardAlreadyExistsError, BoardNotFoundError
-from src.schemas.board import BoardCreate
+from src.schemas.board import BoardCreate, BoardUpdate
 from src.services.board_service import BoardService
 
 
@@ -39,6 +39,34 @@ async def test_get_board_raises_when_missing():
 
     with pytest.raises(BoardNotFoundError):
         await service.get_board("nope")
+
+
+async def test_update_board_applies_only_set_fields():
+    board = SimpleNamespace(
+        slug="b", title="old", description="old desc", bump_limit=300, is_active=True
+    )
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=board)
+    board_repo.update = AsyncMock(side_effect=lambda updated: updated)
+    service = BoardService(board_repo=board_repo)
+
+    result = await service.update_board("b", BoardUpdate(title="new", is_active=False))
+
+    assert result.title == "new"
+    assert result.is_active is False
+    assert result.description == "old desc"  # not in the payload, left untouched
+    board_repo.update.assert_awaited_once_with(board)
+
+
+async def test_update_board_raises_when_missing():
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=None)
+    board_repo.update = AsyncMock()
+    service = BoardService(board_repo=board_repo)
+
+    with pytest.raises(BoardNotFoundError):
+        await service.update_board("nope", BoardUpdate(title="x"))
+    board_repo.update.assert_not_called()
 
 
 async def test_list_boards_delegates():

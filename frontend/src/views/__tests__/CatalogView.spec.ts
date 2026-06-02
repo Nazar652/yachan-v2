@@ -128,7 +128,7 @@ describe('CatalogView', () => {
   })
 
   it('shows lock and sticky controls when authenticated', () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubOneThread()
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Lock')
@@ -136,7 +136,7 @@ describe('CatalogView', () => {
   })
 
   it('toggles a thread lock', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubOneThread()
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Lock')
@@ -144,7 +144,7 @@ describe('CatalogView', () => {
   })
 
   it('toggles a thread sticky', async () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     stubOneThread()
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')

@@ -46,8 +46,8 @@ describe('ModLoginView', () => {
     expect(modLoginMock).not.toHaveBeenCalled()
   })
 
-  it('logs in, stores the token and redirects on success', async () => {
-    modLoginMock.mockResolvedValue({ access_token: 'jwt-9', token_type: 'bearer' })
+  it('logs in, stores the token and role, and redirects on success', async () => {
+    modLoginMock.mockResolvedValue({ access_token: 'jwt-9', token_type: 'bearer', role: 'admin' })
     const wrapper = mount(ModLoginView, { global: { stubs: globalStubs } })
 
     await wrapper.find('#mod-username').setValue('admin')
@@ -56,7 +56,9 @@ describe('ModLoginView', () => {
     await flushPromises()
 
     expect(modLoginMock).toHaveBeenCalledWith('admin', 'secret')
-    expect(useAuthStore().token).toBe('jwt-9')
+    const auth = useAuthStore()
+    expect(auth.token).toBe('jwt-9')
+    expect(auth.role).toBe('admin')
     expect(pushMock).toHaveBeenCalledWith('/mod')
   })
 

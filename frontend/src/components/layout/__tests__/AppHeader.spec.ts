@@ -19,7 +19,7 @@ describe('AppHeader', () => {
   })
 
   it('shows the mod panel link when authenticated', () => {
-    useAuthStore().login('jwt')
+    useAuthStore().login('jwt', 'admin')
     const wrapper = mount(AppHeader, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Mod panel')
   })
