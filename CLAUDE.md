@@ -185,15 +185,16 @@ make lint                               # ruff + pyright + pytest + frontend lin
 cd backend && poetry run pytest tests/  # tests only
 cd backend && poetry run alembic revision --autogenerate -m "msg"
 cd backend && poetry run alembic upgrade head
-docker compose up -d postgres redis     # local infra (postgres published on :5433)
+docker compose up -d postgres redis     # local infra (postgres published on :5434)
 docker compose up --build               # full stack behind nginx on :80
 celery -A src.celery_app.celery worker --loglevel=info   # from backend/
 celery -A src.celery_app.celery beat   --loglevel=info
 cd backend && poetry run python -m src.cli create-admin <username>   # seed an admin (prompts for password)
 ```
 
-Local dev DB URL uses port **5433** (host has another Postgres on 5432). Inside
-docker the backend talks to `postgres:5432`.
+Docker's postgres is published on host port **5434** (this machine already runs
+native PostgreSQL on 5432 and 5433, which would otherwise shadow the published
+port). Inside docker the backend talks to `postgres:5432`.
 
 `JWT_SECRET` should be **at least 32 bytes** in production (pyjwt warns otherwise).
 
