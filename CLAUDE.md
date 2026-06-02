@@ -46,8 +46,8 @@ backend/
   alembic/                 async migrations
   tests/                   mirrors src/, pure unit tests
 frontend/                  (separate, not covered here)
-nginx/nginx.conf           reverse proxy -> backend
-docker-compose.yml         postgres, redis, backend, celery-worker, celery-beat, nginx
+frontend/nginx.conf        edge config: serves the SPA, proxies /api (+ws), /media
+docker-compose.yml         postgres, redis, migrate, backend, celery-worker, celery-beat, nginx
 ```
 
 ## Layer rules (do not violate)
@@ -166,13 +166,19 @@ Identity:
 ## Commands
 
 All backend tooling runs in the **root `.venv`** (used by `make lint`/pyright/
-hooks). Poetry manages a *separate* env under `backend/`. When you add a
-dependency:
+hooks). Poetry is pointed at that same `.venv`: `backend/poetry.toml` sets
+`virtualenvs.create = false`, so Poetry installs into the **currently activated**
+environment instead of a cache venv. Activate the root `.venv` first, then a
+single `poetry add` updates `pyproject`+lock and installs into `.venv` — no
+separate `pip install` needed:
 
 ```bash
-cd backend && poetry add <pkg>          # updates pyproject + lock
-.venv/bin/pip install <pkg>             # keep the root venv in sync (lint uses it)
+source .venv/Scripts/activate            # Windows; .venv/bin/activate on unix
+cd backend && poetry add <pkg>           # updates pyproject + lock, installs into .venv
 ```
+
+Caveat: with `virtualenvs.create = false`, running `poetry` **without** the
+`.venv` activated installs into the base interpreter — always activate first.
 
 ```bash
 make lint                               # ruff + pyright + pytest + frontend lint (run from repo root)

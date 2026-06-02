@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.eslintcache
+.oxlintcache
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile
+.dockerignore
