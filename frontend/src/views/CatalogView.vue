@@ -4,8 +4,11 @@ import { useRoute } from 'vue-router'
 
 import { useThreads } from '@/composables/useThreads'
 import { useBoardWs } from '@/composables/useBoardWs'
+import { useCatalogModeration } from '@/composables/useCatalogModeration'
+import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
+import type { ThreadResponse } from '@/api/types'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -14,6 +17,17 @@ const { data: threads, isPending, isError } = useThreads(slug)
 
 // stream live new_thread events into the catalog cache
 useBoardWs(slug)
+
+const auth = useAuthStore()
+const moderation = useCatalogModeration(slug)
+
+async function onToggleLock(thread: ThreadResponse) {
+  await moderation.setLocked(thread.id, !thread.is_locked)
+}
+
+async function onToggleSticky(thread: ThreadResponse) {
+  await moderation.setSticky(thread.id, !thread.is_sticky)
+}
 </script>
 
 <template>
@@ -49,6 +63,16 @@ useBoardWs(slug)
             </div>
           </BaseCard>
         </RouterLink>
+
+        <!-- mod controls live outside the link so a click does not navigate -->
+        <div v-if="auth.isAuthenticated" class="mt-1 flex gap-2">
+          <BaseButton variant="ghost" size="sm" @click="onToggleLock(thread)">
+            {{ thread.is_locked ? 'Unlock' : 'Lock' }}
+          </BaseButton>
+          <BaseButton variant="ghost" size="sm" @click="onToggleSticky(thread)">
+            {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
+          </BaseButton>
+        </div>
       </li>
     </ul>
   </section>

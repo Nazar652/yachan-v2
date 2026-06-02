@@ -1,54 +1,76 @@
-# yachan-v2
+# yachan-v2 — frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+The **Vue 3 single-page app** for the yachan imageboard: board catalog, threads,
+posting with attachments, realtime updates, and a moderator panel.
 
-## Recommended IDE Setup
+For architecture and conventions see [`CLAUDE.md`](CLAUDE.md) in this folder; this
+README is the human quick-start.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Stack
 
-## Recommended Browser Setup
+Vue 3 (`<script setup lang="ts">`) · Vite · Vue Router · **Pinia** (client-only
+state) · **TanStack Vue Query** (server state) · Tailwind CSS v4 ·
+`openapi-typescript` + `openapi-fetch` (typed API) · Vitest + Vue Test Utils.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## Prerequisites
 
-## Type Support for `.vue` Imports in TS
+Node `^20.19 || >=22.12`. The backend should be running (locally on
+`http://localhost:8000`, or the full stack via Docker).
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Quick start
 
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+```bash
+npm install                  # .npmrc already sets legacy-peer-deps=true
+cp .env.example .env         # VITE_API_BASE_URL=http://localhost:8000
+npm run dev                  # Vite dev server (default http://localhost:5173)
 ```
 
-### Compile and Hot-Reload for Development
+In production the SPA is built and served by **nginx** (see `nginx.conf` and the
+root `docker-compose.yml`); there `VITE_API_BASE_URL` is empty so the app talks to
+the same origin (`/api`, `/media`, ws).
 
-```sh
-npm run dev
+## Scripts
+
+```bash
+npm run dev          # dev server with HMR
+npm run build        # type-check + production build (dist/)
+npm run type-check   # vue-tsc --build
+npm run lint         # oxlint + eslint (autofix)
+npm run test:unit    # Vitest (watch); add `-- --run` for a single pass
 ```
 
-### Type-Check, Compile and Minify for Production
+## Typed API
 
-```sh
-npm run build
+Types are generated from the backend OpenAPI schema into `src/api/schema.d.ts`
+(do not edit by hand). Regenerate after any backend change, from the repo root:
+
+```bash
+make openapi         # dumps openapi.json + runs gen:api here
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+Import friendly aliases from `src/api/types.ts` (`PostResponse`,
+`ThreadDetailResponse`, …) rather than the generated schema directly.
 
-```sh
-npm run test:unit
+## Project structure
+
+```
+src/
+  api/           typed client + per-resource wrappers (boards, threads, mod, ws, …)
+  composables/   Vue Query wrappers + realtime + moderation helpers
+  components/     ReplyForm, layout/, ui/ (BaseButton, BaseCard, BaseInput, CaptchaWidget)
+  views/          BoardList, Catalog, CreateThread, Thread, mod/(Login, Dashboard)
+  stores/         auth (mod JWT, the only Pinia state)
+  router/         routes + auth guard
+  assets/main.css design tokens (@theme) + base styles
+  main.ts         app bootstrap (Pinia + Vue Query + router)
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+## Tests
 
-```sh
-npm run lint
+```bash
+npm run test:unit -- --run
 ```
+
+Every composable and component has a unit test. Server state is mocked at the
+composable boundary; the typed client and `fetch` are mocked in API-wrapper tests.
+See [`CLAUDE.md`](CLAUDE.md) for the test patterns.

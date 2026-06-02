@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
 import CatalogView from '@/views/CatalogView.vue'
 import { useThreads } from '@/composables/useThreads'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b' } }),
@@ -19,11 +21,31 @@ vi.mock('@/composables/useBoardWs', () => ({
   useBoardWs: vi.fn(),
 }))
 
+const setLockedMock = vi.fn()
+const setStickyMock = vi.fn()
+vi.mock('@/composables/useCatalogModeration', () => ({
+  useCatalogModeration: () => ({ setLocked: setLockedMock, setSticky: setStickyMock }),
+}))
+
 const useThreadsMock = vi.mocked(useThreads)
 
 function stubThreads(state: Record<string, unknown>) {
   useThreadsMock.mockReturnValue(state as ReturnType<typeof useThreads>)
 }
+
+// click a button by its visible label (each card renders several buttons)
+function clickButton(wrapper: VueWrapper, label: string) {
+  const button = wrapper.findAll('button').find((candidate) => candidate.text() === label)
+  if (!button) throw new Error(`button "${label}" not found`)
+  return button.trigger('click')
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  setActivePinia(createPinia())
+  setLockedMock.mockReset()
+  setStickyMock.mockReset()
+})
 
 describe('CatalogView', () => {
   it('shows a loading message while pending', () => {
@@ -86,6 +108,47 @@ describe('CatalogView', () => {
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('📌')
     expect(wrapper.text()).toContain('🔒')
+  })
+
+  function stubOneThread() {
+    stubThreads({
+      data: ref([
+        { id: 1, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 0, bump_at: '', created_at: '' },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+  }
+
+  it('hides mod controls when not authenticated', () => {
+    stubOneThread()
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Lock')
+    expect(wrapper.text()).not.toContain('Sticky')
+  })
+
+  it('shows lock and sticky controls when authenticated', () => {
+    useAuthStore().login('jwt')
+    stubOneThread()
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Lock')
+    expect(wrapper.text()).toContain('Sticky')
+  })
+
+  it('toggles a thread lock', async () => {
+    useAuthStore().login('jwt')
+    stubOneThread()
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Lock')
+    expect(setLockedMock).toHaveBeenCalledWith(1, true)
+  })
+
+  it('toggles a thread sticky', async () => {
+    useAuthStore().login('jwt')
+    stubOneThread()
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Sticky')
+    expect(setStickyMock).toHaveBeenCalledWith(1, true)
   })
 })
 

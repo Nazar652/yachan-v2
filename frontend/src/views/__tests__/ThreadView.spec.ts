@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
 import ThreadView from '@/views/ThreadView.vue'
 import { useThread } from '@/composables/useThread'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b', id: '42' } }),
@@ -18,6 +20,19 @@ vi.mock('@/composables/useThreadWs', () => ({
   useThreadWs: vi.fn(),
 }))
 
+const setLockedMock = vi.fn()
+const setStickyMock = vi.fn()
+const removePostMock = vi.fn()
+const banMock = vi.fn()
+vi.mock('@/composables/useModeration', () => ({
+  useModeration: () => ({
+    setLocked: setLockedMock,
+    setSticky: setStickyMock,
+    removePost: removePostMock,
+    ban: banMock,
+  }),
+}))
+
 const useThreadMock = vi.mocked(useThread)
 
 function stubThread(state: Record<string, unknown>) {
@@ -27,7 +42,29 @@ function stubThread(state: Record<string, unknown>) {
 const globalStubs = {
   RouterLink: { template: '<a><slot /></a>' },
   ReplyForm: { template: '<form class="reply-form-stub" />' },
+  BaseButton: { template: '<button @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
+  BaseInput: {
+    template: '<input @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
+  },
 }
+
+// click a stubbed button by its visible label (mod controls render many buttons)
+function clickButton(wrapper: VueWrapper, label: string) {
+  const button = wrapper.findAll('button').find((candidate) => candidate.text() === label)
+  if (!button) throw new Error(`button "${label}" not found`)
+  return button.trigger('click')
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  setActivePinia(createPinia())
+  setLockedMock.mockReset()
+  setStickyMock.mockReset()
+  removePostMock.mockReset()
+  banMock.mockReset()
+})
 
 describe('ThreadView', () => {
   it('shows loading state while pending', () => {
@@ -158,6 +195,78 @@ describe('ThreadView', () => {
     const img = wrapper.find('img')
     expect(img.exists()).toBe(true)
     expect(img.attributes('src')).toBe('/media/thumb.jpg')
+  })
+
+  const postFixture = {
+    id: 1, post_number: 101, thread_id: 42, board_id: 1, name: 'Anon', tripcode: null,
+    body: 'hi', body_html: '<p>hi</p>', sage: false, is_op: true, is_edited: false,
+    edited_at: null, created_at: '2024-01-01T00:00:00', attachments: [],
+  }
+
+  function stubAuthedThread(overrides: Record<string, unknown> = {}) {
+    stubThread({
+      data: ref({
+        id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 1,
+        bump_at: '', created_at: '', posts: [postFixture], ...overrides,
+      }),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+  }
+
+  it('hides mod controls when not authenticated', () => {
+    stubAuthedThread()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Delete')
+    expect(wrapper.text()).not.toContain('Lock')
+  })
+
+  it('shows mod controls when authenticated', () => {
+    useAuthStore().login('jwt')
+    stubAuthedThread()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Lock')
+    expect(wrapper.text()).toContain('Sticky')
+    expect(wrapper.text()).toContain('Delete')
+    expect(wrapper.text()).toContain('Ban')
+  })
+
+  it('toggles the thread lock', async () => {
+    useAuthStore().login('jwt')
+    stubAuthedThread({ is_locked: false })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Lock')
+    expect(setLockedMock).toHaveBeenCalledWith(true)
+  })
+
+  it('toggles the thread sticky', async () => {
+    useAuthStore().login('jwt')
+    stubAuthedThread({ is_sticky: false })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Sticky')
+    expect(setStickyMock).toHaveBeenCalledWith(true)
+  })
+
+  it('deletes a post', async () => {
+    useAuthStore().login('jwt')
+    stubAuthedThread()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Delete')
+    expect(removePostMock).toHaveBeenCalledWith(101)
+  })
+
+  it('bans a poster through the inline ban form', async () => {
+    useAuthStore().login('jwt')
+    banMock.mockResolvedValue(undefined)
+    stubAuthedThread()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Ban')
+    await wrapper.find('input').setValue('spam')
+    await clickButton(wrapper, 'Confirm ban')
+    await flushPromises()
+
+    expect(banMock).toHaveBeenCalledWith(101, { reason: 'spam' })
   })
 })
 

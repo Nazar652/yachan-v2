@@ -17,7 +17,7 @@ def configure(parser: argparse.ArgumentParser) -> None:
 def handle(args: argparse.Namespace) -> None:
     password = _prompt_password()
     account = asyncio.run(
-        run_in_scope(lambda: ModService().create_account(args.username, password, ModRole.ADMIN))
+        run_in_scope(lambda: ModService().create_account(args.username, password, ModRole.ADMIN))  # type: ignore
     )
     print(f"created admin '{account.username}' (id={account.id})")
 

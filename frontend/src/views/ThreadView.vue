@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
+import { useModeration } from '@/composables/useModeration'
+import { useAuthStore } from '@/stores/auth'
 import type { AttachmentResponse } from '@/api/types'
 import ReplyForm from '@/components/ReplyForm.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -17,6 +21,40 @@ const { data: thread, isPending, isError } = useThread(
 
 // stream live new_post / post_edited events into the thread cache
 useThreadWs(slug, threadId)
+
+const auth = useAuthStore()
+const moderation = useModeration(slug, threadId)
+
+// per-post inline ban form: holds which post is being banned and the reason
+const banningPost = ref<number | null>(null)
+const banReason = ref('')
+
+async function onToggleLock() {
+  if (thread.value) await moderation.setLocked(!thread.value.is_locked)
+}
+
+async function onToggleSticky() {
+  if (thread.value) await moderation.setSticky(!thread.value.is_sticky)
+}
+
+async function onDelete(postNumber: number) {
+  await moderation.removePost(postNumber)
+}
+
+function onStartBan(postNumber: number) {
+  banningPost.value = postNumber
+  banReason.value = ''
+}
+
+function onCancelBan() {
+  banningPost.value = null
+  banReason.value = ''
+}
+
+async function onConfirmBan(postNumber: number) {
+  await moderation.ban(postNumber, { reason: banReason.value || null })
+  onCancelBan()
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -54,6 +92,15 @@ function isImage(attachment: AttachmentResponse): boolean {
         <span v-if="thread.is_sticky" title="Sticky">📌</span>
         <span v-if="thread.is_locked" title="Locked">🔒</span>
         <span class="ml-auto text-sm text-secondary">{{ thread.reply_count }} replies</span>
+      </div>
+
+      <div v-if="auth.isAuthenticated" class="mb-4 flex gap-2">
+        <BaseButton variant="ghost" size="sm" @click="onToggleLock">
+          {{ thread.is_locked ? 'Unlock' : 'Lock' }}
+        </BaseButton>
+        <BaseButton variant="ghost" size="sm" @click="onToggleSticky">
+          {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
+        </BaseButton>
       </div>
 
       <div class="flex flex-col gap-6">
@@ -110,6 +157,19 @@ function isImage(attachment: AttachmentResponse): boolean {
             v-html="post.body_html"
           />
           <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
+
+          <!-- mod controls (only when logged in as a mod) -->
+          <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-border pt-2">
+            <div class="flex gap-2">
+              <BaseButton variant="danger" size="sm" @click="onDelete(post.post_number)">Delete</BaseButton>
+              <BaseButton variant="ghost" size="sm" @click="onStartBan(post.post_number)">Ban</BaseButton>
+            </div>
+            <div v-if="banningPost === post.post_number" class="flex items-center gap-2">
+              <BaseInput v-model="banReason" placeholder="Ban reason (optional)" />
+              <BaseButton variant="danger" size="sm" @click="onConfirmBan(post.post_number)">Confirm ban</BaseButton>
+              <BaseButton variant="ghost" size="sm" @click="onCancelBan">Cancel</BaseButton>
+            </div>
+          </div>
         </article>
       </div>
 
