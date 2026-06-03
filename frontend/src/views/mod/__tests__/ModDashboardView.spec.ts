@@ -35,6 +35,13 @@ vi.mock('@/api/mod', () => ({
   updateBoard: vi.fn(),
 }))
 
+// mock the composable but keep the real moveItem (the drop handler uses it)
+const reorderMock = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/useBoardReorder', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/composables/useBoardReorder')>()),
+  useBoardReorder: () => ({ reorder: reorderMock }),
+}))
+
 const globalStubs = {
   BaseButton: { template: '<button @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
   BaseInput: {
@@ -74,7 +81,7 @@ function clickButton(wrapper: VueWrapper, label: string) {
 }
 
 function board(overrides: Record<string, unknown> = {}) {
-  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, created_at: '', ...overrides }
+  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, position: 0, created_at: '', ...overrides }
 }
 
 beforeEach(() => {
@@ -85,6 +92,7 @@ beforeEach(() => {
   resolveReportMock.mockReset()
   createBoardMock.mockReset()
   updateBoardMock.mockReset()
+  reorderMock.mockReset()
   stubReports()
   stubBoards()
 })
@@ -171,6 +179,33 @@ describe('ModDashboardView', () => {
     expect(wrapper.text()).toContain('Boards')
     expect(wrapper.text()).toContain('/a/')
     expect(wrapper.text()).toContain('Anime')
+  })
+
+  it('shows the board description in the list row', () => {
+    useAuthStore().login('jwt', 'admin')
+    stubBoards([board({ slug: 'a', title: 'Anime', description: 'Anime & manga' })])
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Anime & manga')
+  })
+
+  it('reorders boards via drag and drop and persists the new order', async () => {
+    useAuthStore().login('jwt', 'admin')
+    reorderMock.mockResolvedValue(undefined)
+    stubBoards([
+      board({ id: 1, slug: 'a', title: 'A' }),
+      board({ id: 2, slug: 'b', title: 'B' }),
+      board({ id: 3, slug: 'c', title: 'C' }),
+    ])
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+
+    const rows = wrapper.findAll('section li')
+    const [source, , target] = rows
+    if (!source || !target) throw new Error('expected three board rows')
+    await source.trigger('dragstart')
+    await target.trigger('drop')
+    await flushPromises()
+
+    expect(reorderMock).toHaveBeenCalledWith(['b', 'c', 'a'])
   })
 
   it('creates a board and invalidates the boards query', async () => {

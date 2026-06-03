@@ -32,6 +32,12 @@ export async function updateBoard(slug: string, data: BoardUpdate): Promise<Boar
   return board
 }
 
+export async function reorderBoards(slugs: string[]): Promise<BoardResponse[]> {
+  const { data, error } = await apiClient.PUT('/api/mod/boards/order', { body: { slugs } })
+  if (error) throw error
+  return data
+}
+
 export async function listReports(): Promise<ReportResponse[]> {
   const { data, error } = await apiClient.GET('/api/mod/reports')
   if (error) throw error

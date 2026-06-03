@@ -638,6 +638,69 @@
         }
       }
     },
+    "/api/mod/boards/order": {
+      "put": {
+        "tags": [
+          "mod"
+        ],
+        "summary": "Reorder Boards",
+        "operationId": "reorder_boards_api_mod_boards_order_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardReorder"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BoardResponse"
+                  },
+                  "title": "Response Reorder Boards Api Mod Boards Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mod/boards/{board_slug}": {
       "patch": {
         "tags": [
@@ -1339,6 +1402,23 @@
         ],
         "title": "BoardCreate"
       },
+      "BoardReorder": {
+        "properties": {
+          "slugs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Slugs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slugs"
+        ],
+        "title": "BoardReorder"
+      },
       "BoardResponse": {
         "properties": {
           "id": {
@@ -1372,6 +1452,10 @@
             "type": "boolean",
             "title": "Is Active"
           },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1386,6 +1470,7 @@
           "description",
           "bump_limit",
           "is_active",
+          "position",
           "created_at"
         ],
         "title": "BoardResponse"

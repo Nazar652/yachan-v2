@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/stores/auth'
 import { useReports, reportsQueryKey } from '@/composables/useReports'
 import { useBoards, boardsQueryKey } from '@/composables/useBoards'
+import { useBoardReorder, moveItem } from '@/composables/useBoardReorder'
 import { resolveReport, createBoard, updateBoard } from '@/api/mod'
 import type { BoardResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -101,6 +102,50 @@ async function onSave(slug: string) {
   }
 }
 
+// --- reorder boards (admin only, native drag and drop) ---
+const { reorder } = useBoardReorder()
+// a local, reorderable copy of the server list; reset whenever the query refetches
+const orderedBoards = ref<BoardResponse[]>([])
+watch(
+  boards,
+  (value) => {
+    orderedBoards.value = value ? [...value] : []
+  },
+  { immediate: true },
+)
+
+const dragIndex = ref<number | null>(null)
+const overIndex = ref<number | null>(null)
+const reorderError = ref<string | null>(null)
+
+function onDragStart(index: number) {
+  dragIndex.value = index
+}
+
+function onDragOver(index: number) {
+  overIndex.value = index
+}
+
+function onDragEnd() {
+  dragIndex.value = null
+  overIndex.value = null
+}
+
+async function onDrop(index: number) {
+  const from = dragIndex.value
+  onDragEnd()
+  if (from === null || from === index) return
+  // optimistic local reorder; the server order comes back on the next refetch
+  const next = moveItem(orderedBoards.value, from, index)
+  orderedBoards.value = next
+  reorderError.value = null
+  try {
+    await reorder(next.map((item) => item.slug))
+  } catch (error: unknown) {
+    reorderError.value = errorDetail(error) ?? 'Failed to reorder boards.'
+  }
+}
+
 async function onLogout() {
   auth.logout()
   await router.push('/mod/login')
@@ -179,9 +224,18 @@ function formatDate(iso: string): string {
 
       <ul class="flex flex-col gap-2">
         <li
-          v-for="board in boards ?? []"
+          v-for="(board, index) in orderedBoards"
           :key="board.slug"
           class="border border-border rounded p-3 text-sm"
+          :class="{
+            'opacity-50': dragIndex === index,
+            'border-accent': overIndex === index && dragIndex !== null && dragIndex !== index,
+          }"
+          :draggable="editingSlug !== board.slug"
+          @dragstart="onDragStart(index)"
+          @dragover.prevent="onDragOver(index)"
+          @drop="onDrop(index)"
+          @dragend="onDragEnd"
         >
           <div v-if="editingSlug === board.slug" class="flex flex-col gap-2">
             <div class="flex flex-wrap items-end gap-2">
@@ -211,13 +265,18 @@ function formatDate(iso: string): string {
             <p v-if="editError" class="text-sm text-red-500">{{ editError }}</p>
           </div>
           <div v-else class="flex items-center gap-3">
+            <span class="text-secondary cursor-move select-none" title="Drag to reorder" aria-hidden="true">⠿</span>
             <span class="font-mono text-secondary">/{{ board.slug }}/</span>
-            <span class="flex-1">{{ board.title }}</span>
+            <div class="flex-1 min-w-0">
+              <div>{{ board.title }}</div>
+              <div v-if="board.description" class="text-secondary text-xs truncate">{{ board.description }}</div>
+            </div>
             <span v-if="!board.is_active" class="text-secondary italic">disabled</span>
             <BaseButton variant="ghost" size="sm" @click="startEdit(board)">Edit</BaseButton>
           </div>
         </li>
       </ul>
+      <p v-if="reorderError" class="text-sm text-red-500 mt-2">{{ reorderError }}</p>
     </section>
   </div>
 </template>

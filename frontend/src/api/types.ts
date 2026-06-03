@@ -18,6 +18,7 @@ export type ModRole = Schemas['ModRole']
 
 export type BoardCreate = Schemas['BoardCreate']
 export type BoardUpdate = Schemas['BoardUpdate']
+export type BoardReorder = Schemas['BoardReorder']
 export type ThreadCreate = Schemas['ThreadCreate']
 export type PostCreate = Schemas['PostCreate']
 export type PostEditCreate = Schemas['PostEditCreate']

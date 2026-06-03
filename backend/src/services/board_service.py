@@ -1,6 +1,10 @@
 from kink import inject
 
-from src.core.exceptions import BoardAlreadyExistsError, BoardNotFoundError
+from src.core.exceptions import (
+    BadRequestError,
+    BoardAlreadyExistsError,
+    BoardNotFoundError,
+)
 from src.models.board import Board
 from src.repositories.board_repo import BoardRepository
 from src.schemas.board import BoardCreate, BoardUpdate
@@ -34,6 +38,20 @@ class BoardService:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(board, field, value)
         return await self.board_repo.update(board)
+
+    async def reorder_boards(self, slugs: list[str]) -> list[Board]:
+        boards = await self.board_repo.list_all()
+        by_slug = {board.slug: board for board in boards}
+        # the payload must be a permutation of every existing board (length check
+        # also rejects duplicate slugs that would otherwise pass the set compare)
+        if len(slugs) != len(by_slug) or set(slugs) != set(by_slug):
+            raise BadRequestError("slugs must list every existing board exactly once")
+        reordered: list[Board] = []
+        for index, slug in enumerate(slugs):
+            board = by_slug[slug]
+            board.position = index
+            reordered.append(await self.board_repo.update(board))
+        return reordered
 
     async def list_boards(self) -> list[Board]:
         return await self.board_repo.list_all()

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
-from src.schemas.board import BoardCreate, BoardResponse, BoardUpdate
+from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 
 
 def test_board_create_defaults_bump_limit():
@@ -46,7 +46,14 @@ def test_board_response_from_attributes():
         description=None,
         bump_limit=300,
         is_active=True,
+        position=2,
         created_at=datetime(2026, 1, 1),
     )
     response = BoardResponse.model_validate(obj)
     assert response.slug == "b"
+    assert response.position == 2
+
+
+def test_board_reorder_rejects_empty_slugs():
+    with pytest.raises(ValidationError):
+        BoardReorder(slugs=[])

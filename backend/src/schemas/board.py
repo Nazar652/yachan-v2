@@ -32,6 +32,12 @@ class BoardUpdate(BaseModel):
         return data
 
 
+class BoardReorder(BaseModel):
+    # the complete set of board slugs in the desired display order; the service
+    # rejects anything that is not a permutation of all existing boards
+    slugs: list[str] = Field(min_length=1)
+
+
 class BoardResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,4 +47,5 @@ class BoardResponse(BaseModel):
     description: str | None
     bump_limit: int
     is_active: bool
+    position: int
     created_at: datetime

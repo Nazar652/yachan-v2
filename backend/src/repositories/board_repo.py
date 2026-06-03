@@ -23,7 +23,9 @@ class BoardRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def list_all(self) -> list[Board]:
-        result = await self.session.execute(select(Board).order_by(col(Board.slug).asc()))
+        result = await self.session.execute(
+            select(Board).order_by(col(Board.position).asc(), col(Board.slug).asc())
+        )
         return list(result.scalars().all())
 
     async def create(self, board: Board) -> Board:

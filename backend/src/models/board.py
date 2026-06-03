@@ -15,4 +15,5 @@ class Board(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=500)
     bump_limit: int = Field(default=300)
     is_active: bool = Field(default=True)
+    position: int = Field(default=0, index=True)
     created_at: datetime = Field(default_factory=utcnow)

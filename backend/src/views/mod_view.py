@@ -2,7 +2,7 @@ from kink import inject
 
 from src.core.exceptions import ForbiddenError
 from src.models.mod_account import ModAccount, ModRole
-from src.schemas.board import BoardCreate, BoardResponse, BoardUpdate
+from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
 from src.services.board_service import BoardService
@@ -39,6 +39,12 @@ class ModView:
         self._require_admin(mod)
         board = await self.board_service.update_board(board_slug, data)
         return BoardResponse.model_validate(board)
+
+    async def reorder_boards(self, token: str, data: BoardReorder) -> list[BoardResponse]:
+        mod = await self.mod_service.resolve_mod(token)
+        self._require_admin(mod)
+        boards = await self.board_service.reorder_boards(data.slugs)
+        return [BoardResponse.model_validate(board) for board in boards]
 
     async def delete_post(self, token: str, board_slug: str, post_number: int) -> None:
         mod = await self.mod_service.resolve_mod(token)

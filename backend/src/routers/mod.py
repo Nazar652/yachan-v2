@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from src.schemas.board import BoardCreate, BoardResponse, BoardUpdate
+from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
 from src.views.dependencies import bearer_token
@@ -25,6 +25,15 @@ async def create_board(
     view: ModView = Depends(_view),
 ) -> BoardResponse:
     return await view.create_board(token, data)
+
+
+@router.put("/boards/order", response_model=list[BoardResponse])
+async def reorder_boards(
+    data: BoardReorder,
+    token: str = Depends(bearer_token),
+    view: ModView = Depends(_view),
+) -> list[BoardResponse]:
+    return await view.reorder_boards(token, data)
 
 
 @router.patch("/boards/{board_slug}", response_model=BoardResponse)
