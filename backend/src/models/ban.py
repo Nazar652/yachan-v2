@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from sqlmodel import Field
 
-from src.models.timestamps import TimestampMixin
+from src.models.timestamp_mixin import TimestampMixin
 
 
 class Ban(TimestampMixin, table=True):

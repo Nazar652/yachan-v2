@@ -29,7 +29,7 @@ def resolve_scoped[T](
     """
     Resolve a scoped instance.
 
-    Behaviour:
+    Behavior:
       - active scope and cls already created: return cached instance
       - active scope and cls not yet created: call factory(), cache, return
       - no active scope: call factory() every time (no caching)
