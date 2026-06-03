@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import ClassVar
 
 from sqlalchemy import UniqueConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-from src.utils.clock import utcnow
+from src.models.timestamps import TimestampMixin
 
 
-class Post(SQLModel, table=True):
+class Post(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "post"
     __table_args__: ClassVar = (
         UniqueConstraint("board_id", "post_number", name="uq_post_board_number"),
@@ -28,4 +28,3 @@ class Post(SQLModel, table=True):
     ip_hash: str = Field(max_length=64)  # never exposed in the api
     deleted: bool = Field(default=False)
     deleted_by: int | None = Field(default=None, foreign_key="mod_account.id")
-    created_at: datetime = Field(default_factory=utcnow)

@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-from src.utils.clock import utcnow
+from src.models.timestamps import TimestampMixin
 
 
-class Ban(SQLModel, table=True):
+class Ban(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "ban"
 
     id: int = Field(default=None, primary_key=True)
@@ -16,4 +16,3 @@ class Ban(SQLModel, table=True):
     created_by: int | None = Field(default=None, foreign_key="mod_account.id")
     expires_at: datetime | None = Field(default=None)  # null = permanent
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=utcnow)

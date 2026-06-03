@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
+from src.models.timestamps import TimestampMixin
 from src.utils.clock import utcnow
 
 
-class PostEdit(SQLModel, table=True):
+class PostEdit(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "post_edit"
 
     id: int = Field(default=None, primary_key=True)
