@@ -13,5 +13,6 @@ lint-backend:
 lint-frontend:
 	cd frontend && npm run lint
 	cd frontend && npm run test:unit -- --run
+	cd frontend && npm run type-check
 
 lint-all: lint-backend lint-frontend
