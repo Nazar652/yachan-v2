@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -11,6 +11,28 @@ on:
       - master
 
 jobs:
+  backend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install backend dependencies
+        run: poetry -C backend install --no-interaction --no-root
+
+      - name: Run backend linters
+        run: |
+          poetry -C backend run ruff check --force-exclude src/
+          poetry -C backend run pyright
+
   backend-tests:
     runs-on: ubuntu-latest
     steps:
@@ -53,3 +75,25 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test:unit -- --run
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run frontend lint and type-check
+        run: |
+          npm run lint
+          npm run type-check
