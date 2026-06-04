@@ -4,7 +4,7 @@ from starlette.requests import Request
 
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
-from src.core.storage import LocalStorage
+from src.core.storage import Storage
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
@@ -28,7 +28,7 @@ class ThreadsView:
         captcha_service: CaptchaService,
         rate_limiter: RateLimiter,
         events: EventPublisher,
-        storage: LocalStorage,
+        storage: Storage,
         settings: Settings,
     ) -> None:
         self.thread_service = thread_service
