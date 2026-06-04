@@ -9,8 +9,8 @@ from src.utils.sequences import post_number_sequence_name
 from .base import BaseRepository
 
 
-@inject
 class PostRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

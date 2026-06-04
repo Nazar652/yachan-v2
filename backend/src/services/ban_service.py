@@ -8,8 +8,8 @@ from src.repositories.ban_repo import BanRepository
 from src.utils.clock import utcnow
 
 
-@inject
 class BanService:
+    @inject
     def __init__(self, ban_repo: BanRepository) -> None:
         self.ban_repo = ban_repo
 

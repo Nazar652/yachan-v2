@@ -28,8 +28,8 @@ from src.utils.names import parse_name
 EDIT_WINDOW = timedelta(minutes=30)
 
 
-@inject
 class PostService:
+    @inject
     def __init__(
         self,
         post_repo: PostRepository,

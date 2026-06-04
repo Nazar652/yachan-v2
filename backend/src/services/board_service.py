@@ -10,8 +10,8 @@ from src.repositories.board_repo import BoardRepository
 from src.schemas.board import BoardCreate, BoardUpdate
 
 
-@inject
 class BoardService:
+    @inject
     def __init__(self, board_repo: BoardRepository) -> None:
         self.board_repo = board_repo
 

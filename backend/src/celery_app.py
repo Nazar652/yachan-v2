@@ -1,7 +1,6 @@
 from celery import Celery
 from celery.signals import worker_process_init
 
-from src.bootstrap.container import setup_di
 from src.core.config import get_settings
 
 settings = get_settings()
@@ -28,5 +27,6 @@ celery.conf.update(
 
 @worker_process_init.connect
 def _setup_worker_di(**_kwargs) -> None:
-    # each worker process registers its own di container once on startup
+    from src.bootstrap.container import setup_di
+
     setup_di()

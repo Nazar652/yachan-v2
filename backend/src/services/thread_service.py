@@ -18,8 +18,8 @@ from src.services.markup_service import MarkupService
 from src.utils.names import parse_name
 
 
-@inject
 class ThreadService:
+    @inject
     def __init__(
         self,
         thread_repo: ThreadRepository,
@@ -39,7 +39,6 @@ class ThreadService:
     async def create_thread(
         self, board_slug: str, data: ThreadCreate, ip_hash: str, has_image: bool
     ) -> tuple[Thread, Post]:
-        # the opening post of a thread must carry at least one image
         if not has_image:
             raise OpRequiresImageError("a new thread requires an image")
 
@@ -49,8 +48,6 @@ class ThreadService:
 
         await self.ban_service.assert_not_banned(ip_hash, board.id)
 
-        # thread row and its opening post are written in the same request
-        # transaction, committed together by the scope middleware
         thread = await self.thread_repo.create(
             Thread(board_id=board.id, title=data.title)
         )

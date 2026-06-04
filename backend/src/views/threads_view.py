@@ -19,8 +19,8 @@ THREAD_RATE_LIMIT = 3
 THREAD_RATE_WINDOW = 60
 
 
-@inject
 class ThreadsView:
+    @inject
     def __init__(
         self,
         thread_service: ThreadService,

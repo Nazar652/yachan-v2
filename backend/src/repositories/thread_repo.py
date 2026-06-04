@@ -8,8 +8,8 @@ from src.models.thread import Thread
 from .base import BaseRepository
 
 
-@inject
 class ThreadRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

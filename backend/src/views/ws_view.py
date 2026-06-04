@@ -7,8 +7,8 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from src.utils.events import board_channel, thread_channel
 
 
-@inject
 class WsView:
+    @inject
     def __init__(self, redis: Redis) -> None:
         self.redis = redis
 

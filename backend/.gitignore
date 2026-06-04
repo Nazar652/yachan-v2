@@ -1,6 +1,10 @@
-____pycache__
-__pycache__/
-
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
 .env
 .env.test
 celerybeat-schedule*
+storage

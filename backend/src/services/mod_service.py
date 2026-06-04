@@ -28,8 +28,8 @@ from src.utils.auth import (
 )
 
 
-@inject
 class ModService:
+    @inject
     def __init__(
         self,
         mod_account_repo: ModAccountRepository,

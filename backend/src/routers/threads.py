@@ -2,14 +2,20 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 
+from src.bootstrap.container import get_dependency
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.views.threads_view import ThreadsView
 
 router = APIRouter(prefix="/{board_slug}/threads", tags=["threads"])
 
 
-def _view() -> ThreadsView:
-    return ThreadsView()
+def thread_create_from_form(
+    title: Annotated[str | None, Form()] = None,
+    name: Annotated[str | None, Form()] = None,
+    body: Annotated[str | None, Form()] = None,
+    sage: Annotated[bool, Form()] = False,
+) -> ThreadCreate:
+    return ThreadCreate(title=title, name=name, body=body, sage=sage)
 
 
 @router.get("", response_model=list[ThreadResponse])
@@ -17,14 +23,14 @@ async def list_threads(
     board_slug: str,
     limit: int = 50,
     offset: int = 0,
-    view: ThreadsView = Depends(_view),
+    view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> list[ThreadResponse]:
     return await view.list_threads(board_slug, limit, offset)
 
 
 @router.get("/{thread_id}", response_model=ThreadDetailResponse)
 async def get_thread(
-    board_slug: str, thread_id: int, view: ThreadsView = Depends(_view)
+    board_slug: str, thread_id: int, view: ThreadsView = Depends(lambda: get_dependency(ThreadsView))
 ) -> ThreadDetailResponse:
     return await view.get_thread(board_slug, thread_id)
 
@@ -33,11 +39,11 @@ async def get_thread(
 async def create_thread(
     board_slug: str,
     request: Request,
-    data: Annotated[ThreadCreate, Form()],
+    data: Annotated[ThreadCreate, Depends(thread_create_from_form)],
     files: list[UploadFile] = File(default=[]),
     captcha_token: str = Header(alias="X-Captcha-Token"),
     captcha_answer: str = Header(alias="X-Captcha-Answer"),
-    view: ThreadsView = Depends(_view),
+    view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> ThreadDetailResponse:
     return await view.create_thread(
         board_slug, data, files, request, captcha_token, captcha_answer

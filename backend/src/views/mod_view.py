@@ -10,8 +10,8 @@ from src.services.mod_service import ModService
 from src.services.report_service import ReportService
 
 
-@inject
 class ModView:
+    @inject
     def __init__(
         self,
         mod_service: ModService,

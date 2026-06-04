@@ -12,8 +12,8 @@ from src.models.ban import Ban
 from .base import BaseRepository
 
 
-@inject
 class BanRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

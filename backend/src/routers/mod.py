@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from src.bootstrap.container import get_dependency
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
@@ -9,12 +10,8 @@ from src.views.mod_view import ModView
 router = APIRouter(prefix="/mod", tags=["mod"])
 
 
-def _view() -> ModView:
-    return ModView()
-
-
 @router.post("/login", response_model=TokenResponse)
-async def login(data: ModLogin, view: ModView = Depends(_view)) -> TokenResponse:
+async def login(data: ModLogin, view: ModView = Depends(lambda: get_dependency(ModView))) -> TokenResponse:
     return await view.login(data)
 
 
@@ -22,7 +19,7 @@ async def login(data: ModLogin, view: ModView = Depends(_view)) -> TokenResponse
 async def create_board(
     data: BoardCreate,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> BoardResponse:
     return await view.create_board(token, data)
 
@@ -31,7 +28,7 @@ async def create_board(
 async def reorder_boards(
     data: BoardReorder,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> list[BoardResponse]:
     return await view.reorder_boards(token, data)
 
@@ -41,7 +38,7 @@ async def update_board(
     board_slug: str,
     data: BoardUpdate,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> BoardResponse:
     return await view.update_board(token, board_slug, data)
 
@@ -51,7 +48,7 @@ async def delete_post(
     board_slug: str,
     post_number: int,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> None:
     await view.delete_post(token, board_slug, post_number)
 
@@ -62,7 +59,7 @@ async def lock_thread(
     thread_id: int,
     locked: bool = True,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> None:
     await view.set_thread_locked(token, board_slug, thread_id, locked)
 
@@ -73,7 +70,7 @@ async def sticky_thread(
     thread_id: int,
     sticky: bool = True,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> None:
     await view.set_thread_sticky(token, board_slug, thread_id, sticky)
 
@@ -84,7 +81,7 @@ async def ban_poster(
     post_number: int,
     data: BanCreate,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> BanResponse:
     return await view.ban_poster(token, board_slug, post_number, data)
 
@@ -93,7 +90,7 @@ async def ban_poster(
 async def list_reports(
     board_id: int | None = None,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> list[ReportResponse]:
     return await view.list_reports(token, board_id)
 
@@ -102,6 +99,6 @@ async def list_reports(
 async def resolve_report(
     report_id: int,
     token: str = Depends(bearer_token),
-    view: ModView = Depends(_view),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
 ) -> None:
     await view.resolve_report(token, report_id)

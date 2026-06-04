@@ -437,21 +437,39 @@ export interface components {
         };
         /** Body_create_reply_api__board_slug__threads__thread_id__posts_post */
         Body_create_reply_api__board_slug__threads__thread_id__posts_post: {
-            data: components["schemas"]["PostCreate"];
             /**
              * Files
              * @default []
              */
             files: string[];
+            /** Name */
+            name?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Sage
+             * @default false
+             */
+            sage: boolean;
         };
         /** Body_create_thread_api__board_slug__threads_post */
         Body_create_thread_api__board_slug__threads_post: {
-            data: components["schemas"]["ThreadCreate"];
             /**
              * Files
              * @default []
              */
             files: string[];
+            /** Title */
+            title?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Sage
+             * @default false
+             */
+            sage: boolean;
         };
         /** CaptchaChallengeResponse */
         CaptchaChallengeResponse: {
@@ -482,18 +500,6 @@ export interface components {
          * @enum {string}
          */
         ModRole: "admin" | "moderator";
-        /** PostCreate */
-        PostCreate: {
-            /** Name */
-            name?: string | null;
-            /** Body */
-            body?: string | null;
-            /**
-             * Sage
-             * @default false
-             */
-            sage: boolean;
-        };
         /** PostEditCreate */
         PostEditCreate: {
             /** New Body */
@@ -569,20 +575,6 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-        };
-        /** ThreadCreate */
-        ThreadCreate: {
-            /** Title */
-            title?: string | null;
-            /** Name */
-            name?: string | null;
-            /** Body */
-            body?: string | null;
-            /**
-             * Sage
-             * @default false
-             */
-            sage: boolean;
         };
         /** ThreadDetailResponse */
         ThreadDetailResponse: {
@@ -766,7 +758,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_thread_api__board_slug__threads_post"];
             };
@@ -837,7 +829,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_reply_api__board_slug__threads__thread_id__posts_post"];
             };

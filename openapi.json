@@ -173,7 +173,6 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -303,7 +302,6 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -1531,9 +1529,6 @@
       },
       "Body_create_reply_api__board_slug__threads__thread_id__posts_post": {
         "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PostCreate"
-          },
           "files": {
             "items": {
               "type": "string",
@@ -1542,19 +1537,40 @@
             "type": "array",
             "title": "Files",
             "default": []
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "sage": {
+            "type": "boolean",
+            "title": "Sage",
+            "default": false
           }
         },
         "type": "object",
-        "required": [
-          "data"
-        ],
         "title": "Body_create_reply_api__board_slug__threads__thread_id__posts_post"
       },
       "Body_create_thread_api__board_slug__threads_post": {
         "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ThreadCreate"
-          },
           "files": {
             "items": {
               "type": "string",
@@ -1563,12 +1579,47 @@
             "type": "array",
             "title": "Files",
             "default": []
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "sage": {
+            "type": "boolean",
+            "title": "Sage",
+            "default": false
           }
         },
         "type": "object",
-        "required": [
-          "data"
-        ],
         "title": "Body_create_thread_api__board_slug__threads_post"
       },
       "CaptchaChallengeResponse": {
@@ -1639,41 +1690,6 @@
           "moderator"
         ],
         "title": "ModRole"
-      },
-      "PostCreate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 100
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "body": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 5000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Body"
-          },
-          "sage": {
-            "type": "boolean",
-            "title": "Sage",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "PostCreate"
       },
       "PostEditCreate": {
         "properties": {
@@ -1916,53 +1932,6 @@
           "created_at"
         ],
         "title": "ReportResponse"
-      },
-      "ThreadCreate": {
-        "properties": {
-          "title": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 150
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 100
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "body": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 5000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Body"
-          },
-          "sage": {
-            "type": "boolean",
-            "title": "Sage",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "ThreadCreate"
       },
       "ThreadDetailResponse": {
         "properties": {
