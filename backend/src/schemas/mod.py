@@ -13,6 +13,7 @@ class ModLogin(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"  # noqa: S105  oauth token type, not a secret
+    role: ModRole  # lets the spa gate admin-only UI (auth is still enforced server-side)
 
 
 class ModAccountResponse(BaseModel):

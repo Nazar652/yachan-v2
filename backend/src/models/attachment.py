@@ -1,10 +1,9 @@
-from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-from src.utils.clock import utcnow
+from src.models.timestamp_mixin import TimestampMixin
 
 
 class MediaType(StrEnum):
@@ -13,7 +12,7 @@ class MediaType(StrEnum):
     GIF = "gif"
 
 
-class Attachment(SQLModel, table=True):
+class Attachment(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "attachment"
 
     id: int = Field(default=None, primary_key=True)
@@ -29,4 +28,3 @@ class Attachment(SQLModel, table=True):
     width: int | None = Field(default=None)
     height: int | None = Field(default=None)
     duration_seconds: float | None = Field(default=None)
-    created_at: datetime = Field(default_factory=utcnow)

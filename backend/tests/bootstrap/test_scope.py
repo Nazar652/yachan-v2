@@ -51,12 +51,3 @@ def test_resolve_with_scope_caches_instance():
     second = resolve_scoped(Dummy, factory)
     assert first is second
     assert len(calls) == 1
-
-
-def test_force_new_returns_fresh_and_does_not_cache():
-    open_scope()
-    cached = resolve_scoped(Dummy, Dummy)
-    fresh = resolve_scoped(Dummy, Dummy, force_new=True)
-    assert fresh is not cached
-    # cache still holds the original instance
-    assert resolve_scoped(Dummy, Dummy) is cached

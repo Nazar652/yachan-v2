@@ -2,7 +2,7 @@ from kink import inject
 
 from src.core.exceptions import ForbiddenError
 from src.models.mod_account import ModAccount, ModRole
-from src.schemas.board import BoardCreate, BoardResponse
+from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
 from src.services.board_service import BoardService
@@ -10,8 +10,8 @@ from src.services.mod_service import ModService
 from src.services.report_service import ReportService
 
 
-@inject
 class ModView:
+    @inject
     def __init__(
         self,
         mod_service: ModService,
@@ -23,14 +23,28 @@ class ModView:
         self.report_service = report_service
 
     async def login(self, data: ModLogin) -> TokenResponse:
-        token = await self.mod_service.authenticate(data.username, data.password)
-        return TokenResponse(access_token=token)
+        token, role = await self.mod_service.authenticate(data.username, data.password)
+        return TokenResponse(access_token=token, role=role)
 
     async def create_board(self, token: str, data: BoardCreate) -> BoardResponse:
         mod = await self.mod_service.resolve_mod(token)
         self._require_admin(mod)
         board = await self.board_service.create_board(data)
         return BoardResponse.model_validate(board)
+
+    async def update_board(
+        self, token: str, board_slug: str, data: BoardUpdate
+    ) -> BoardResponse:
+        mod = await self.mod_service.resolve_mod(token)
+        self._require_admin(mod)
+        board = await self.board_service.update_board(board_slug, data)
+        return BoardResponse.model_validate(board)
+
+    async def reorder_boards(self, token: str, data: BoardReorder) -> list[BoardResponse]:
+        mod = await self.mod_service.resolve_mod(token)
+        self._require_admin(mod)
+        boards = await self.board_service.reorder_boards(data.slugs)
+        return [BoardResponse.model_validate(board) for board in boards]
 
     async def delete_post(self, token: str, board_slug: str, post_number: int) -> None:
         mod = await self.mod_service.resolve_mod(token)

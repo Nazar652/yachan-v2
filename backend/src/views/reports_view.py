@@ -7,8 +7,8 @@ from src.services.report_service import ReportService
 from src.views.dependencies import client_ip_hash
 
 
-@inject
 class ReportsView:
+    @inject
     def __init__(self, report_service: ReportService, settings: Settings) -> None:
         self.report_service = report_service
         self.settings = settings

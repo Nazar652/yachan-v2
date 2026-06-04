@@ -4,8 +4,8 @@ from src.schemas.captcha import CaptchaChallengeResponse
 from src.services.captcha_service import CaptchaService
 
 
-@inject
 class CaptchaView:
+    @inject
     def __init__(self, captcha_service: CaptchaService) -> None:
         self.captcha_service = captcha_service
 

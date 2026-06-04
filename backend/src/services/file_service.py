@@ -22,8 +22,8 @@ _EXTENSIONS: dict[str, tuple[MediaType, str]] = {
 }
 
 
-@inject
 class FileService:
+    @inject
     def __init__(self, attachment_repo: AttachmentRepository, storage: LocalStorage) -> None:
         self.attachment_repo = attachment_repo
         self.storage = storage

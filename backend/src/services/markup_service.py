@@ -3,8 +3,8 @@ from kink import inject
 from src.utils.markup import MarkupRenderer, extract_post_refs
 
 
-@inject
 class MarkupService:
+    @inject
     def __init__(self, renderer: MarkupRenderer) -> None:
         self.renderer = renderer
 

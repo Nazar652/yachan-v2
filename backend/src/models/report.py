@@ -1,12 +1,11 @@
-from datetime import datetime
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-from src.utils.clock import utcnow
+from src.models.timestamp_mixin import TimestampMixin
 
 
-class Report(SQLModel, table=True):
+class Report(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "report"
 
     id: int = Field(default=None, primary_key=True)
@@ -16,4 +15,3 @@ class Report(SQLModel, table=True):
     ip_hash: str = Field(max_length=64)  # reporter ip, never exposed
     is_resolved: bool = Field(default=False)
     resolved_by: int | None = Field(default=None, foreign_key="mod_account.id")
-    created_at: datetime = Field(default_factory=utcnow)

@@ -9,8 +9,8 @@ from src.utils import captcha
 CAPTCHA_TTL_SECONDS = 300
 
 
-@inject
 class CaptchaService:
+    @inject
     def __init__(self, redis: Redis) -> None:
         self.redis = redis
 

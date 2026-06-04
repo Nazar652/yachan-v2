@@ -12,6 +12,7 @@ def board_ns(**overrides):
         description=None,
         bump_limit=300,
         is_active=True,
+        position=0,
         created_at=_NOW,
     )
     data.update(overrides)

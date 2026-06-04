@@ -9,8 +9,8 @@ from src.utils.sequences import post_number_sequence_name
 from .base import BaseRepository
 
 
-@inject
 class BoardRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 
@@ -23,10 +23,18 @@ class BoardRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def list_all(self) -> list[Board]:
-        result = await self.session.execute(select(Board).order_by(col(Board.slug).asc()))
+        result = await self.session.execute(
+            select(Board).order_by(col(Board.position).asc(), col(Board.slug).asc())
+        )
         return list(result.scalars().all())
 
     async def create(self, board: Board) -> Board:
+        self.session.add(board)
+        await self.session.flush()
+        await self.session.refresh(board)
+        return board
+
+    async def update(self, board: Board) -> Board:
         self.session.add(board)
         await self.session.flush()
         await self.session.refresh(board)

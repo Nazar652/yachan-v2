@@ -24,6 +24,8 @@ dependencies = [
     "python-multipart (>=0.0.29,<0.0.30)",
 ]
 
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.0"
@@ -32,9 +34,6 @@ prek = "^0.3.8"
 pyright = "^1.1.409"
 ruff = "^0.15.14"
 pytest-asyncio = "^1.4.0"
-
-[tool.poetry]
-package-mode = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

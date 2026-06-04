@@ -2,8 +2,8 @@ from kink import inject
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-@inject
 class BaseRepository:
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         self.session = session  # shared with all repos in the same request
 

@@ -8,8 +8,8 @@ from src.models.post_edit import PostEdit
 from .base import BaseRepository
 
 
-@inject
 class PostEditRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

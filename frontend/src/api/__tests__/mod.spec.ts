@@ -9,15 +9,20 @@ import {
   setThreadLocked,
   setThreadSticky,
   banPoster,
+  createBoard,
+  updateBoard,
+  reorderBoards,
 } from '@/api/mod'
 
 vi.mock('@/api/client', () => ({
-  apiClient: { GET: vi.fn(), POST: vi.fn(), DELETE: vi.fn() },
+  apiClient: { GET: vi.fn(), POST: vi.fn(), DELETE: vi.fn(), PATCH: vi.fn(), PUT: vi.fn() },
 }))
 
 const getMock = vi.mocked(apiClient.GET)
 const postMock = vi.mocked(apiClient.POST)
 const deleteMock = vi.mocked(apiClient.DELETE)
+const patchMock = vi.mocked(apiClient.PATCH)
+const putMock = vi.mocked(apiClient.PUT)
 
 describe('modLogin', () => {
   beforeEach(() => postMock.mockReset())
@@ -37,6 +42,70 @@ describe('modLogin', () => {
     postMock.mockResolvedValue({ data: undefined, error })
 
     await expect(modLogin('admin', 'wrong')).rejects.toBe(error)
+  })
+})
+
+describe('createBoard', () => {
+  beforeEach(() => postMock.mockReset())
+
+  it('creates a board and returns it', async () => {
+    const board = { id: 1, slug: 'b', title: 'Random', description: null, bump_limit: 300, is_active: true, created_at: '' }
+    postMock.mockResolvedValue({ data: board, error: undefined })
+
+    const payload = { slug: 'b', title: 'Random', bump_limit: 300 }
+    await expect(createBoard(payload)).resolves.toBe(board)
+    expect(postMock).toHaveBeenCalledWith('/api/mod/boards', { body: payload })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'admin privileges required' }
+    postMock.mockResolvedValue({ data: undefined, error })
+
+    await expect(createBoard({ slug: 'b', title: 'x', bump_limit: 300 })).rejects.toBe(error)
+  })
+})
+
+describe('updateBoard', () => {
+  beforeEach(() => patchMock.mockReset())
+
+  it('updates a board and returns it', async () => {
+    const board = { id: 1, slug: 'b', title: 'New', description: null, bump_limit: 300, is_active: false, created_at: '' }
+    patchMock.mockResolvedValue({ data: board, error: undefined } as never)
+
+    await expect(updateBoard('b', { title: 'New', is_active: false })).resolves.toBe(board)
+    expect(patchMock).toHaveBeenCalledWith('/api/mod/boards/{board_slug}', {
+      params: { path: { board_slug: 'b' } },
+      body: { title: 'New', is_active: false },
+    })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'not found' }
+    patchMock.mockResolvedValue({ data: undefined, error } as never)
+
+    await expect(updateBoard('b', { title: 'x' })).rejects.toBe(error)
+  })
+})
+
+describe('reorderBoards', () => {
+  beforeEach(() => putMock.mockReset())
+
+  it('reorders boards and returns the new order', async () => {
+    const boards = [
+      { id: 2, slug: 'g', title: 'Games', description: null, bump_limit: 300, is_active: true, position: 0, created_at: '' },
+      { id: 1, slug: 'b', title: 'Random', description: null, bump_limit: 300, is_active: true, position: 1, created_at: '' },
+    ]
+    putMock.mockResolvedValue({ data: boards, error: undefined } as never)
+
+    await expect(reorderBoards(['g', 'b'])).resolves.toBe(boards)
+    expect(putMock).toHaveBeenCalledWith('/api/mod/boards/order', { body: { slugs: ['g', 'b'] } })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'admin privileges required' }
+    putMock.mockResolvedValue({ data: undefined, error } as never)
+
+    await expect(reorderBoards(['g', 'b'])).rejects.toBe(error)
   })
 })
 

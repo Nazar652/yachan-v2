@@ -28,8 +28,8 @@ from src.utils.auth import (
 )
 
 
-@inject
 class ModService:
+    @inject
     def __init__(
         self,
         mod_account_repo: ModAccountRepository,
@@ -55,13 +55,13 @@ class ModService:
             ModAccount(username=username, password_hash=hash_password(password), role=role)
         )
 
-    async def authenticate(self, username: str, password: str) -> str:
+    async def authenticate(self, username: str, password: str) -> tuple[str, ModRole]:
         account = await self.mod_account_repo.get_by_username(username)
         if account is None or not verify_password(password, account.password_hash):
             raise InvalidCredentialsError()
         if not account.is_active:
             raise ModInactiveError()
-        return create_access_token(str(account.id), self.settings)
+        return create_access_token(str(account.id), self.settings), account.role
 
     async def resolve_mod(self, token: str) -> ModAccount:
         try:

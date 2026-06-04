@@ -8,8 +8,8 @@ from src.repositories.report_repo import ReportRepository
 from src.schemas.report import ReportCreate
 
 
-@inject
 class ReportService:
+    @inject
     def __init__(
         self,
         report_repo: ReportRepository,

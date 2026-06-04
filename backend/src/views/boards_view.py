@@ -4,8 +4,8 @@ from src.schemas.board import BoardResponse
 from src.services.board_service import BoardService
 
 
-@inject
 class BoardsView:
+    @inject
     def __init__(self, board_service: BoardService) -> None:
         self.board_service = board_service
 

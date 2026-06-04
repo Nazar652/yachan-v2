@@ -8,8 +8,8 @@ from src.models.post_backlink import PostBacklink
 from .base import BaseRepository
 
 
-@inject
 class PostBacklinkRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

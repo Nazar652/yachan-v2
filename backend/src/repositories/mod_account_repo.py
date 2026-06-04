@@ -8,8 +8,8 @@ from src.models.mod_account import ModAccount
 from .base import BaseRepository
 
 
-@inject
 class ModAccountRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

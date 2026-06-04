@@ -8,8 +8,8 @@ from src.models.report import Report
 from .base import BaseRepository
 
 
-@inject
 class ReportRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 

@@ -30,7 +30,7 @@ function runOnRequest(request: ReturnType<typeof fakeRequest>) {
 
 describe('authMiddleware', () => {
   it('adds a bearer authorization header when a token is present', () => {
-    useAuthStore().login('jwt-xyz')
+    useAuthStore().login('jwt-xyz', 'admin')
     const request = fakeRequest()
     runOnRequest(request)
     expect(request.headers.get('Authorization')).toBe('Bearer jwt-xyz')

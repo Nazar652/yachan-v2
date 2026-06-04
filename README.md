@@ -89,7 +89,7 @@ Run the pieces natively for a fast inner loop — see the per-area guides:
 Lint everything from the repo root:
 
 ```bash
-make lint        # ruff + pyright + pytest + frontend lint
+make lint-all        # ruff + pyright + pytest + frontend lint
 ```
 
 ## Contributing / AI agents

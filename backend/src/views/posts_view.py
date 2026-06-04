@@ -19,8 +19,8 @@ REPLY_RATE_LIMIT = 10
 REPLY_RATE_WINDOW = 60
 
 
-@inject
 class PostsView:
+    @inject
     def __init__(
         self,
         post_service: PostService,

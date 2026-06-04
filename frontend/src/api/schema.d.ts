@@ -192,6 +192,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mod/boards/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reorder Boards */
+        put: operations["reorder_boards_api_mod_boards_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mod/boards/{board_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Board */
+        patch: operations["update_board_api_mod_boards__board_slug__patch"];
+        trace?: never;
+    };
     "/api/mod/{board_slug}/posts/{post_number}": {
         parameters: {
             query?: never;
@@ -363,6 +397,11 @@ export interface components {
              */
             bump_limit: number;
         };
+        /** BoardReorder */
+        BoardReorder: {
+            /** Slugs */
+            slugs: string[];
+        };
         /** BoardResponse */
         BoardResponse: {
             /** Id */
@@ -377,29 +416,60 @@ export interface components {
             bump_limit: number;
             /** Is Active */
             is_active: boolean;
+            /** Position */
+            position: number;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
         };
+        /** BoardUpdate */
+        BoardUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Bump Limit */
+            bump_limit?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** Body_create_reply_api__board_slug__threads__thread_id__posts_post */
         Body_create_reply_api__board_slug__threads__thread_id__posts_post: {
-            data: components["schemas"]["PostCreate"];
             /**
              * Files
              * @default []
              */
             files: string[];
+            /** Name */
+            name?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Sage
+             * @default false
+             */
+            sage: boolean;
         };
         /** Body_create_thread_api__board_slug__threads_post */
         Body_create_thread_api__board_slug__threads_post: {
-            data: components["schemas"]["ThreadCreate"];
             /**
              * Files
              * @default []
              */
             files: string[];
+            /** Title */
+            title?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Sage
+             * @default false
+             */
+            sage: boolean;
         };
         /** CaptchaChallengeResponse */
         CaptchaChallengeResponse: {
@@ -425,18 +495,11 @@ export interface components {
             /** Password */
             password: string;
         };
-        /** PostCreate */
-        PostCreate: {
-            /** Name */
-            name?: string | null;
-            /** Body */
-            body?: string | null;
-            /**
-             * Sage
-             * @default false
-             */
-            sage: boolean;
-        };
+        /**
+         * ModRole
+         * @enum {string}
+         */
+        ModRole: "admin" | "moderator";
         /** PostEditCreate */
         PostEditCreate: {
             /** New Body */
@@ -513,20 +576,6 @@ export interface components {
              */
             created_at: string;
         };
-        /** ThreadCreate */
-        ThreadCreate: {
-            /** Title */
-            title?: string | null;
-            /** Name */
-            name?: string | null;
-            /** Body */
-            body?: string | null;
-            /**
-             * Sage
-             * @default false
-             */
-            sage: boolean;
-        };
         /** ThreadDetailResponse */
         ThreadDetailResponse: {
             /** Id */
@@ -588,6 +637,7 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+            role: components["schemas"]["ModRole"];
         };
         /** ValidationError */
         ValidationError: {
@@ -708,7 +758,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_thread_api__board_slug__threads_post"];
             };
@@ -779,7 +829,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_reply_api__board_slug__threads__thread_id__posts_post"];
             };
@@ -979,6 +1029,78 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_boards_api_mod_boards_order_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardReorder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_board_api_mod_boards__board_slug__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                board_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

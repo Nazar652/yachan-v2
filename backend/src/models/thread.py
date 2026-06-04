@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
+from src.models.timestamp_mixin import TimestampMixin
 from src.utils.clock import utcnow
 
 
-class Thread(SQLModel, table=True):
+class Thread(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "thread"
 
     id: int = Field(default=None, primary_key=True)
@@ -16,4 +17,3 @@ class Thread(SQLModel, table=True):
     is_sticky: bool = Field(default=False)
     reply_count: int = Field(default=0)
     bump_at: datetime = Field(default_factory=utcnow, index=True)
-    created_at: datetime = Field(default_factory=utcnow)

@@ -8,8 +8,8 @@ from src.models.attachment import Attachment
 from .base import BaseRepository
 
 
-@inject
 class AttachmentRepository(BaseRepository):
+    @inject
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session)
 
