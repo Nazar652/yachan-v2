@@ -1691,6 +1691,38 @@
         ],
         "title": "ModRole"
       },
+      "OpPostPreview": {
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "body",
+          "thumbnail_url"
+        ],
+        "title": "OpPostPreview"
+      },
       "PostEditCreate": {
         "properties": {
           "new_body": {
@@ -1976,6 +2008,16 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "op_post": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpPostPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "posts": {
             "items": {
               "$ref": "#/components/schemas/PostResponse"
@@ -2039,6 +2081,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "op_post": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpPostPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

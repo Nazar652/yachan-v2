@@ -1,9 +1,9 @@
 from kink import inject
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from src.models.attachment import Attachment
+from src.models.attachment import Attachment, MediaType
 
 from .base import BaseRepository
 
@@ -24,6 +24,23 @@ class AttachmentRepository(BaseRepository):
             select(Attachment).where(col(Attachment.md5) == md5)
         )
         return result.scalar_one_or_none()
+
+    async def get_first_images_by_post_ids(self, post_ids: list[int]) -> dict[int, Attachment]:
+        if not post_ids:
+            return {}
+        subquery = (
+            select(func.min(col(Attachment.id)))
+            .where(
+                col(Attachment.post_id).in_(post_ids),
+                col(Attachment.media_type) == MediaType.IMAGE,
+            )
+            .group_by(col(Attachment.post_id))
+            .scalar_subquery()
+        )
+        result = await self.session.execute(
+            select(Attachment).where(col(Attachment.id).in_(subquery))
+        )
+        return {att.post_id: att for att in result.scalars().all()}
 
     async def list_by_post(self, post_id: int) -> list[Attachment]:
         result = await self.session.execute(

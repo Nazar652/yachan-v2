@@ -26,6 +26,28 @@ async def test_get_by_board_and_number(session, make_result):
     session.execute.assert_awaited_once()
 
 
+async def test_get_op_posts_by_thread_ids_returns_dict(session, make_result):
+    from types import SimpleNamespace
+
+    post = SimpleNamespace(thread_id=5)
+    session.execute.return_value = make_result(all_=[post])
+    repo = PostRepository(session=session)
+
+    result = await repo.get_op_posts_by_thread_ids([5])
+
+    assert result == {5: post}
+    session.execute.assert_awaited_once()
+
+
+async def test_get_op_posts_by_thread_ids_empty_input(session):
+    repo = PostRepository(session=session)
+
+    result = await repo.get_op_posts_by_thread_ids([])
+
+    assert result == {}
+    session.execute.assert_not_awaited()
+
+
 async def test_get_thread_posts_returns_list(session, make_result):
     posts = [object(), object()]
     session.execute.return_value = make_result(all_=posts)

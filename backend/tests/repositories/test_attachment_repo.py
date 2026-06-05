@@ -17,6 +17,28 @@ async def test_get_by_md5(session, make_result):
     assert await repo.get_by_md5("d41d8cd98f00b204e9800998ecf8427e") is attachment
 
 
+async def test_get_first_images_by_post_ids_returns_dict(session, make_result):
+    from types import SimpleNamespace
+
+    att = SimpleNamespace(post_id=10)
+    session.execute.return_value = make_result(all_=[att])
+    repo = AttachmentRepository(session=session)
+
+    result = await repo.get_first_images_by_post_ids([10])
+
+    assert result == {10: att}
+    session.execute.assert_awaited_once()
+
+
+async def test_get_first_images_by_post_ids_empty_input(session):
+    repo = AttachmentRepository(session=session)
+
+    result = await repo.get_first_images_by_post_ids([])
+
+    assert result == {}
+    session.execute.assert_not_awaited()
+
+
 async def test_list_by_post(session, make_result):
     attachments = [object()]
     session.execute.return_value = make_result(all_=attachments)

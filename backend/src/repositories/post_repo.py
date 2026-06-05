@@ -28,6 +28,18 @@ class PostRepository(BaseRepository):
         )
         return result.scalar_one_or_none()
 
+    async def get_op_posts_by_thread_ids(self, thread_ids: list[int]) -> dict[int, Post]:
+        if not thread_ids:
+            return {}
+        result = await self.session.execute(
+            select(Post).where(
+                col(Post.thread_id).in_(thread_ids),
+                col(Post.is_op).is_(True),
+                col(Post.deleted).is_(False),
+            )
+        )
+        return {post.thread_id: post for post in result.scalars().all()}
+
     async def get_thread_posts(self, thread_id: int) -> list[Post]:
         result = await self.session.execute(
             select(Post)

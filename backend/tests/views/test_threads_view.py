@@ -18,7 +18,9 @@ from tests.views._factories import (
 
 def build(*, allowed=True):
     thread_service = MagicMock()
-    thread_service.list_threads = AsyncMock(return_value=[thread_ns()])
+    thread_service.list_threads = AsyncMock(
+        return_value=[(thread_ns(), post_ns(id=10, is_op=True, thread_id=5), attachment_ns(thumbnail_path="t.jpg"))]
+    )
     thread_service.get_thread_detail = AsyncMock(
         return_value=(thread_ns(), [post_ns(id=10)], {10: [attachment_ns()]})
     )
@@ -55,6 +57,9 @@ async def test_list_threads_maps_responses():
     view, _ = build()
     result = await view.list_threads("b")
     assert all(isinstance(item, ThreadResponse) for item in result)
+    assert result[0].op_post is not None
+    assert result[0].op_post.body == "hi"
+    assert result[0].op_post.thumbnail_url == "/media/t.jpg"
 
 
 async def test_get_thread_includes_posts_with_attachments():

@@ -500,6 +500,13 @@ export interface components {
          * @enum {string}
          */
         ModRole: "admin" | "moderator";
+        /** OpPostPreview */
+        OpPostPreview: {
+            /** Body */
+            body: string | null;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+        };
         /** PostEditCreate */
         PostEditCreate: {
             /** New Body */
@@ -600,6 +607,7 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            op_post?: components["schemas"]["OpPostPreview"] | null;
             /** Posts */
             posts?: components["schemas"]["PostResponse"][];
         };
@@ -627,6 +635,7 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            op_post?: components["schemas"]["OpPostPreview"] | null;
         };
         /** TokenResponse */
         TokenResponse: {

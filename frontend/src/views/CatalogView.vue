@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 
+import { useBoards } from '@/composables/useBoards'
 import { useThreads } from '@/composables/useThreads'
 import { useBoardWs } from '@/composables/useBoardWs'
 import { useCatalogModeration } from '@/composables/useCatalogModeration'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseCard from '@/components/ui/BaseCard.vue'
 import type { ThreadResponse } from '@/api/types'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
+const { data: boards } = useBoards()
 const { data: threads, isPending, isError } = useThreads(slug)
 
-// stream live new_thread events into the catalog cache
 useBoardWs(slug)
 
 const auth = useAuthStore()
 const moderation = useCatalogModeration(slug)
+
+const board = computed(() => boards.value?.find((b) => b.slug === slug.value))
 
 async function onToggleLock(thread: ThreadResponse) {
   await moderation.setLocked(thread.id, !thread.is_locked)
@@ -28,14 +30,29 @@ async function onToggleLock(thread: ThreadResponse) {
 async function onToggleSticky(thread: ThreadResponse) {
   await moderation.setSticky(thread.id, !thread.is_sticky)
 }
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString()
+}
+
+function bodyPreview(body: string | null | undefined, maxLen = 120): string {
+  if (!body) return ''
+  return body.length > maxLen ? body.slice(0, maxLen) + '…' : body
+}
 </script>
 
 <template>
   <section>
-    <div class="flex items-center justify-between gap-4 mb-4">
-      <h1 class="text-xl font-bold">
-        <span class="font-mono text-accent">/{{ slug }}/</span>
-      </h1>
+    <!-- board header -->
+    <div class="mb-4 rounded-card border border-border bg-surface p-4">
+      <h1 class="text-xl font-bold text-accent">/{{ slug }}/</h1>
+      <p v-if="board?.description" class="mt-1 text-sm text-text-muted">
+        {{ board.description }}
+      </p>
+    </div>
+
+    <!-- new thread form -->
+    <div class="mb-6 flex justify-end">
       <RouterLink :to="`/${slug}/new`">
         <BaseButton variant="primary" size="sm">+ New thread</BaseButton>
       </RouterLink>
@@ -45,36 +62,65 @@ async function onToggleSticky(thread: ThreadResponse) {
     <p v-else-if="isError" class="mt-2 text-danger">Failed to load threads.</p>
     <p v-else-if="!threads?.length" class="mt-4 text-text-muted">No threads yet.</p>
 
-    <ul v-else class="mt-4 space-y-3">
+    <ul v-else class="space-y-4">
       <li v-for="thread in threads" :key="thread.id">
-        <RouterLink :to="`/${slug}/thread/${thread.id}`" class="block">
-          <BaseCard :interactive="true">
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <span v-if="thread.is_sticky" title="Sticky" class="text-accent">📌</span>
-                <span v-if="thread.is_locked" title="Locked" class="text-text-muted">🔒</span>
-                <span class="font-medium">
-                  {{ thread.title ?? '(no title)' }}
+        <div class="rounded-card border border-border bg-surface overflow-hidden">
+          <RouterLink :to="`/${slug}/thread/${thread.id}`" class="block hover:bg-surface-2 transition-colors">
+            <div class="flex gap-4 p-3">
+              <!-- thumbnail -->
+              <div class="shrink-0">
+                <img
+                  v-if="thread.op_post?.thumbnail_url"
+                  :src="thread.op_post.thumbnail_url"
+                  alt=""
+                  class="h-24 w-24 object-cover rounded border border-border"
+                />
+                <div
+                  v-else
+                  class="h-24 w-24 rounded border border-border bg-surface-2 flex items-center justify-center text-text-muted text-xs"
+                >
+                  no img
+                </div>
+              </div>
+
+              <!-- thread info -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start gap-2 mb-1">
+                  <span v-if="thread.is_sticky" title="Sticky">📌</span>
+                  <span v-if="thread.is_locked" title="Locked">🔒</span>
+                  <span class="font-semibold text-accent truncate">
+                    {{ thread.title ?? '(no title)' }}
+                  </span>
+                  <span class="ml-auto shrink-0 text-xs text-text-muted">
+                    {{ formatDate(thread.created_at) }}
+                  </span>
+                </div>
+                <p class="text-sm text-text-muted line-clamp-2">
+                  {{ bodyPreview(thread.op_post?.body) }}
+                </p>
+              </div>
+
+              <!-- replies count -->
+              <div class="shrink-0 self-start text-right">
+                <span class="text-sm text-text-muted">
+                  {{ thread.reply_count }}
+                  {{ thread.reply_count === 1 ? 'reply' : 'replies' }}
                 </span>
               </div>
-              <span class="shrink-0 text-sm text-text-muted">
-                {{ thread.reply_count }} {{ thread.reply_count === 1 ? 'reply' : 'replies' }}
-              </span>
             </div>
-          </BaseCard>
-        </RouterLink>
+          </RouterLink>
 
-        <!-- mod controls live outside the link so a click does not navigate -->
-        <div v-if="auth.isAuthenticated" class="mt-1 flex gap-2">
-          <BaseButton variant="ghost" size="sm" @click="onToggleLock(thread)">
-            {{ thread.is_locked ? 'Unlock' : 'Lock' }}
-          </BaseButton>
-          <BaseButton variant="ghost" size="sm" @click="onToggleSticky(thread)">
-            {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
-          </BaseButton>
+          <!-- mod controls outside the link -->
+          <div v-if="auth.isAuthenticated" class="flex gap-2 border-t border-border px-3 py-1">
+            <BaseButton variant="ghost" size="sm" @click="onToggleLock(thread)">
+              {{ thread.is_locked ? 'Unlock' : 'Lock' }}
+            </BaseButton>
+            <BaseButton variant="ghost" size="sm" @click="onToggleSticky(thread)">
+              {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
+            </BaseButton>
+          </div>
         </div>
       </li>
     </ul>
   </section>
 </template>
-

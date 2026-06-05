@@ -17,6 +17,8 @@ from src.services.ban_service import BanService
 from src.services.markup_service import MarkupService
 from src.utils.names import parse_name
 
+ThreadWithPreview = tuple[Thread, Post | None, Attachment | None]
+
 
 class ThreadService:
     @inject
@@ -87,9 +89,21 @@ class ThreadService:
 
     async def list_threads(
         self, board_slug: str, limit: int = 50, offset: int = 0
-    ) -> list[Thread]:
+    ) -> list[ThreadWithPreview]:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
 
-        return await self.thread_repo.list_by_board(board.id, limit, offset)
+        threads = await self.thread_repo.list_by_board(board.id, limit, offset)
+        thread_ids = [t.id for t in threads]
+
+        op_posts = await self.post_repo.get_op_posts_by_thread_ids(thread_ids)
+        op_post_ids = [p.id for p in op_posts.values()]
+        first_images = await self.attachment_repo.get_first_images_by_post_ids(op_post_ids)
+
+        result: list[ThreadWithPreview] = []
+        for thread in threads:
+            op_post = op_posts.get(thread.id)
+            first_image = first_images.get(op_post.id) if op_post else None
+            result.append((thread, op_post, first_image))
+        return result

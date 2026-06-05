@@ -28,8 +28,10 @@ def build(*, board=_UNSET):
     post_repo.next_post_number = AsyncMock(return_value=1)
     post_repo.create = AsyncMock(return_value=op_post)
     post_repo.get_thread_posts = AsyncMock(return_value=[op_post])
+    post_repo.get_op_posts_by_thread_ids = AsyncMock(return_value={thread_obj.id: op_post})
     attachment_repo = MagicMock()
     attachment_repo.list_by_post = AsyncMock(return_value=[])
+    attachment_repo.get_first_images_by_post_ids = AsyncMock(return_value={})
     markup = MagicMock()
     markup.render = MagicMock(return_value="<p>x</p>")
     ban_service = MagicMock()
@@ -100,6 +102,22 @@ async def test_get_thread_detail_wrong_board():
     mocks.thread_repo.get_by_id = AsyncMock(return_value=SimpleNamespace(id=5, board_id=999))
     with pytest.raises(ThreadNotFoundError):
         await service.get_thread_detail("b", 5)
+
+
+async def test_list_threads_returns_tuples_with_preview():
+    service, mocks = build()
+    mocks.thread_repo.list_by_board = AsyncMock(return_value=[mocks.thread])
+
+    result = await service.list_threads("b")
+
+    assert len(result) == 1
+    thread, op_post, first_image = result[0]
+    assert thread is mocks.thread
+    assert op_post is mocks.op_post
+    # no image attachment in default mock
+    assert first_image is None
+    mocks.post_repo.get_op_posts_by_thread_ids.assert_awaited_once_with([mocks.thread.id])
+    mocks.attachment_repo.get_first_images_by_post_ids.assert_awaited_once()
 
 
 async def test_list_threads_unknown_board():
