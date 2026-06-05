@@ -40,6 +40,40 @@ class PostRepository(BaseRepository):
         )
         return {post.thread_id: post for post in result.scalars().all()}
 
+    async def get_last_replies_by_thread_ids(
+        self, thread_ids: list[int], limit_per_thread: int = 4
+    ) -> dict[int, list[Post]]:
+        if not thread_ids:
+            return {}
+
+        row_number = func.row_number().over(
+            partition_by=col(Post.thread_id),
+            order_by=col(Post.created_at).desc(),
+        ).label("rn")
+
+        ranked_cte = (
+            select(col(Post.id), col(Post.thread_id), row_number)
+            .where(
+                col(Post.thread_id).in_(thread_ids),
+                col(Post.is_op).is_(False),
+                col(Post.deleted).is_(False),
+            )
+            .cte("ranked_replies")
+        )
+
+        result = await self.session.execute(
+            select(Post)
+            .join(ranked_cte, col(Post.id) == ranked_cte.c.id)
+            .where(ranked_cte.c.rn <= limit_per_thread)
+            .order_by(col(Post.thread_id), col(Post.created_at))
+        )
+
+        replies: dict[int, list[Post]] = {}
+        for post in result.scalars().all():
+            replies.setdefault(post.thread_id, []).append(post)
+
+        return replies
+
     async def get_thread_posts(self, thread_id: int) -> list[Post]:
         result = await self.session.execute(
             select(Post)

@@ -17,7 +17,7 @@ from src.services.ban_service import BanService
 from src.services.markup_service import MarkupService
 from src.utils.names import parse_name
 
-ThreadWithPreview = tuple[Thread, Post | None, Attachment | None]
+ThreadWithPreview = tuple[Thread, Post | None, Attachment | None, list[Post]]
 
 
 class ThreadService:
@@ -100,10 +100,12 @@ class ThreadService:
         op_posts = await self.post_repo.get_op_posts_by_thread_ids(thread_ids)
         op_post_ids = [p.id for p in op_posts.values()]
         first_images = await self.attachment_repo.get_first_images_by_post_ids(op_post_ids)
+        last_replies = await self.post_repo.get_last_replies_by_thread_ids(thread_ids)
 
         result: list[ThreadWithPreview] = []
         for thread in threads:
             op_post = op_posts.get(thread.id)
             first_image = first_images.get(op_post.id) if op_post else None
-            result.append((thread, op_post, first_image))
+            replies = last_replies.get(thread.id, [])
+            result.append((thread, op_post, first_image, replies))
         return result

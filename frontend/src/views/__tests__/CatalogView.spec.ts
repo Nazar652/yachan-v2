@@ -110,6 +110,7 @@ describe('CatalogView', () => {
           id: 5, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
           reply_count: 0, bump_at: '', created_at: '',
           op_post: { body: 'hello preview', thumbnail_url: null },
+          last_replies: [],
         },
       ]),
       isPending: ref(false),
@@ -117,6 +118,40 @@ describe('CatalogView', () => {
     })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('hello preview')
+  })
+
+  it('shows "Nobody posted anything yet" when last_replies is empty', () => {
+    stubThreads({
+      data: ref([
+        { id: 7, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 0, bump_at: '', created_at: '', last_replies: [] },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Nobody posted anything yet')
+  })
+
+  it('renders last replies with body and id', () => {
+    stubThreads({
+      data: ref([
+        {
+          id: 8, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 2, bump_at: '', created_at: '',
+          last_replies: [
+            { id: 100, body: 'first reply', created_at: '2024-01-01T00:00:00' },
+            { id: 101, body: 'second reply', created_at: '2024-01-02T00:00:00' },
+          ],
+        },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('first reply')
+    expect(wrapper.text()).toContain('second reply')
+    expect(wrapper.text()).toContain('№100')
   })
 
   it('shows sticky and locked icons', () => {

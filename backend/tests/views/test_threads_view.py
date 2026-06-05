@@ -1,3 +1,4 @@
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,10 +17,17 @@ from tests.views._factories import (
 )
 
 
-def build(*, allowed=True):
+def build(*, allowed=True, replies=None):
     thread_service = MagicMock()
     thread_service.list_threads = AsyncMock(
-        return_value=[(thread_ns(), post_ns(id=10, is_op=True, thread_id=5), attachment_ns(thumbnail_path="t.jpg"))]
+        return_value=[
+            (
+                thread_ns(),
+                post_ns(id=10, is_op=True, thread_id=5),
+                attachment_ns(thumbnail_path="t.jpg"),
+                replies if replies is not None else [],
+            )
+        ]
     )
     thread_service.get_thread_detail = AsyncMock(
         return_value=(thread_ns(), [post_ns(id=10)], {10: [attachment_ns()]})
@@ -60,6 +68,16 @@ async def test_list_threads_maps_responses():
     assert result[0].op_post is not None
     assert result[0].op_post.body == "hi"
     assert result[0].op_post.thumbnail_url == "/media/t.jpg"
+    assert result[0].last_replies == []
+
+
+async def test_list_threads_maps_last_replies():
+    reply = post_ns(id=77, body="reply body", created_at=datetime(2024, 6, 1))
+    view, _ = build(replies=[reply])
+    result = await view.list_threads("b")
+    assert len(result[0].last_replies) == 1
+    assert result[0].last_replies[0].id == 77
+    assert result[0].last_replies[0].body == "reply body"
 
 
 async def test_get_thread_includes_posts_with_attachments():

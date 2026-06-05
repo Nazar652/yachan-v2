@@ -560,6 +560,18 @@ export interface components {
             /** Attachments */
             attachments?: components["schemas"]["AttachmentResponse"][];
         };
+        /** ReplyPreview */
+        ReplyPreview: {
+            /** Id */
+            id: number;
+            /** Body */
+            body: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** ReportCreate */
         ReportCreate: {
             /** Reason */
@@ -608,6 +620,8 @@ export interface components {
              */
             created_at: string;
             op_post?: components["schemas"]["OpPostPreview"] | null;
+            /** Last Replies */
+            last_replies?: components["schemas"]["ReplyPreview"][];
             /** Posts */
             posts?: components["schemas"]["PostResponse"][];
         };
@@ -636,6 +650,8 @@ export interface components {
              */
             created_at: string;
             op_post?: components["schemas"]["OpPostPreview"] | null;
+            /** Last Replies */
+            last_replies?: components["schemas"]["ReplyPreview"][];
         };
         /** TokenResponse */
         TokenResponse: {

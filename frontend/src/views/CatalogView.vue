@@ -8,7 +8,7 @@ import { useBoardWs } from '@/composables/useBoardWs'
 import { useCatalogModeration } from '@/composables/useCatalogModeration'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import type { ThreadResponse } from '@/api/types'
+import type { ReplyPreview, ThreadResponse } from '@/api/types'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -38,6 +38,15 @@ function formatDate(iso: string): string {
 function bodyPreview(body: string | null | undefined, maxLen = 120): string {
   if (!body) return ''
   return body.length > maxLen ? body.slice(0, maxLen) + '…' : body
+}
+
+function replyPreview(body: string | null | undefined, maxLen = 80): string {
+  if (!body) return ''
+  return body.length > maxLen ? body.slice(0, maxLen) + '…' : body
+}
+
+function formatReplyDate(reply: ReplyPreview): string {
+  return new Date(reply.created_at).toLocaleString()
 }
 </script>
 
@@ -109,6 +118,28 @@ function bodyPreview(body: string | null | undefined, maxLen = 120): string {
               </div>
             </div>
           </RouterLink>
+
+          <!-- latest replies -->
+          <div class="border-t border-border px-3 py-2">
+            <p class="mb-1 text-xs font-semibold text-text-muted">Latest posts:</p>
+            <p
+              v-if="!thread.last_replies?.length"
+              class="text-xs text-text-muted italic"
+            >
+              Nobody posted anything yet
+            </p>
+            <ul v-else class="space-y-0.5">
+              <li
+                v-for="reply in thread.last_replies"
+                :key="reply.id"
+                class="flex items-baseline gap-2 text-xs text-text-muted"
+              >
+                <span class="shrink-0 font-mono">№{{ reply.id }}</span>
+                <span class="min-w-0 flex-1 truncate">{{ replyPreview(reply.body) }}</span>
+                <span class="shrink-0">{{ formatReplyDate(reply) }}</span>
+              </li>
+            </ul>
+          </div>
 
           <!-- mod controls outside the link -->
           <div v-if="auth.isAuthenticated" class="flex gap-2 border-t border-border px-3 py-1">

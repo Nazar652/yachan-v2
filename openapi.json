@@ -1894,6 +1894,37 @@
         ],
         "title": "PostResponse"
       },
+      "ReplyPreview": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "body",
+          "created_at"
+        ],
+        "title": "ReplyPreview"
+      },
       "ReportCreate": {
         "properties": {
           "reason": {
@@ -2018,6 +2049,13 @@
               }
             ]
           },
+          "last_replies": {
+            "items": {
+              "$ref": "#/components/schemas/ReplyPreview"
+            },
+            "type": "array",
+            "title": "Last Replies"
+          },
           "posts": {
             "items": {
               "$ref": "#/components/schemas/PostResponse"
@@ -2091,6 +2129,13 @@
                 "type": "null"
               }
             ]
+          },
+          "last_replies": {
+            "items": {
+              "$ref": "#/components/schemas/ReplyPreview"
+            },
+            "type": "array",
+            "title": "Last Replies"
           }
         },
         "type": "object",

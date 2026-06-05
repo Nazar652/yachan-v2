@@ -5,7 +5,7 @@ from starlette.requests import Request
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
 from src.core.storage import Storage
-from src.schemas.thread import OpPostPreview, ThreadCreate, ThreadDetailResponse, ThreadResponse
+from src.schemas.thread import OpPostPreview, ReplyPreview, ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.thread_service import ThreadService
@@ -44,7 +44,7 @@ class ThreadsView:
     ) -> list[ThreadResponse]:
         thread_data = await self.thread_service.list_threads(board_slug, limit, offset)
         responses: list[ThreadResponse] = []
-        for thread, op_post, first_image in thread_data:
+        for thread, op_post, first_image, replies in thread_data:
             response = ThreadResponse.model_validate(thread)
             if op_post:
                 thumbnail_url = (
@@ -56,6 +56,10 @@ class ThreadsView:
                     body=op_post.body,
                     thumbnail_url=thumbnail_url,
                 )
+            response.last_replies = [
+                ReplyPreview(id=reply.id, body=reply.body, created_at=reply.created_at)
+                for reply in replies
+            ]
             responses.append(response)
         return responses
 
