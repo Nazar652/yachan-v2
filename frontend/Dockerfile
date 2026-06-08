@@ -8,6 +8,12 @@ WORKDIR /app
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+# error + performance monitoring, baked into the bundle at build time
+ARG VITE_SENTRY_DSN=""
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+ARG VITE_SENTRY_ENVIRONMENT="production"
+ENV VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
+
 # install deps first for layer caching; .npmrc carries legacy-peer-deps=true
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci
