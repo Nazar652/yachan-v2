@@ -82,6 +82,7 @@ function formatReplyDate(reply: ReplyPreview): string {
                   v-if="thread.op_post?.thumbnail_url"
                   :src="thread.op_post.thumbnail_url"
                   alt=""
+                  loading="lazy"
                   class="h-24 w-24 object-cover rounded border border-border"
                 />
                 <div
