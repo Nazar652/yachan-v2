@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # browser origins allowed to call the api, comma-separated
     cors_origins: str = "http://localhost:5173"
 
+    # error + performance monitoring; empty dsn disables the sdk entirely
+    sentry_dsn: str = ""
+    sentry_environment: str = "production"
+    sentry_traces_sample_rate: float = 1.0
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

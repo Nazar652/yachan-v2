@@ -167,6 +167,16 @@ WS routes are **not** in the OpenAPI schema, so `api/ws.ts` declares them by han
     flag on the matching item in the threads-list cache. Buttons sit **outside**
     the card's `RouterLink` so a click doesn't navigate.
 
+## Observability (Sentry)
+
+`src/sentry.ts` `initSentry(app, router)` (called in `main.ts` right after
+`createApp`, before mount) is a **no-op unless `VITE_SENTRY_DSN` is set**. The DSN
+is baked into the bundle at **build time** (Vite env), so prod passes it as a Docker
+build arg — `docker-compose.prod.yml` nginx `build.args`, fed by the
+`FRONTEND_SENTRY_DSN` secret. Captures Vue + global errors;
+`browserTracingIntegration` adds route/performance tracing
+(`tracesSampleRate: 1.0`).
+
 ## Test patterns (Vitest)
 
 - **API wrapper test:** `vi.mock('@/api/client', () => ({ apiClient: { GET: vi.fn(), ... } }))`,

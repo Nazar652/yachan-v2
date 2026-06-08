@@ -232,6 +232,18 @@ WS     /api/{slug}/ws                                 (not in OpenAPI)
   `utils/sequences.post_number_sequence_name(slug)`, which validates the slug
   because it is interpolated into raw DDL.
 
+## Observability (Sentry)
+
+`core/sentry.py` `init_sentry(settings)` is a **no-op unless `SENTRY_DSN` is set**,
+so local and test runs never touch Sentry. It is called **once per OS process**:
+`create_app()` (web), the `worker_process_init` signal (Celery worker) and
+`beat_init` (beat) — the prefork model forks *after* the parent starts, so each
+child must init its own client (init-before-fork breaks the transport). The
+FastAPI/Starlette, Celery and Redis integrations auto-enable. Every error carries a
+stacktrace automatically; tracing (`SENTRY_TRACES_SAMPLE_RATE`, default `1.0`) adds
+performance transactions/spans. PII stays off (Sentry default) — poster IPs are
+hashed and must never reach Sentry.
+
 ## Realtime (websocket)
 
 - `utils/events.py` — `EventPublisher` publishes JSON envelopes

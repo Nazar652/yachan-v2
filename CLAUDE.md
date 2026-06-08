@@ -136,6 +136,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
   Compose **v2.24+** on the server.
 - Secrets live in a server-side `.env` (template: `.env.prod.example`), injected by
   the platform — never committed.
+- **Sentry** (optional error + performance monitoring). Set GitHub Secrets
+  `BACKEND_SENTRY_DSN` / `FRONTEND_SENTRY_DSN`; the deploy workflow maps them to
+  `SENTRY_DSN` (backend env) and `VITE_SENTRY_DSN` (frontend Docker build arg).
+  Empty DSN disables the SDK, so local/test runs never report. See the backend and
+  frontend guides.
 
 `make openapi` dumps the backend OpenAPI schema and regenerates the frontend's
 `src/api/schema.d.ts` — run it after any backend schema change.

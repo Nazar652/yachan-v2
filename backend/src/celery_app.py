@@ -1,5 +1,5 @@
 from celery import Celery
-from celery.signals import worker_process_init
+from celery.signals import beat_init, worker_process_init
 
 from src.core.config import get_settings
 
@@ -28,5 +28,14 @@ celery.conf.update(
 @worker_process_init.connect
 def _setup_worker_di(**_kwargs) -> None:
     from src.bootstrap.container import setup_di
+    from src.core.sentry import init_sentry
 
     setup_di()
+    init_sentry(get_settings())
+
+
+@beat_init.connect
+def _setup_beat_sentry(**_kwargs) -> None:
+    from src.core.sentry import init_sentry
+
+    init_sentry(get_settings())

@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from src.bootstrap.container import setup_di
 from src.core.config import get_settings
+from src.core.sentry import init_sentry
 from src.core.exceptions import (
     BadRequestError,
     ConflictError,
@@ -19,6 +20,7 @@ from src.routers import boards, captcha, mod, posts, reports, threads, ws
 def create_app() -> FastAPI:
     setup_di()
     settings = get_settings()
+    init_sentry(settings)
 
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     # noinspection PyTypeChecker

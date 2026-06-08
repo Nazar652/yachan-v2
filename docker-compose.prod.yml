@@ -6,6 +6,8 @@ x-prod-app-env: &prod-app-env
   S3_REGION: ${S3_REGION:-auto}
   STORAGE_BASE_URL: ${STORAGE_BASE_URL:?set STORAGE_BASE_URL to the public R2 url}
   CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS to the production origin}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
 
 services:
   redis:
@@ -39,6 +41,10 @@ services:
       <<: *prod-app-env
 
   nginx:
+    build:
+      args:
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_SENTRY_ENVIRONMENT:-production}
     ports: !override
       - "80:80"
       - "443:443"
