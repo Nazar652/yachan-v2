@@ -7,7 +7,7 @@ from src.utils.ip import hash_ip
 
 
 def client_ip_hash(request: Request, settings: Settings) -> str:
-    raw_ip = request.client.host if request.client else "unknown"
+    raw_ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "unknown")
     return hash_ip(raw_ip, settings.ip_hash_salt)
 
 

@@ -112,8 +112,8 @@ def upload_ns(filename="cat.png", content=b"bytes", content_type="image/png"):
     return upload
 
 
-def request_ns(host="1.2.3.4"):
-    return SimpleNamespace(client=SimpleNamespace(host=host))
+def request_ns(host="1.2.3.4", headers=None):
+    return SimpleNamespace(client=SimpleNamespace(host=host), headers=headers or {})
 
 
 def settings_ns():
