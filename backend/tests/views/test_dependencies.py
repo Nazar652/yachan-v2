@@ -11,11 +11,17 @@ def test_client_ip_hash_matches_hash_ip():
     assert result == hash_ip("9.9.9.9", "salt")
 
 
+def test_client_ip_hash_prefers_x_real_ip():
+    settings = settings_ns()
+    result = client_ip_hash(request_ns("9.9.9.9", headers={"x-real-ip": "5.6.7.8"}), settings)
+    assert result == hash_ip("5.6.7.8", "salt")
+
+
 def test_client_ip_hash_handles_missing_client():
     from types import SimpleNamespace
 
     settings = settings_ns()
-    result = client_ip_hash(SimpleNamespace(client=None), settings)
+    result = client_ip_hash(SimpleNamespace(client=None, headers={}), settings)
     assert result == hash_ip("unknown", "salt")
 
 
