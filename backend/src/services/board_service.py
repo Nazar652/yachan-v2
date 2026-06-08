@@ -42,15 +42,16 @@ class BoardService:
     async def reorder_boards(self, slugs: list[str]) -> list[Board]:
         boards = await self.board_repo.list_all()
         by_slug = {board.slug: board for board in boards}
-        # the payload must be a permutation of every existing board (length check
-        # also rejects duplicate slugs that would otherwise pass the set compare)
+
         if len(slugs) != len(by_slug) or set(slugs) != set(by_slug):
             raise BadRequestError("slugs must list every existing board exactly once")
+
         reordered: list[Board] = []
         for index, slug in enumerate(slugs):
             board = by_slug[slug]
             board.position = index
             reordered.append(await self.board_repo.update(board))
+
         return reordered
 
     async def list_boards(self) -> list[Board]:

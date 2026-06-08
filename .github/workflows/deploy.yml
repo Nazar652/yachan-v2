@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          IP_HASH_SALT: ${{ secrets.IP_HASH_SALT }}
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          STORAGE_BASE_URL: ${{ secrets.STORAGE_BASE_URL }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          envs: DATABASE_URL,JWT_SECRET,IP_HASH_SALT,S3_ENDPOINT_URL,S3_ACCESS_KEY,S3_SECRET_KEY,STORAGE_BASE_URL,CORS_ORIGINS
+          script: |
+            set -e
+            cd ~/yachan-v2
+            git fetch origin master
+            git reset --hard origin/master
+            umask 077
+            cat > .env <<EOF
+            DATABASE_URL=${DATABASE_URL}
+            JWT_SECRET=${JWT_SECRET}
+            IP_HASH_SALT=${IP_HASH_SALT}
+            S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
+            S3_ACCESS_KEY=${S3_ACCESS_KEY}
+            S3_SECRET_KEY=${S3_SECRET_KEY}
+            STORAGE_BASE_URL=${STORAGE_BASE_URL}
+            CORS_ORIGINS=${CORS_ORIGINS}
+            EOF
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
+              redis migrate backend celery-worker celery-beat nginx
+            docker image prune -f
