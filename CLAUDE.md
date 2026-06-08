@@ -31,9 +31,12 @@ see the contextual guides (Claude Code auto-loads them when you work in that dir
 ```
 backend/         FastAPI app, Celery, alembic migrations, admin cli  (see backend/CLAUDE.md)
 frontend/        Vue 3 SPA + its nginx edge config                   (see frontend/CLAUDE.md)
-frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media (-> minio)
+frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media (-> minio)  [local/base]
+frontend/nginx.prod.conf  prod edge config, no /media proxy (media served from R2)
 docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, celery-worker, celery-beat, nginx
+docker-compose.prod.yml   prod override: Neon + R2, drops postgres/minio/createbucket, nginx :80
 .env / .env.example   compose ${VAR} interpolation (gitignored / template)
+.env.prod.example     template for the prod server .env (Neon + R2 secrets)
 Makefile              `make lint`, `make openapi`
 ```
 
@@ -104,6 +107,35 @@ Services and wiring:
   volume; change it later via `ALTER USER` or recreate the volume (`down -v`).
 - `JWT_SECRET` ≥ 32 bytes in production. In production inject secrets via the
   platform/orchestrator (Vault, k8s/Swarm secrets, env), not a committed file.
+
+### Production (Neon + Cloudflare R2)
+
+Production runs the **same images** but swaps the in-Docker postgres/minio for
+managed services, via `docker-compose.prod.yml` layered over the base file:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
+    redis migrate backend celery-worker celery-beat nginx
+```
+
+- **Postgres → Neon.** `DATABASE_URL` points at the Neon `main` branch. asyncpg
+  needs `?ssl=require` on the url (not `sslmode`). The audit migrations' event
+  trigger works on Neon (the default role is in `neon_superuser`) — run migrations
+  with that owner role, not a restricted one.
+- **MinIO → Cloudflare R2.** `S3_ENDPOINT_URL` is the R2 account api url,
+  `STORAGE_BASE_URL` is R2's **public** url (r2.dev or a custom domain). Media is
+  served straight from R2, so the prod nginx (`nginx.prod.conf`, bind-mounted over
+  the baked config) has **no `/media/` proxy**. `S3Storage` is unchanged — same
+  code, different endpoint.
+- **Services.** The deploy command names services explicitly; postgres, minio and
+  createbucket are deliberately omitted (the prod override drops the `depends_on`
+  that would pull them in). `redis` stays self-hosted but its host port is closed.
+- **Service names matter:** the worker is `celery-worker` (not `celery`), the edge
+  is `nginx` (not `frontend`).
+- The prod override uses Compose `!override`/`!reset` merge tags — needs Docker
+  Compose **v2.24+** on the server.
+- Secrets live in a server-side `.env` (template: `.env.prod.example`), injected by
+  the platform — never committed.
 
 `make openapi` dumps the backend OpenAPI schema and regenerates the frontend's
 `src/api/schema.d.ts` — run it after any backend schema change.
