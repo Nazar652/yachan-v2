@@ -70,7 +70,8 @@ exception handlers in `create_app()` map them to status codes:
 - Global kink `di` is configured once by `setup_di()` (in `create_app()` and in
   the Celery worker via the `worker_process_init` signal).
 - **Singletons** are registered as instances: `Settings`, `MarkupRenderer`,
-  `LocalStorage`, `Redis`, `RateLimiter`.
+  `Storage`, `Redis`, `RateLimiter`. `di[Storage]` is built by
+  `build_storage(settings)` — `LocalStorage` or `S3Storage` per `STORAGE_BACKEND`.
 - **Scoped** deps (`AsyncSession`, every repository, every service) are
   registered as `lambda container: resolve_scoped(Cls, Cls)`. Within one request
   (or one task) they resolve to the same instance, so all repositories share one
@@ -250,8 +251,14 @@ WS     /api/{slug}/ws                                 (not in OpenAPI)
   `contains_image` decides the OP-image rule; `store_uploads` stores each via
   `FileService` and enqueues `process_attachment.delay`.
 - `views/serializers.py` — builds `AttachmentResponse`/`PostResponse` with public
-  URLs from `LocalStorage` (`storage_base_url` = `/media`, served by nginx from
-  the shared `media_data` volume).
+  URLs from `Storage.public_url` (`storage_base_url` = `/media`; nginx proxies
+  `/media/` to the minio bucket, or in prod set it to the bucket/CDN url).
+- **Storage backends** (`core/storage.py`): `Storage` (ABC) defines
+  `save/read/delete/exists/public_url`. `LocalStorage` writes to the filesystem;
+  `S3Storage` (boto3, path-style addressing) targets any s3-compatible store —
+  minio in docker, AWS S3 in prod. The backend is selected once in DI via
+  `build_storage`; `FileService` and the views depend only on the `Storage`
+  abstraction.
 - Rule: a **new thread's OP must include an image** (`ThreadService` raises
   `OpRequiresImageError` when `has_image` is false). Replies may have no image.
 - `create_thread` returns a `ThreadDetailResponse` (the OP post + its attachments);

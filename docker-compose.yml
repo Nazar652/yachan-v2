@@ -4,6 +4,12 @@ x-app-env: &app-env
   REDIS_URL: redis://redis:6379/0
   JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
   IP_HASH_SALT: ${IP_HASH_SALT:-dev-ip-salt-change-me}
+  # object storage: the stack stores uploads in minio (s3-compatible)
+  STORAGE_BACKEND: s3
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_BUCKET: ${S3_BUCKET:-yachan-media}
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
 
 services:
   postgres:
@@ -36,6 +42,41 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # s3-compatible object store for uploads; console on :9001, api on :9000
+  minio:
+    image: minio/minio
+    container_name: yachan-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+
+  # one-shot: create the bucket and make it anonymously readable so nginx can
+  # proxy public file urls. backend/celery wait for this via service_completed_successfully.
+  createbucket:
+    image: minio/mc
+    container_name: yachan-createbucket
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-yachan-media}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do echo 'waiting for minio'; sleep 1; done;
+      mc mb --ignore-existing local/\"$$S3_BUCKET\";
+      mc anonymous set download local/\"$$S3_BUCKET\";
+      "
+    restart: "no"
+
   # one-shot: bring the schema up to head before anything that touches the db.
   # backend/celery wait for this to finish via service_completed_successfully.
   migrate:
@@ -58,13 +99,13 @@ services:
     container_name: yachan-backend
     environment:
       <<: *app-env
-    volumes:
-      - media_data:/app/storage
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+      createbucket:
+        condition: service_completed_successfully
     expose:
       - "8000"
     healthcheck:
@@ -83,13 +124,13 @@ services:
     command: celery -A src.celery_app.celery worker --loglevel=info
     environment:
       <<: *app-env
-    volumes:
-      - media_data:/app/storage
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+      createbucket:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   celery-beat:
@@ -108,21 +149,21 @@ services:
     restart: unless-stopped
 
   # builds the SPA and serves it; also reverse-proxies /api (+ ws) to the backend
-  # and /media from the shared storage volume.
+  # and /media/ to the minio bucket.
   nginx:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: yachan-nginx
-    volumes:
-      - media_data:/media:ro
     ports:
       - "8080:80"
     depends_on:
       backend:
         condition: service_healthy
+      minio:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   postgres_data:
-  media_data:
+  minio_data:

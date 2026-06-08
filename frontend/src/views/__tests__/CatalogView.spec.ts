@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b' } }),
+  RouterLink: { template: '<a><slot /></a>' },
 }))
 
 const globalStubs = { RouterLink: { template: '<a><slot /></a>' } }
@@ -19,6 +20,10 @@ vi.mock('@/composables/useThreads', () => ({
 
 vi.mock('@/composables/useBoardWs', () => ({
   useBoardWs: vi.fn(),
+}))
+
+vi.mock('@/composables/useBoards', () => ({
+  useBoards: () => ({ data: ref([{ id: 1, slug: 'b', title: 'Random', description: 'random board' }]) }),
 }))
 
 const setLockedMock = vi.fn()
@@ -91,10 +96,62 @@ describe('CatalogView', () => {
     expect(wrapper.text()).toContain('(no title)')
   })
 
-  it('shows the board slug in the header', () => {
+  it('shows the board slug and description in the header', () => {
     stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('/b/')
+    expect(wrapper.text()).toContain('random board')
+  })
+
+  it('renders op_post body preview when present', () => {
+    stubThreads({
+      data: ref([
+        {
+          id: 5, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 0, bump_at: '', created_at: '',
+          op_post: { body: 'hello preview', thumbnail_url: null },
+          last_replies: [],
+        },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('hello preview')
+  })
+
+  it('shows "Nobody posted anything yet" when last_replies is empty', () => {
+    stubThreads({
+      data: ref([
+        { id: 7, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 0, bump_at: '', created_at: '', last_replies: [] },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Nobody posted anything yet')
+  })
+
+  it('renders last replies with body and id', () => {
+    stubThreads({
+      data: ref([
+        {
+          id: 8, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 2, bump_at: '', created_at: '',
+          last_replies: [
+            { id: 100, body: 'first reply', created_at: '2024-01-01T00:00:00' },
+            { id: 101, body: 'second reply', created_at: '2024-01-02T00:00:00' },
+          ],
+        },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('first reply')
+    expect(wrapper.text()).toContain('second reply')
+    expect(wrapper.text()).toContain('№100')
   })
 
   it('shows sticky and locked icons', () => {

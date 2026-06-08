@@ -31,8 +31,8 @@ see the contextual guides (Claude Code auto-loads them when you work in that dir
 ```
 backend/         FastAPI app, Celery, alembic migrations, admin cli  (see backend/CLAUDE.md)
 frontend/        Vue 3 SPA + its nginx edge config                   (see frontend/CLAUDE.md)
-frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media
-docker-compose.yml    postgres, redis, migrate, backend, celery-worker, celery-beat, nginx
+frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media (-> minio)
+docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, celery-worker, celery-beat, nginx
 .env / .env.example   compose ${VAR} interpolation (gitignored / template)
 Makefile              `make lint`, `make openapi`
 ```
@@ -65,6 +65,13 @@ Services and wiring:
   on host **:5434** (this machine already runs native PostgreSQL on 5432/5433,
   which would otherwise shadow the published port). Inside the network the backend
   talks to `postgres:5432`, `redis:6379`.
+- **minio** — s3-compatible object store for uploads (`minio_data` volume);
+  api on host **:9000**, web console on **:9001**. The backend/worker write here
+  via the `s3` storage backend (`STORAGE_BACKEND=s3`, see `core/storage.py`).
+- **createbucket** — one-shot `minio/mc`: waits for minio, creates the bucket
+  (`S3_BUCKET`, default `yachan-media`) and makes it anonymously readable so nginx
+  can serve public file urls. backend/celery wait on it via
+  `service_completed_successfully`, so the bucket exists before any upload.
 - **migrate** — one-shot `alembic upgrade head`; backend/celery wait on it via
   `service_completed_successfully`, so the schema is up before any app process
   starts (race-free, runs once regardless of replicas).
@@ -73,15 +80,23 @@ Services and wiring:
   container's system Python — no venv inside the image).
 - **nginx** is built from `frontend/` (multi-stage: vite build → nginx). It serves
   the SPA (`try_files … /index.html`), reverse-proxies `/api/` (with WebSocket
-  upgrade headers) to the backend, and serves `/media/` from the shared
-  **`media_data`** volume (where the backend/worker write uploads).
+  upgrade headers) to the backend, and proxies `/media/` to the **minio** bucket
+  (the bucket name is hard-coded in `frontend/nginx.conf` — keep it in sync with
+  `S3_BUCKET`).
 
 ### Environment variables
 
 - Compose interpolates `${VAR}` (POSTGRES_USER/PASSWORD/DB, JWT_SECRET,
-  IP_HASH_SALT) from the **root `.env`** (next to `docker-compose.yml`). Copy
-  `.env.example` → `.env` and fill values; all vars have dev defaults so the stack
-  also comes up without a `.env`.
+  IP_HASH_SALT, MINIO_ROOT_USER/PASSWORD, S3_BUCKET) from the **root `.env`** (next
+  to `docker-compose.yml`). Copy `.env.example` → `.env` and fill values; all vars
+  have dev defaults so the stack also comes up without a `.env`.
+- **Storage**: the Docker stack runs the `s3` backend against minio. The
+  `S3_*` env vars in `x-app-env` are fixed wiring to the in-network minio
+  (`S3_ENDPOINT_URL=http://minio:9000`, credentials = MinIO root user/password).
+  For real AWS S3 in production set `STORAGE_BACKEND=s3`, point `S3_ENDPOINT_URL`
+  at the S3/region endpoint (or empty for AWS default), set `S3_BUCKET` + real
+  keys, and set `STORAGE_BASE_URL` to the bucket/CDN public url so file urls
+  resolve without nginx. `STORAGE_BACKEND=local` falls back to filesystem storage.
 - The root `.env` is **interpolation only** — values reach containers because
   `environment: <<: *app-env` forwards them. The backend `.env` file is excluded
   from the image; in Docker the backend reads pure env vars.

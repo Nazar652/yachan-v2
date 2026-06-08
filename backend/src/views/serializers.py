@@ -1,11 +1,11 @@
-from src.core.storage import LocalStorage
+from src.core.storage import Storage
 from src.models.attachment import Attachment
 from src.models.post import Post
 from src.schemas.attachment import AttachmentResponse
 from src.schemas.post import PostResponse
 
 
-def attachment_response(attachment: Attachment, storage: LocalStorage) -> AttachmentResponse:
+def attachment_response(attachment: Attachment, storage: Storage) -> AttachmentResponse:
     thumbnail_url = (
         storage.public_url(attachment.thumbnail_path) if attachment.thumbnail_path else None
     )
@@ -24,7 +24,7 @@ def attachment_response(attachment: Attachment, storage: LocalStorage) -> Attach
 
 
 def post_response(
-    post: Post, attachments: list[Attachment], storage: LocalStorage
+    post: Post, attachments: list[Attachment], storage: Storage
 ) -> PostResponse:
     response = PostResponse.model_validate(post)
     response.attachments = [attachment_response(item, storage) for item in attachments]

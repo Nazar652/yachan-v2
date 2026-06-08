@@ -5,7 +5,7 @@ from kink import inject
 from PIL import Image
 
 from src.core.exceptions import FileTooLargeError, UnsupportedMediaTypeError
-from src.core.storage import LocalStorage
+from src.core.storage import Storage
 from src.models.attachment import Attachment, MediaType
 from src.repositories.attachment_repo import AttachmentRepository
 
@@ -24,7 +24,7 @@ _EXTENSIONS: dict[str, tuple[MediaType, str]] = {
 
 class FileService:
     @inject
-    def __init__(self, attachment_repo: AttachmentRepository, storage: LocalStorage) -> None:
+    def __init__(self, attachment_repo: AttachmentRepository, storage: Storage) -> None:
         self.attachment_repo = attachment_repo
         self.storage = storage
 

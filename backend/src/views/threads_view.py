@@ -4,8 +4,8 @@ from starlette.requests import Request
 
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
-from src.core.storage import LocalStorage
-from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
+from src.core.storage import Storage
+from src.schemas.thread import OpPostPreview, ReplyPreview, ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.thread_service import ThreadService
@@ -28,7 +28,7 @@ class ThreadsView:
         captcha_service: CaptchaService,
         rate_limiter: RateLimiter,
         events: EventPublisher,
-        storage: LocalStorage,
+        storage: Storage,
         settings: Settings,
     ) -> None:
         self.thread_service = thread_service
@@ -42,8 +42,26 @@ class ThreadsView:
     async def list_threads(
         self, board_slug: str, limit: int = 50, offset: int = 0
     ) -> list[ThreadResponse]:
-        threads = await self.thread_service.list_threads(board_slug, limit, offset)
-        return [ThreadResponse.model_validate(thread) for thread in threads]
+        thread_data = await self.thread_service.list_threads(board_slug, limit, offset)
+        responses: list[ThreadResponse] = []
+        for thread, op_post, first_image, replies in thread_data:
+            response = ThreadResponse.model_validate(thread)
+            if op_post:
+                thumbnail_url = (
+                    self.storage.public_url(first_image.thumbnail_path)
+                    if first_image and first_image.thumbnail_path
+                    else None
+                )
+                response.op_post = OpPostPreview(
+                    body=op_post.body,
+                    thumbnail_url=thumbnail_url,
+                )
+            response.last_replies = [
+                ReplyPreview(id=reply.id, body=reply.body, created_at=reply.created_at)
+                for reply in replies
+            ]
+            responses.append(response)
+        return responses
 
     async def get_thread(self, board_slug: str, thread_id: int) -> ThreadDetailResponse:
         thread, posts, attachments_by_post = await self.thread_service.get_thread_detail(

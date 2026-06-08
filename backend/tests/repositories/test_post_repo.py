@@ -26,6 +26,28 @@ async def test_get_by_board_and_number(session, make_result):
     session.execute.assert_awaited_once()
 
 
+async def test_get_op_posts_by_thread_ids_returns_dict(session, make_result):
+    from types import SimpleNamespace
+
+    post = SimpleNamespace(thread_id=5)
+    session.execute.return_value = make_result(all_=[post])
+    repo = PostRepository(session=session)
+
+    result = await repo.get_op_posts_by_thread_ids([5])
+
+    assert result == {5: post}
+    session.execute.assert_awaited_once()
+
+
+async def test_get_op_posts_by_thread_ids_empty_input(session):
+    repo = PostRepository(session=session)
+
+    result = await repo.get_op_posts_by_thread_ids([])
+
+    assert result == {}
+    session.execute.assert_not_awaited()
+
+
 async def test_get_thread_posts_returns_list(session, make_result):
     posts = [object(), object()]
     session.execute.return_value = make_result(all_=posts)
@@ -72,3 +94,27 @@ async def test_soft_delete_executes_update(session):
     await repo.soft_delete(5, deleted_by=2)
 
     session.execute.assert_awaited_once()
+
+
+async def test_get_last_replies_by_thread_ids_returns_grouped(session, make_result):
+    from types import SimpleNamespace
+
+    reply_a = SimpleNamespace(thread_id=1, created_at="2024-01-01")
+    reply_b = SimpleNamespace(thread_id=1, created_at="2024-01-02")
+    reply_c = SimpleNamespace(thread_id=2, created_at="2024-01-01")
+    session.execute.return_value = make_result(all_=[reply_a, reply_b, reply_c])
+    repo = PostRepository(session=session)
+
+    result = await repo.get_last_replies_by_thread_ids([1, 2])
+
+    assert result == {1: [reply_a, reply_b], 2: [reply_c]}
+    session.execute.assert_awaited_once()
+
+
+async def test_get_last_replies_by_thread_ids_empty_input(session):
+    repo = PostRepository(session=session)
+
+    result = await repo.get_last_replies_by_thread_ids([])
+
+    assert result == {}
+    session.execute.assert_not_awaited()

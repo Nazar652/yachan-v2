@@ -5,6 +5,8 @@ import type { components } from '@/api/schema'
 type Schemas = components['schemas']
 
 export type BoardResponse = Schemas['BoardResponse']
+export type OpPostPreview = Schemas['OpPostPreview']
+export type ReplyPreview = Schemas['ReplyPreview']
 export type ThreadResponse = Schemas['ThreadResponse']
 export type ThreadDetailResponse = Schemas['ThreadDetailResponse']
 export type PostResponse = Schemas['PostResponse']

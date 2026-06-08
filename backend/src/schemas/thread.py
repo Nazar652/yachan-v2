@@ -13,6 +13,17 @@ class ThreadCreate(BaseModel):
     sage: bool = False
 
 
+class OpPostPreview(BaseModel):
+    body: str | None
+    thumbnail_url: str | None
+
+
+class ReplyPreview(BaseModel):
+    id: int
+    body: str | None
+    created_at: datetime
+
+
 class ThreadResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,6 +35,8 @@ class ThreadResponse(BaseModel):
     reply_count: int
     bump_at: datetime
     created_at: datetime
+    op_post: OpPostPreview | None = None
+    last_replies: list[ReplyPreview] = Field(default_factory=list)
 
 
 class ThreadDetailResponse(ThreadResponse):
