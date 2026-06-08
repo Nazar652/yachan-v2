@@ -17,14 +17,16 @@ from tests.views._factories import (
 )
 
 
-def build(*, allowed=True, replies=None):
+def build(*, allowed=True, replies=None, first_image=None):
+    if first_image is None:
+        first_image = attachment_ns(thumbnail_path="t.jpg")
     thread_service = MagicMock()
     thread_service.list_threads = AsyncMock(
         return_value=[
             (
                 thread_ns(),
                 post_ns(id=10, is_op=True, thread_id=5),
-                attachment_ns(thumbnail_path="t.jpg"),
+                first_image,
                 replies if replies is not None else [],
             )
         ]
@@ -69,6 +71,13 @@ async def test_list_threads_maps_responses():
     assert result[0].op_post.body == "hi"
     assert result[0].op_post.thumbnail_url == "/media/t.jpg"
     assert result[0].last_replies == []
+
+
+async def test_list_threads_falls_back_to_full_image_without_thumbnail():
+    view, _ = build(first_image=attachment_ns(thumbnail_path=None, file_path="full.jpg"))
+    result = await view.list_threads("b")
+    assert result[0].op_post is not None
+    assert result[0].op_post.thumbnail_url == "/media/full.jpg"
 
 
 async def test_list_threads_maps_last_replies():

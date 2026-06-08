@@ -48,8 +48,8 @@ class ThreadsView:
             response = ThreadResponse.model_validate(thread)
             if op_post:
                 thumbnail_url = (
-                    self.storage.public_url(first_image.thumbnail_path)
-                    if first_image and first_image.thumbnail_path
+                    self.storage.public_url(first_image.thumbnail_path or first_image.file_path)
+                    if first_image
                     else None
                 )
                 response.op_post = OpPostPreview(
