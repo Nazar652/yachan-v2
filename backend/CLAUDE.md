@@ -223,7 +223,11 @@ WS     /api/{slug}/ws                                 (not in OpenAPI)
   `tests/conftest.py` before importing `src`.
 - **Celery + async:** `ScopedTask.__call__` runs the async `run()` via
   `asyncio.run`. Therefore task tests must be **synchronous** (calling a task from
-  an async test would nest event loops).
+  an async test would nest event loops). Each task gets its **own** `asyncio.run`
+  loop, and asyncpg connections are loop-bound — so `ScopedTask` calls
+  `get_engine().dispose()` after a task that used a session; otherwise the next
+  task reuses a pooled connection from a dead loop and raises *"got Future attached
+  to a different loop"* (the symptom that broke `process_attachment` in prod).
 - **Per-board sequence names** are built only via
   `utils/sequences.post_number_sequence_name(slug)`, which validates the slug
   because it is interpolated into raw DDL.
