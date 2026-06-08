@@ -4,6 +4,7 @@ from celery import Task
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bootstrap.scope import close_scope, current_scope, open_scope
+from src.core.database import get_engine
 
 
 class ScopedTask(Task):
@@ -25,8 +26,14 @@ class ScopedTask(Task):
             await self._rollback()
             raise
         finally:
+            had_session = self._session() is not None
             await self._close()
             close_scope()
+            # each task runs in its own asyncio.run() loop; asyncpg connections are
+            # loop-bound, so drop the pool or the next task reuses a connection from
+            # a dead loop ("got Future attached to a different loop")
+            if had_session:
+                await get_engine().dispose()
 
     @staticmethod
     def _session() -> AsyncSession | None:
