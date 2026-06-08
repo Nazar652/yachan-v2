@@ -41,8 +41,10 @@ services:
   nginx:
     ports: !override
       - "80:80"
+      - "443:443"
     depends_on: !override
       backend:
         condition: service_healthy
     volumes:
       - ./frontend/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/ssl:ro
