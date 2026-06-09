@@ -31,7 +31,7 @@ def build(*, board=_UNSET):
     post_repo.get_op_posts_by_thread_ids = AsyncMock(return_value={thread_obj.id: op_post})
     post_repo.get_last_replies_by_thread_ids = AsyncMock(return_value={})
     attachment_repo = MagicMock()
-    attachment_repo.list_by_post = AsyncMock(return_value=[])
+    attachment_repo.list_by_post_ids = AsyncMock(return_value={})
     attachment_repo.get_first_images_by_post_ids = AsyncMock(return_value={})
     markup = MagicMock()
     markup.render = MagicMock(return_value="<p>x</p>")
@@ -95,7 +95,8 @@ async def test_get_thread_detail_returns_thread_posts_and_attachments():
     thread, posts, attachments_by_post = await service.get_thread_detail("b", 5)
     assert thread is mocks.thread
     assert posts == [mocks.op_post]
-    assert attachments_by_post == {mocks.op_post.id: []}
+    assert attachments_by_post == {}
+    mocks.attachment_repo.list_by_post_ids.assert_awaited_once_with([mocks.op_post.id])
 
 
 async def test_get_thread_detail_wrong_board():

@@ -82,9 +82,8 @@ class ThreadService:
             raise ThreadNotFoundError(thread_id)
 
         posts = await self.post_repo.get_thread_posts(thread_id)
-        attachments_by_post = {
-            post.id: await self.attachment_repo.list_by_post(post.id) for post in posts
-        }
+        post_ids = [post.id for post in posts]
+        attachments_by_post = await self.attachment_repo.list_by_post_ids(post_ids)
         return thread, posts, attachments_by_post
 
     async def list_threads(
