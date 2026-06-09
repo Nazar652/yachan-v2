@@ -5,6 +5,7 @@ from sqlmodel import Field
 
 from src.models.timestamp_mixin import TimestampMixin
 from src.utils.clock import utcnow
+from src.utils.types import TZDateTime
 
 
 class Thread(TimestampMixin, table=True):
@@ -16,4 +17,4 @@ class Thread(TimestampMixin, table=True):
     is_locked: bool = Field(default=False)
     is_sticky: bool = Field(default=False)
     reply_count: int = Field(default=0)
-    bump_at: datetime = Field(default_factory=utcnow, index=True)
+    bump_at: datetime = Field(default_factory=utcnow, index=True, sa_type=TZDateTime)
