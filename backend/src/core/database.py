@@ -13,7 +13,12 @@ from src.core.config import get_settings
 @lru_cache
 def get_engine() -> AsyncEngine:
     settings = get_settings()
-    return create_async_engine(settings.database_url, echo=settings.db_echo)
+    return create_async_engine(
+        settings.database_url,
+        echo=settings.db_echo,
+        pool_pre_ping=True,
+        pool_recycle=settings.db_pool_recycle,
+    )
 
 
 @lru_cache
