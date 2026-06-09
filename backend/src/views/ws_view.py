@@ -33,17 +33,24 @@ class WsView:
         # forward redis messages to the socket; stop as soon as the client drops
         forward = asyncio.create_task(WsView._forward(pubsub, websocket))
         drain = asyncio.create_task(WsView._drain(websocket))
-        _done, pending = await asyncio.wait(
+        done, pending = await asyncio.wait(
             {forward, drain}, return_when=asyncio.FIRST_COMPLETED
         )
         for task in pending:
             task.cancel()
+        for task in done:
+            task.result()
 
     @staticmethod
     async def _forward(pubsub, websocket: WebSocket) -> None:
-        async for message in pubsub.listen():
-            if message.get("type") == "message":
-                await websocket.send_text(message["data"])
+        while True:
+            try:
+                async for message in pubsub.listen():
+                    if message.get("type") == "message":
+                        await websocket.send_text(message["data"])
+                break
+            except TimeoutError:
+                pass
 
     @staticmethod
     async def _drain(websocket: WebSocket) -> None:
