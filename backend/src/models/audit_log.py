@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 from src.utils.clock import utcnow
+from src.utils.types import TZDateTime
 
 
 class AuditLog(SQLModel, table=True):
@@ -19,4 +20,4 @@ class AuditLog(SQLModel, table=True):
     row_data: dict[str, Any] | None = Field(default=None, sa_column=Column(JSONB))
     old_data: dict[str, Any] | None = Field(default=None, sa_column=Column(JSONB))  # set on UPDATE
     txid: int = Field(sa_column=Column(BigInteger, nullable=False))
-    at: datetime = Field(default_factory=utcnow)
+    at: datetime = Field(default_factory=utcnow, sa_type=TZDateTime)

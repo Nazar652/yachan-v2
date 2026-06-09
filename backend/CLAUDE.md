@@ -148,7 +148,8 @@ which is exactly the kind of thing we want to catch.
 - **`audit_log`** (`models/audit_log.py`) — one row per change: `table_name`,
   `op` (INSERT/UPDATE/DELETE), `row_data` (the new row, or the old row on delete),
   `old_data` (the pre-image on update), `txid` (`txid_current()`, groups a
-  transaction's changes), `at` (naive UTC). The trigger writes the rows; the model
+  transaction's changes), `at` (tz-aware UTC, written by the trigger as `now()`).
+  The trigger writes the rows; the model
   exists only so Alembic owns the table and the app can read the trail. The table
   is **not** audited itself (would recurse). No actor/"who" column by design — it
   answers *what changed, when, in which transaction*.
@@ -199,10 +200,13 @@ WS     /api/{slug}/ws                                 (not in OpenAPI)
 
 ## Important technical decisions
 
-- **Timestamps are naive UTC.** Columns are `TIMESTAMP WITHOUT TIME ZONE`;
-  asyncpg rejects tz-aware values for them. Always use `utils/clock.utcnow()`
-  (naive UTC) for defaults and comparisons, never `datetime.utcnow()` (deprecated)
-  or tz-aware `datetime.now(UTC)`.
+- **Timestamps are tz-aware UTC.** Columns are `TIMESTAMP WITH TIME ZONE`
+  (timestamptz) — declared via the shared `utils/types.TZDateTime` SA type, which
+  every datetime column passes as `sa_type`. asyncpg round-trips tz-aware values,
+  so the offset reaches clients (pydantic serializes `…+00:00`) and the browser
+  renders local time. Always use `utils/clock.utcnow()` (aware UTC,
+  `datetime.now(UTC)`) for defaults and comparisons, never `datetime.utcnow()`
+  (deprecated) or a naive datetime — comparing aware vs naive raises `TypeError`.
 - **Every table model carries `created_at` + `updated_at`** via `TimestampMixin`
   (`models/timestamp_mixin.py`); `updated_at` is bumped on each ORM update through
   the column's `onupdate=utcnow`.

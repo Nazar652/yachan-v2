@@ -5,6 +5,7 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
 from src.models.timestamp_mixin import TimestampMixin
+from src.utils.types import TZDateTime
 
 
 class Post(TimestampMixin, table=True):
@@ -24,7 +25,7 @@ class Post(TimestampMixin, table=True):
     sage: bool = Field(default=False)
     is_op: bool = Field(default=False)
     is_edited: bool = Field(default=False)
-    edited_at: datetime | None = Field(default=None)
+    edited_at: datetime | None = Field(default=None, sa_type=TZDateTime)
     ip_hash: str = Field(max_length=64)  # never exposed in the api
     deleted: bool = Field(default=False)
     deleted_by: int | None = Field(default=None, foreign_key="mod_account.id")

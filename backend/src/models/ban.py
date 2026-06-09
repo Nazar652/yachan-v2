@@ -4,6 +4,7 @@ from typing import ClassVar
 from sqlmodel import Field
 
 from src.models.timestamp_mixin import TimestampMixin
+from src.utils.types import TZDateTime
 
 
 class Ban(TimestampMixin, table=True):
@@ -14,5 +15,5 @@ class Ban(TimestampMixin, table=True):
     board_id: int | None = Field(default=None, foreign_key="board.id")  # null = global ban
     reason: str | None = Field(default=None, max_length=500)
     created_by: int | None = Field(default=None, foreign_key="mod_account.id")
-    expires_at: datetime | None = Field(default=None)  # null = permanent
+    expires_at: datetime | None = Field(default=None, sa_type=TZDateTime)  # null = permanent
     is_active: bool = Field(default=True)
