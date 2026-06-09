@@ -1,6 +1,7 @@
 import asyncio
 
 from kink import inject
+from redis import exceptions as redis_exceptions
 from redis.asyncio import Redis
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -43,14 +44,17 @@ class WsView:
 
     @staticmethod
     async def _forward(pubsub, websocket: WebSocket) -> None:
+        # redis gives pubsub connections a 5s socket_timeout by default, so an idle
+        # listen() raises redis TimeoutError every 5s. swallow it and keep listening;
+        # note redis.exceptions.TimeoutError is not the builtin TimeoutError.
         while True:
             try:
                 async for message in pubsub.listen():
                     if message.get("type") == "message":
                         await websocket.send_text(message["data"])
                 break
-            except TimeoutError:
-                pass
+            except redis_exceptions.TimeoutError:
+                continue
 
     @staticmethod
     async def _drain(websocket: WebSocket) -> None:

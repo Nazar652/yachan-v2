@@ -8,6 +8,9 @@ import pytest
 # import time; setdefault keeps real env values when they are present
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-change-me-in-tests")
 os.environ.setdefault("IP_HASH_SALT", "test-salt")
+# keep tests hermetic against a developer's local storage config (e.g. STORAGE_BACKEND=s3
+# in backend/.env); an env var takes precedence over the .env file
+os.environ.setdefault("STORAGE_BACKEND", "local")
 
 
 @pytest.fixture

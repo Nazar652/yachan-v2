@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from redis import exceptions as redis_exceptions
 from src.views.ws_view import WsView
 from starlette.websockets import WebSocketDisconnect
 
@@ -21,13 +22,15 @@ async def test_forward_sends_only_message_type():
 
 
 async def test_forward_retries_after_timeout():
+    # redis pubsub raises redis.exceptions.TimeoutError (not the builtin) on its 5s
+    # idle socket_timeout; _forward must swallow that exact class and keep listening.
     call_count = 0
 
     async def listen():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise TimeoutError
+            raise redis_exceptions.TimeoutError
         yield {"type": "message", "data": "after-retry"}
 
     pubsub = MagicMock()
