@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://yachan:yachan@localhost:5432/yachan"
     db_echo: bool = False
+    db_pool_recycle: int = 300
 
     redis_url: str = "redis://localhost:6379/0"
 
