@@ -39,6 +39,30 @@ async def test_get_first_images_by_post_ids_empty_input(session):
     session.execute.assert_not_awaited()
 
 
+async def test_list_by_post_ids_groups_by_post(session, make_result):
+    from types import SimpleNamespace
+
+    att1 = SimpleNamespace(post_id=1)
+    att2 = SimpleNamespace(post_id=2)
+    att3 = SimpleNamespace(post_id=1)
+    session.execute.return_value = make_result(all_=[att1, att2, att3])
+    repo = AttachmentRepository(session=session)
+
+    result = await repo.list_by_post_ids([1, 2])
+
+    assert result == {1: [att1, att3], 2: [att2]}
+    session.execute.assert_awaited_once()
+
+
+async def test_list_by_post_ids_empty_input(session):
+    repo = AttachmentRepository(session=session)
+
+    result = await repo.list_by_post_ids([])
+
+    assert result == {}
+    session.execute.assert_not_awaited()
+
+
 async def test_list_by_post(session, make_result):
     attachments = [object()]
     session.execute.return_value = make_result(all_=attachments)
