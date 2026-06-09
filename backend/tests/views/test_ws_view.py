@@ -1,4 +1,5 @@
-from unittest.mock import AsyncMock, MagicMock
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.views.ws_view import WsView
 from starlette.websockets import WebSocketDisconnect
@@ -17,6 +18,44 @@ async def test_forward_sends_only_message_type():
     await WsView._forward(pubsub, websocket)
 
     websocket.send_text.assert_awaited_once_with("payload")
+
+
+async def test_forward_retries_after_timeout():
+    call_count = 0
+
+    async def listen():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise TimeoutError
+        yield {"type": "message", "data": "after-retry"}
+
+    pubsub = MagicMock()
+    pubsub.listen = listen
+    websocket = MagicMock()
+    websocket.send_text = AsyncMock()
+
+    await WsView._forward(pubsub, websocket)
+
+    assert call_count == 2
+    websocket.send_text.assert_awaited_once_with("after-retry")
+
+
+async def test_pump_propagates_forward_exception():
+    async def failing_forward(pubsub, websocket):
+        raise RuntimeError("forward error")
+
+    async def instant_drain(websocket):
+        pass
+
+    pubsub = MagicMock()
+    websocket = MagicMock()
+
+    with patch.object(WsView, "_forward", failing_forward), patch.object(
+        WsView, "_drain", instant_drain
+    ):
+        with pytest.raises(RuntimeError, match="forward error"):
+            await WsView._pump(pubsub, websocket)
 
 
 async def test_drain_returns_on_disconnect():
