@@ -68,7 +68,17 @@ function formatSize(bytes: number | null | undefined): string {
 }
 
 function isImage(attachment: AttachmentResponse): boolean {
-  return attachment.media_type === 'image'
+  return attachment.media_type === 'image' || attachment.media_type === 'gif'
+}
+
+function isVideo(attachment: AttachmentResponse): boolean {
+  return attachment.media_type === 'video'
+}
+
+function imageSrc(attachment: AttachmentResponse): string {
+  return attachment.media_type === 'gif'
+    ? attachment.url
+    : (attachment.thumbnail_url ?? attachment.url)
 }
 </script>
 
@@ -126,28 +136,31 @@ function isImage(attachment: AttachmentResponse): boolean {
             v-if="post.attachments && post.attachments.length"
             class="flex flex-wrap gap-3 mb-3"
           >
-            <a
-              v-for="att in post.attachments"
-              :key="att.id"
-              :href="att.url"
-              target="_blank"
-              rel="noopener"
-              class="block"
-            >
-              <img
-                v-if="isImage(att)"
-                :src="att.thumbnail_url ?? att.url"
-                :alt="att.original_name"
+            <template v-for="att in post.attachments" :key="att.id">
+              <video
+                v-if="isVideo(att)"
+                :src="att.url"
                 :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
-                class="max-h-32 max-w-32 object-contain rounded border border-border"
+                controls
+                preload="metadata"
+                class="max-h-64 max-w-full rounded border border-border"
               />
-              <div
-                v-else
-                class="flex items-center gap-1 text-xs text-accent underline"
-              >
-                📎 {{ att.original_name }}
-              </div>
-            </a>
+              <a v-else :href="att.url" target="_blank" rel="noopener" class="block">
+                <img
+                  v-if="isImage(att)"
+                  :src="imageSrc(att)"
+                  :alt="att.original_name"
+                  :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
+                  class="max-h-32 max-w-32 object-contain rounded border border-border"
+                />
+                <div
+                  v-else
+                  class="flex items-center gap-1 text-xs text-accent underline"
+                >
+                  📎 {{ att.original_name }}
+                </div>
+              </a>
+            </template>
           </div>
 
           <!-- body: server-rendered html (backlinks/greentext) styled via scoped css -->

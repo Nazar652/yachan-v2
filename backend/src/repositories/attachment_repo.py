@@ -32,7 +32,7 @@ class AttachmentRepository(BaseRepository):
             select(func.min(col(Attachment.id)))
             .where(
                 col(Attachment.post_id).in_(post_ids),
-                col(Attachment.media_type) == MediaType.IMAGE,
+                col(Attachment.media_type).in_([MediaType.IMAGE, MediaType.GIF]),
             )
             .group_by(col(Attachment.post_id))
             .scalar_subquery()

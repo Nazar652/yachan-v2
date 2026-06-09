@@ -197,6 +197,48 @@ describe('ThreadView', () => {
     expect(img.attributes('src')).toBe('/media/thumb.jpg')
   })
 
+  it('renders a gif attachment inline as an image', () => {
+    stubThread({
+      data: ref({
+        id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 1, bump_at: '', created_at: '',
+        posts: [
+          {
+            id: 1, post_number: 1, thread_id: 42, board_id: 1, name: 'Anon', tripcode: null, body: null, body_html: null, sage: false, is_op: true, is_edited: false, edited_at: null, created_at: '2024-01-01T00:00:00',
+            attachments: [{ id: 11, media_type: 'gif', original_name: 'anim.gif', url: '/media/anim.gif', thumbnail_url: '/media/anim-thumb.jpg', mime_type: 'image/gif', width: 200, height: 100, size_bytes: 12345, duration_seconds: null }],
+          },
+        ],
+      }),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('/media/anim.gif')
+    expect(wrapper.text()).not.toContain('📎')
+  })
+
+  it('renders a video attachment inline with a video element', () => {
+    stubThread({
+      data: ref({
+        id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 1, bump_at: '', created_at: '',
+        posts: [
+          {
+            id: 1, post_number: 1, thread_id: 42, board_id: 1, name: 'Anon', tripcode: null, body: null, body_html: null, sage: false, is_op: true, is_edited: false, edited_at: null, created_at: '2024-01-01T00:00:00',
+            attachments: [{ id: 12, media_type: 'video', original_name: 'clip.webm', url: '/media/clip.webm', thumbnail_url: null, mime_type: 'video/webm', width: null, height: null, size_bytes: 99999, duration_seconds: null }],
+          },
+        ],
+      }),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    const video = wrapper.find('video')
+    expect(video.exists()).toBe(true)
+    expect(video.attributes('src')).toBe('/media/clip.webm')
+    expect(wrapper.find('img').exists()).toBe(false)
+  })
+
   const postFixture = {
     id: 1, post_number: 101, thread_id: 42, board_id: 1, name: 'Anon', tripcode: null,
     body: 'hi', body_html: '<p>hi</p>', sage: false, is_op: true, is_edited: false,
