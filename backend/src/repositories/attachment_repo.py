@@ -21,7 +21,7 @@ class AttachmentRepository(BaseRepository):
 
     async def get_by_md5(self, md5: str) -> Attachment | None:
         result = await self.session.execute(
-            select(Attachment).where(col(Attachment.md5) == md5)
+            select(Attachment).where(col(Attachment.md5) == md5).limit(1)
         )
         return result.scalar_one_or_none()
 

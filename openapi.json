@@ -1868,6 +1868,11 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit",
+            "default": false
+          },
           "attachments": {
             "items": {
               "$ref": "#/components/schemas/AttachmentResponse"

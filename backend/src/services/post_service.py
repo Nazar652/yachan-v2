@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from kink import inject
 
@@ -26,6 +26,14 @@ from src.utils.clock import utcnow
 from src.utils.names import parse_name
 
 EDIT_WINDOW = timedelta(minutes=30)
+
+
+def post_is_editable(post: Post, viewer_ip_hash: str, now: datetime) -> bool:
+    return (
+        post.ip_hash == viewer_ip_hash
+        and not post.is_edited
+        and now - post.created_at <= EDIT_WINDOW
+    )
 
 
 class PostService:

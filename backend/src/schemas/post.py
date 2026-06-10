@@ -31,6 +31,7 @@ class PostResponse(BaseModel):
     is_edited: bool
     edited_at: datetime | None
     created_at: datetime
+    can_edit: bool = False
     attachments: list[AttachmentResponse] = Field(default_factory=list)
 
 

@@ -64,6 +64,7 @@ class PostsView:
         await self.events.publish(
             thread_channel(thread_id), NEW_POST, response.model_dump(mode="json")
         )
+        response.can_edit = True
         return response
 
     async def edit_post(

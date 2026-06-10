@@ -48,6 +48,8 @@ async def test_create_reply_text_only_delegates():
         "b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans"
     )
     assert isinstance(result, PostResponse)
+    # the author may edit their own fresh post
+    assert result.can_edit is True
     mocks.captcha_service.validate.assert_awaited_once_with("tok", "ans")
     mocks.post_service.create_reply.assert_awaited_once()
     mocks.file_service.store_attachment.assert_not_called()

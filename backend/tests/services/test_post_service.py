@@ -14,7 +14,7 @@ from src.core.exceptions import (
     ThreadNotFoundError,
 )
 from src.schemas.post import PostCreate, PostEditCreate
-from src.services.post_service import PostService
+from src.services.post_service import PostService, post_is_editable
 from src.utils.clock import utcnow
 
 _UNSET = object()
@@ -273,3 +273,27 @@ async def test_get_post_history_returns_edit():
     )
 
     assert await service.get_post_history("b", 1) is edit
+
+
+def test_post_is_editable_true_for_fresh_own_post():
+    now = utcnow()
+    post = SimpleNamespace(ip_hash="me", is_edited=False, created_at=now)
+    assert post_is_editable(post, "me", now) is True
+
+
+def test_post_is_editable_false_for_other_ip():
+    now = utcnow()
+    post = SimpleNamespace(ip_hash="someone", is_edited=False, created_at=now)
+    assert post_is_editable(post, "me", now) is False
+
+
+def test_post_is_editable_false_when_already_edited():
+    now = utcnow()
+    post = SimpleNamespace(ip_hash="me", is_edited=True, created_at=now)
+    assert post_is_editable(post, "me", now) is False
+
+
+def test_post_is_editable_false_when_window_expired():
+    now = utcnow()
+    post = SimpleNamespace(ip_hash="me", is_edited=False, created_at=now - timedelta(hours=1))
+    assert post_is_editable(post, "me", now) is False
