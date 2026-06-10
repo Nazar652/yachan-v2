@@ -36,6 +36,24 @@ describe('appendPostToThread', () => {
     expect(result?.reply_count).toBe(1)
   })
 
+  it('upgrades can_edit when the same post is re-added with edit capability', () => {
+    const existing = thread({ posts: [{ id: 1, post_number: 1, can_edit: false } as PostResponse] })
+    const authoritative = { id: 1, post_number: 1, can_edit: true } as PostResponse
+    const result = appendPostToThread(existing, authoritative)
+    expect(result?.posts?.[0]?.can_edit).toBe(true)
+    // it is still the same post, not a duplicate, and reply_count is untouched
+    expect(result?.posts).toHaveLength(1)
+    expect(result?.reply_count).toBe(1)
+  })
+
+  it('never downgrades can_edit when a broadcast copy lacks it', () => {
+    const existing = thread({ posts: [{ id: 1, post_number: 1, can_edit: true } as PostResponse] })
+    const broadcast = { id: 1, post_number: 1, can_edit: false } as PostResponse
+    const result = appendPostToThread(existing, broadcast)
+    expect(result).toBe(existing)
+    expect(result?.posts?.[0]?.can_edit).toBe(true)
+  })
+
   it('handles a thread with no posts array', () => {
     const post = { id: 2, post_number: 2 } as PostResponse
     const result = appendPostToThread(thread({ posts: undefined }), post)

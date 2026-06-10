@@ -89,6 +89,26 @@ def test_escapes_raw_html_inside_spoiler():
     assert "&lt;b&gt;" in html
 
 
+def test_post_ref_at_line_start_is_a_link_not_a_blockquote():
+    html = MarkupRenderer().render(">>26")
+    assert 'data-post="26"' in html
+    assert "blockquote" not in html
+
+
+def test_post_ref_at_line_start_does_not_swallow_the_next_line():
+    html = MarkupRenderer().render(">>26\nreply text")
+    assert 'data-post="26"' in html
+    assert "blockquote" not in html
+    # the following line stays out of any quote, as ordinary paragraph text
+    assert "reply text" in html
+
+
+def test_greentext_at_line_start_still_renders_as_blockquote():
+    html = MarkupRenderer().render(">greentext")
+    assert "<blockquote>" in html
+    assert "greentext" in html
+
+
 def test_extract_post_refs_dedups_in_order():
     assert extract_post_refs("see >>10 and >>20 and >>10") == [10, 20]
 

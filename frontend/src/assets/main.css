@@ -102,3 +102,30 @@ body {
   color: var(--color-text-muted);
   user-select: none;
 }
+
+/* backlinks footer: the >>N references to a post, rendered outside .post-body so
+   they need their own copy of the reference styling */
+.post-backlinks .post-ref {
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.post-backlinks .post-ref:hover {
+  text-decoration: underline;
+}
+
+/* brief flash on the post jumped to from a >>N click */
+.post-highlight {
+  animation: post-highlight-fade 1.5s ease-out;
+}
+
+@keyframes post-highlight-fade {
+  from {
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}

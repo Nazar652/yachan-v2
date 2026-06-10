@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
 import { useModeration } from '@/composables/useModeration'
 import { useAuthStore } from '@/stores/auth'
+import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -23,6 +24,37 @@ useThreadWs(slug, threadId)
 
 const auth = useAuthStore()
 const moderation = useModeration(slug, threadId)
+
+// reverse map post_number -> numbers of posts that reference it, derived from the
+// thread's posts so it stays in sync with live new_post / post_edited events
+const backlinksByPostNumber = computed(() => {
+  const map = new Map<number, number[]>()
+  for (const post of thread.value?.posts ?? []) {
+    for (const target of extractPostRefs(post.body_html)) {
+      if (target === post.post_number) continue
+      const sources = map.get(target) ?? []
+      if (!sources.includes(post.post_number)) sources.push(post.post_number)
+      map.set(target, sources)
+    }
+  }
+  return map
+})
+
+const replyForm = ref<InstanceType<typeof ReplyForm> | null>(null)
+
+function onQuote(postNumber: number) {
+  replyForm.value?.quote(postNumber)
+}
+
+function onNavigate(postNumber: number) {
+  const target = document.getElementById(`post-${postNumber}`)
+  if (!target) return
+  if (typeof target.scrollIntoView === 'function') {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  target.classList.add('post-highlight')
+  window.setTimeout(() => target.classList.remove('post-highlight'), 1500)
+}
 
 async function onToggleLock() {
   if (thread.value) await moderation.setLocked(!thread.value.is_locked)
@@ -71,6 +103,9 @@ async function onToggleSticky() {
           :post="post"
           :slug="slug"
           :thread-id="threadId"
+          :backlinks="backlinksByPostNumber.get(post.post_number) ?? []"
+          @quote="onQuote"
+          @navigate="onNavigate"
         />
       </div>
 
@@ -78,7 +113,7 @@ async function onToggleSticky() {
         <p v-if="thread.is_locked" class="text-sm text-secondary italic py-4 text-center">
           🔒 This thread is locked.
         </p>
-        <ReplyForm v-else :slug="slug" :thread-id="threadId" />
+        <ReplyForm v-else ref="replyForm" :slug="slug" :thread-id="threadId" />
       </div>
     </template>
   </div>

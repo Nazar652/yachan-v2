@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { createReply } from '@/api/threads'
@@ -18,6 +18,8 @@ const props = defineProps<{
 
 const queryClient = useQueryClient()
 
+const formElement = ref<HTMLFormElement | null>(null)
+
 const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha()
 
 const name = ref('')
@@ -34,6 +36,18 @@ function onFileChange(event: Event) {
     selectedFiles.value = Array.from(input.files).slice(0, 10)
   }
 }
+
+// quote a post: drop a >>N reference on its own line at the end of the body and
+// focus the textarea so the poster can keep typing. called from ThreadView when
+// a post number is clicked.
+async function quote(postNumber: number) {
+  const base = body.value && !body.value.endsWith('\n') ? `${body.value}\n` : body.value
+  body.value = `${base}>>${postNumber}\n`
+  await nextTick()
+  formElement.value?.querySelector<HTMLTextAreaElement>('#reply-body')?.focus()
+}
+
+defineExpose({ quote })
 
 function resetForm() {
   name.value = ''
@@ -94,7 +108,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4 border border-border rounded p-4 bg-surface" @submit.prevent="onSubmit">
+  <form ref="formElement" class="flex flex-col gap-4 border border-border rounded p-4 bg-surface" @submit.prevent="onSubmit">
     <h2 class="text-lg font-semibold">Reply</h2>
 
     <div class="flex flex-col gap-1">

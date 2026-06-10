@@ -114,6 +114,21 @@ describe('ReplyForm', () => {
     expect((wrapper.find('#reply-body').element as HTMLTextAreaElement).value).toBe('')
   })
 
+  it('exposes quote() that appends a >>N reference on its own line', async () => {
+    const wrapper = mountForm()
+    ;(wrapper.vm as unknown as { quote: (n: number) => Promise<void> }).quote(101)
+    await flushPromises()
+    expect((wrapper.find('#reply-body').element as HTMLTextAreaElement).value).toBe('>>101\n')
+  })
+
+  it('quote() keeps existing body and separates the reference with a newline', async () => {
+    const wrapper = mountForm()
+    await wrapper.find('#reply-body').setValue('hello')
+    ;(wrapper.vm as unknown as { quote: (n: number) => Promise<void> }).quote(101)
+    await flushPromises()
+    expect((wrapper.find('#reply-body').element as HTMLTextAreaElement).value).toBe('hello\n>>101\n')
+  })
+
   it('appends the new post to existing posts via the cache updater', async () => {
     createReplyMock.mockResolvedValue({ id: 7, post_number: 102 } as never)
 

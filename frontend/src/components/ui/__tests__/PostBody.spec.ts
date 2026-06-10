@@ -18,4 +18,18 @@ describe('PostBody', () => {
     const wrapper = mount(PostBody, { props: { html: '<p><code>x</code></p>' } })
     expect(wrapper.findAll('.code-line')).toHaveLength(0)
   })
+
+  it('emits navigate with the referenced post number when a post-ref is clicked', async () => {
+    const wrapper = mount(PostBody, {
+      props: { html: '<a class="post-ref" data-post="101">&gt;&gt;101</a>' },
+    })
+    await wrapper.find('a.post-ref').trigger('click')
+    expect(wrapper.emitted('navigate')).toEqual([[101]])
+  })
+
+  it('does not emit navigate when a non-reference element is clicked', async () => {
+    const wrapper = mount(PostBody, { props: { html: '<p>plain</p>' } })
+    await wrapper.find('p').trigger('click')
+    expect(wrapper.emitted('navigate')).toBeUndefined()
+  })
 })
