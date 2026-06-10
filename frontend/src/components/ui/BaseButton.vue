@@ -5,7 +5,7 @@ import { tv, type VariantProps } from 'tailwind-variants'
 // the button's look lives here only; pages use <BaseButton variant="..."> and
 // never repeat tailwind classes. colors come from design tokens (bg-accent etc.)
 const button = tv({
-  base: 'inline-flex items-center justify-center rounded font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'inline-flex items-center justify-center rounded font-medium transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       primary: 'bg-accent text-white hover:bg-accent-hover',
