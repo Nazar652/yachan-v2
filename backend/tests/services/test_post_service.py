@@ -20,10 +20,10 @@ from src.utils.clock import utcnow
 _UNSET = object()
 
 
-def build(*, board=_UNSET, thread=_UNSET, refs=None):
+def build(*, board=_UNSET, thread=_UNSET, refs=None, reply_count=1):
     board_obj = SimpleNamespace(id=1, bump_limit=300) if board is _UNSET else board
     thread_obj = (
-        SimpleNamespace(id=5, board_id=1, is_locked=False, reply_count=0)
+        SimpleNamespace(id=5, board_id=1, is_locked=False)
         if thread is _UNSET
         else thread
     )
@@ -33,13 +33,14 @@ def build(*, board=_UNSET, thread=_UNSET, refs=None):
     post_repo.next_post_number = AsyncMock(return_value=1)
     post_repo.create = AsyncMock(return_value=created_post)
     post_repo.get_by_board_and_number = AsyncMock(return_value=None)
+    post_repo.count_replies = AsyncMock(return_value=reply_count)
 
     board_repo = MagicMock()
     board_repo.get_by_slug = AsyncMock(return_value=board_obj)
 
     thread_repo = MagicMock()
     thread_repo.get_by_id = AsyncMock(return_value=thread_obj)
-    thread_repo.increment_reply_count = AsyncMock()
+    thread_repo.set_reply_count = AsyncMock()
     thread_repo.update_bump_at = AsyncMock()
 
     post_edit_repo = MagicMock()
@@ -76,12 +77,12 @@ def build(*, board=_UNSET, thread=_UNSET, refs=None):
 
 
 async def test_create_reply_happy_path_bumps_thread():
-    service, mocks = build()
+    service, mocks = build(reply_count=3)
 
     result = await service.create_reply("b", 5, PostCreate(body="hi"), "iphash")
 
     assert result is mocks.created_post
-    mocks.thread_repo.increment_reply_count.assert_awaited_once_with(5)
+    mocks.thread_repo.set_reply_count.assert_awaited_once_with(5, 3)
     mocks.thread_repo.update_bump_at.assert_awaited_once_with(5)
 
 
@@ -90,13 +91,12 @@ async def test_create_reply_sage_does_not_bump():
 
     await service.create_reply("b", 5, PostCreate(body="hi", sage=True), "iphash")
 
-    mocks.thread_repo.increment_reply_count.assert_awaited_once()
+    mocks.thread_repo.set_reply_count.assert_awaited_once()
     mocks.thread_repo.update_bump_at.assert_not_called()
 
 
 async def test_create_reply_does_not_bump_past_limit():
-    thread = SimpleNamespace(id=5, board_id=1, is_locked=False, reply_count=300)
-    service, mocks = build(thread=thread)
+    service, mocks = build(reply_count=301)
 
     await service.create_reply("b", 5, PostCreate(body="hi"), "iphash")
 

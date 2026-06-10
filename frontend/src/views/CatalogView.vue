@@ -9,7 +9,7 @@ import { useCatalogModeration } from '@/composables/useCatalogModeration'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import PostBody from '@/components/ui/PostBody.vue'
-import type { ReplyPreview, ThreadResponse } from '@/api/types'
+import type { OpPostPreview, ReplyPreview, ThreadResponse } from '@/api/types'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -43,6 +43,23 @@ function formatReplyDate(reply: ReplyPreview): string {
 // the default poster name carries no information, so only a custom name is shown
 function replyName(name: string | null | undefined): string | null {
   return name && name !== 'Anonymous' ? name : null
+}
+
+// catalog thumbnails follow the op image shape, but the aspect ratio is clamped
+// to 1:4 so extreme images are cropped (object-cover) instead of becoming slivers
+const THUMBNAIL_MAX = 200
+const MAX_ASPECT_RATIO = 4
+
+function thumbnailStyle(opPost: OpPostPreview): { width: string; height: string } {
+  const width = opPost.width
+  const height = opPost.height
+  if (!width || !height) {
+    return { width: `${THUMBNAIL_MAX}px`, height: `${THUMBNAIL_MAX}px` }
+  }
+  const ratio = Math.min(Math.max(width / height, 1 / MAX_ASPECT_RATIO), MAX_ASPECT_RATIO)
+  return ratio >= 1
+    ? { width: `${THUMBNAIL_MAX}px`, height: `${Math.round(THUMBNAIL_MAX / ratio)}px` }
+    : { width: `${Math.round(THUMBNAIL_MAX * ratio)}px`, height: `${THUMBNAIL_MAX}px` }
 }
 </script>
 
@@ -90,9 +107,10 @@ function replyName(name: string | null | undefined): string | null {
               <img
                 v-if="thread.op_post?.thumbnail_url"
                 :src="thread.op_post.thumbnail_url"
+                :style="thumbnailStyle(thread.op_post)"
                 alt=""
                 loading="lazy"
-                class="h-40 w-40 self-start rounded border border-border object-cover"
+                class="self-start rounded border border-border object-cover"
               />
 
               <PostBody

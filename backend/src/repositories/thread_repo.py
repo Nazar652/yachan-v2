@@ -35,11 +35,9 @@ class ThreadRepository(BaseRepository):
         await self.session.refresh(thread)
         return thread
 
-    async def increment_reply_count(self, thread_id: int) -> None:
+    async def set_reply_count(self, thread_id: int, count: int) -> None:
         await self.session.execute(
-            update(Thread)
-            .where(col(Thread.id) == thread_id)
-            .values(reply_count=Thread.reply_count + 1)
+            update(Thread).where(col(Thread.id) == thread_id).values(reply_count=count)
         )
 
     async def update_bump_at(self, thread_id: int) -> None:

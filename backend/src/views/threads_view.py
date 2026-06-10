@@ -58,6 +58,8 @@ class ThreadsView:
                     body=op_post.body,
                     body_html=op_post.body_html,
                     thumbnail_url=thumbnail_url,
+                    width=first_image.width if first_image else None,
+                    height=first_image.height if first_image else None,
                 )
             response.last_replies = [
                 ReplyPreview(

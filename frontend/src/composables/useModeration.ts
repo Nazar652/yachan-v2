@@ -42,8 +42,20 @@ export function useModeration(
     await deletePost(toValue(slug), postNumber)
     queryClient.setQueryData<ThreadDetailResponse>(
       threadQueryKey(toValue(slug), toValue(threadId)),
-      (old) =>
-        old ? { ...old, posts: (old.posts ?? []).filter((post) => post.post_number !== postNumber) } : old,
+      (old) => {
+        if (!old) return old
+        const posts = old.posts ?? []
+        const removed = posts.find((post) => post.post_number === postNumber)
+        if (!removed) return old
+        // mirror the server: reply_count tracks non-op replies, so drop it by one
+        // unless the deleted post is the op
+        const reply_count = removed.is_op ? old.reply_count : Math.max(0, old.reply_count - 1)
+        return {
+          ...old,
+          reply_count,
+          posts: posts.filter((post) => post.post_number !== postNumber),
+        }
+      },
     )
   }
 
