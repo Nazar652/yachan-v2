@@ -30,9 +30,12 @@ async def list_threads(
 
 @router.get("/{thread_id}", response_model=ThreadDetailResponse)
 async def get_thread(
-    board_slug: str, thread_id: int, view: ThreadsView = Depends(lambda: get_dependency(ThreadsView))
+    board_slug: str,
+    thread_id: int,
+    request: Request,
+    view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> ThreadDetailResponse:
-    return await view.get_thread(board_slug, thread_id)
+    return await view.get_thread(board_slug, thread_id, request)
 
 
 @router.post("", response_model=ThreadDetailResponse, status_code=201)

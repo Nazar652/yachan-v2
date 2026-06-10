@@ -557,6 +557,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
             /** Attachments */
             attachments?: components["schemas"]["AttachmentResponse"][];
         };

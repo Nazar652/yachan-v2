@@ -8,7 +8,9 @@ from src.core.storage import Storage
 from src.schemas.thread import OpPostPreview, ReplyPreview, ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
+from src.services.post_service import post_is_editable
 from src.services.thread_service import ThreadService
+from src.utils.clock import utcnow
 from src.utils.events import NEW_THREAD, EventPublisher, board_channel
 from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
@@ -63,15 +65,24 @@ class ThreadsView:
             responses.append(response)
         return responses
 
-    async def get_thread(self, board_slug: str, thread_id: int) -> ThreadDetailResponse:
+    async def get_thread(
+        self, board_slug: str, thread_id: int, request: Request
+    ) -> ThreadDetailResponse:
+        viewer_ip_hash = client_ip_hash(request, self.settings)
+        now = utcnow()
+
         thread, posts, attachments_by_post = await self.thread_service.get_thread_detail(
             board_slug, thread_id
         )
+
         detail = ThreadDetailResponse.model_validate(thread)
-        detail.posts = [
-            post_response(post, attachments_by_post.get(post.id, []), self.storage)
-            for post in posts
-        ]
+        responses = []
+        for post in posts:
+            response = post_response(post, attachments_by_post.get(post.id, []), self.storage)
+            response.can_edit = post_is_editable(post, viewer_ip_hash, now)
+            responses.append(response)
+        detail.posts = responses
+
         return detail
 
     async def create_thread(
@@ -101,4 +112,5 @@ class ThreadsView:
         await self.events.publish(
             board_channel(board_slug), NEW_THREAD, detail.model_dump(mode="json")
         )
+        detail.posts[0].can_edit = True
         return detail
