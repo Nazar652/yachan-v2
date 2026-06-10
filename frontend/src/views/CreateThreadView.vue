@@ -9,6 +9,7 @@ import { threadsQueryKey } from '@/composables/useThreads'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import CaptchaWidget from '@/components/ui/CaptchaWidget.vue'
+import MarkupTextarea from '@/components/ui/MarkupTextarea.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -101,13 +102,12 @@ async function onSubmit() {
 
       <div class="flex flex-col gap-1">
         <label for="body" class="text-sm font-medium">Body</label>
-        <textarea
+        <MarkupTextarea
           id="body"
           v-model="body"
           rows="6"
           maxlength="5000"
           placeholder="Post body…"
-          class="w-full rounded border border-border bg-surface px-3 py-2 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-accent"
         />
       </div>
 

@@ -69,6 +69,12 @@ describe('ReplyForm', () => {
     expect(wrapper.find('.captcha-input').exists()).toBe(true)
   })
 
+  it('renders the formatting toolbar above the body field', () => {
+    const wrapper = mountForm()
+    expect(wrapper.find('button[title="Bold"]').exists()).toBe(true)
+    expect(wrapper.find('button[title="Spoiler"]').exists()).toBe(true)
+  })
+
   it('shows an error and does not submit when body and files are empty', async () => {
     const wrapper = mountForm()
     await wrapper.find('form').trigger('submit')

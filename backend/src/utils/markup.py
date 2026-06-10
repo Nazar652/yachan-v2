@@ -7,6 +7,10 @@ import mistune
 _POST_REF_RE = re.compile(r">>(\d+)")
 _POST_REF_PATTERN = r">>(?P<post_ref_num>\d+)"
 
+# imageboard-style inline spoiler: %%hidden text%%. mistune's own spoiler plugin
+# uses >!text!<, which collides with blockquote when placed at line start
+_SPOILER_PATTERN = r"%%(?P<spoiler_text>[\s\S]+?)%%"
+
 
 def _parse_post_ref(inline, match, state):
     state.append_token({"type": "post_ref", "raw": match.group("post_ref_num")})
@@ -24,13 +28,31 @@ def _post_ref_plugin(md: mistune.Markdown) -> None:
         md.renderer.register("post_ref", _render_post_ref)
 
 
+def _parse_spoiler(inline, match, state):
+    new_state = state.copy()
+    new_state.src = match.group("spoiler_text")
+    children = inline.render(new_state)
+    state.append_token({"type": "spoiler", "children": children})
+    return match.end()
+
+
+def _render_spoiler(renderer, text: str) -> str:
+    return f'<span class="spoiler">{text}</span>'
+
+
+def _spoiler_plugin(md: mistune.Markdown) -> None:
+    md.inline.register("spoiler", _SPOILER_PATTERN, _parse_spoiler, before="link")
+    if md.renderer is not None and md.renderer.NAME == "html":
+        md.renderer.register("spoiler", _render_spoiler)
+
+
 class MarkupRenderer:
     """Renders raw post markdown into safe html (raw html is escaped)."""
 
     def __init__(self) -> None:
         self.markdown = mistune.create_markdown(
             escape=True,
-            plugins=["strikethrough", "url", _post_ref_plugin],
+            plugins=["strikethrough", "insert", "url", _spoiler_plugin, _post_ref_plugin],
         )
 
     def render(self, text: str) -> str:
