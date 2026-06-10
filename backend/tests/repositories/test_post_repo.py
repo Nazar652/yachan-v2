@@ -26,6 +26,14 @@ async def test_get_by_board_and_number(session, make_result):
     session.execute.assert_awaited_once()
 
 
+async def test_count_replies_returns_scalar(session, make_result):
+    session.execute.return_value = make_result(one=5)
+    repo = PostRepository(session=session)
+
+    assert await repo.count_replies(7) == 5
+    session.execute.assert_awaited_once()
+
+
 async def test_get_op_posts_by_thread_ids_returns_dict(session, make_result):
     from types import SimpleNamespace
 

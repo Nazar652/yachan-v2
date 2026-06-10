@@ -17,6 +17,8 @@ class OpPostPreview(BaseModel):
     body: str | None
     body_html: str | None
     thumbnail_url: str | None
+    width: int | None = None
+    height: int | None = None
 
 
 class ReplyPreview(BaseModel):

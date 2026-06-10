@@ -74,6 +74,18 @@ class PostRepository(BaseRepository):
 
         return replies
 
+    async def count_replies(self, thread_id: int) -> int:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Post)
+            .where(
+                col(Post.thread_id) == thread_id,
+                col(Post.is_op).is_(False),
+                col(Post.deleted).is_(False),
+            )
+        )
+        return result.scalar_one()
+
     async def get_thread_posts(self, thread_id: int) -> list[Post]:
         result = await self.session.execute(
             select(Post)

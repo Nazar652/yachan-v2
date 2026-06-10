@@ -122,6 +122,44 @@ describe('CatalogView', () => {
     expect(body.html()).toContain('<strong>hello</strong>')
   })
 
+  function stubThreadWithOpImage(opPost: Record<string, unknown>) {
+    stubThreads({
+      data: ref([
+        {
+          id: 9, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
+          reply_count: 0, bump_at: '', created_at: '',
+          op_post: opPost, last_replies: [],
+        },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+  }
+
+  it('sizes the op thumbnail to the clamped image aspect ratio', () => {
+    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: 400, height: 200 })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    const style = wrapper.find('img').attributes('style')
+    expect(style).toContain('width: 200px')
+    expect(style).toContain('height: 100px')
+  })
+
+  it('crops extreme aspect ratios at 1:4', () => {
+    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: 100, height: 1000 })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    const style = wrapper.find('img').attributes('style')
+    expect(style).toContain('width: 50px')
+    expect(style).toContain('height: 200px')
+  })
+
+  it('falls back to a square thumbnail when dimensions are missing', () => {
+    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: null, height: null })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    const style = wrapper.find('img').attributes('style')
+    expect(style).toContain('width: 200px')
+    expect(style).toContain('height: 200px')
+  })
+
   it('shows "Nobody posted anything yet" when last_replies is empty', () => {
     stubThreads({
       data: ref([

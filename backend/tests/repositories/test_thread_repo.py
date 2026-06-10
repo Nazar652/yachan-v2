@@ -29,9 +29,9 @@ async def test_create(session):
     session.refresh.assert_awaited_once_with(thread)
 
 
-async def test_increment_reply_count(session):
+async def test_set_reply_count(session):
     repo = ThreadRepository(session=session)
-    await repo.increment_reply_count(1)
+    await repo.set_reply_count(1, 7)
     session.execute.assert_awaited_once()
 
 

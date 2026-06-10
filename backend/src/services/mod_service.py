@@ -77,6 +77,8 @@ class ModService:
     async def delete_post(self, board_slug: str, post_number: int, mod: ModAccount) -> None:
         post = await self._require_post(board_slug, post_number)
         await self.post_repo.soft_delete(post.id, deleted_by=mod.id)
+        reply_count = await self.post_repo.count_replies(post.thread_id)
+        await self.thread_repo.set_reply_count(post.thread_id, reply_count)
 
     async def set_thread_locked(
         self, board_slug: str, thread_id: int, locked: bool

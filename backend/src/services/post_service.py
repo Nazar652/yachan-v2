@@ -89,9 +89,12 @@ class PostService:
 
         await self._store_backlinks(board.id, post.id, data.body)
 
+        # recount live replies (the new post is already flushed, so it is included)
+        reply_count = await self.post_repo.count_replies(thread_id)
+        await self.thread_repo.set_reply_count(thread_id, reply_count)
+
         # bump the thread unless the poster saged or the bump limit is reached
-        await self.thread_repo.increment_reply_count(thread_id)
-        if not data.sage and thread.reply_count + 1 <= board.bump_limit:
+        if not data.sage and reply_count <= board.bump_limit:
             await self.thread_repo.update_bump_at(thread_id)
 
         return post

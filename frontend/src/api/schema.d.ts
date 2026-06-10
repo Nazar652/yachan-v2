@@ -508,6 +508,10 @@ export interface components {
             body_html: string | null;
             /** Thumbnail Url */
             thumbnail_url: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
         };
         /** PostEditCreate */
         PostEditCreate: {

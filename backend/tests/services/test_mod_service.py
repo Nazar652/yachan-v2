@@ -124,17 +124,22 @@ async def test_resolve_mod_inactive():
         await service.resolve_mod(token)
 
 
-async def test_delete_post_soft_deletes_with_mod_id():
+async def test_delete_post_soft_deletes_and_recounts():
     board_repo = MagicMock()
     board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
     post_repo = MagicMock()
-    post_repo.get_by_board_and_number = AsyncMock(return_value=SimpleNamespace(id=10))
+    post_repo.get_by_board_and_number = AsyncMock(return_value=SimpleNamespace(id=10, thread_id=5))
     post_repo.soft_delete = AsyncMock()
-    service, _ = build(board_repo=board_repo, post_repo=post_repo)
+    post_repo.count_replies = AsyncMock(return_value=4)
+    thread_repo = MagicMock()
+    thread_repo.set_reply_count = AsyncMock()
+    service, _ = build(board_repo=board_repo, post_repo=post_repo, thread_repo=thread_repo)
 
     await service.delete_post("b", 5, SimpleNamespace(id=99))
 
     post_repo.soft_delete.assert_awaited_once_with(10, deleted_by=99)
+    post_repo.count_replies.assert_awaited_once_with(5)
+    thread_repo.set_reply_count.assert_awaited_once_with(5, 4)
 
 
 async def test_delete_post_missing_post():

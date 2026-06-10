@@ -82,6 +82,14 @@ async def test_list_threads_falls_back_to_full_image_without_thumbnail():
     assert result[0].op_post.thumbnail_url == "/media/full.jpg"
 
 
+async def test_list_threads_exposes_op_image_dimensions():
+    view, _ = build(first_image=attachment_ns(thumbnail_path="t.jpg", width=800, height=200))
+    result = await view.list_threads("b")
+    assert result[0].op_post is not None
+    assert result[0].op_post.width == 800
+    assert result[0].op_post.height == 200
+
+
 async def test_list_threads_maps_last_replies():
     reply = post_ns(
         id=77, name="sdaf", body="reply body", body_html="<p>reply body</p>", created_at=datetime(2024, 6, 1)

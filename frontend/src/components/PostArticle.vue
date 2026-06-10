@@ -167,7 +167,7 @@ function imageSrc(attachment: AttachmentResponse): string {
             :src="imageSrc(att)"
             :alt="att.original_name"
             :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
-            class="max-h-32 max-w-32 object-contain rounded border border-border"
+            class="max-h-64 max-w-full object-contain rounded border border-border"
           />
           <div
             v-else

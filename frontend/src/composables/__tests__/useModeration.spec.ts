@@ -64,11 +64,15 @@ describe('useModeration', () => {
     expect(queryClient.getQueryData(threadQueryKey('b', 42))).toEqual({ id: 42, is_sticky: true })
   })
 
-  it('removePost deletes via the api and drops the post from the cache', async () => {
+  it('removePost deletes via the api, drops the post and decrements reply_count', async () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadQueryKey('b', 42), {
       id: 42,
-      posts: [{ id: 1, post_number: 1 }, { id: 2, post_number: 2 }],
+      reply_count: 1,
+      posts: [
+        { id: 1, post_number: 1, is_op: true },
+        { id: 2, post_number: 2, is_op: false },
+      ],
     })
     const api = mountModeration(queryClient)
 
@@ -77,7 +81,26 @@ describe('useModeration', () => {
     expect(deletePostMock).toHaveBeenCalledWith('b', 2)
     expect(queryClient.getQueryData(threadQueryKey('b', 42))).toEqual({
       id: 42,
-      posts: [{ id: 1, post_number: 1 }],
+      reply_count: 0,
+      posts: [{ id: 1, post_number: 1, is_op: true }],
+    })
+  })
+
+  it('removePost leaves reply_count untouched when the op is deleted', async () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadQueryKey('b', 42), {
+      id: 42,
+      reply_count: 3,
+      posts: [{ id: 1, post_number: 1, is_op: true }],
+    })
+    const api = mountModeration(queryClient)
+
+    await api.removePost(1)
+
+    expect(queryClient.getQueryData(threadQueryKey('b', 42))).toEqual({
+      id: 42,
+      reply_count: 3,
+      posts: [],
     })
   })
 
