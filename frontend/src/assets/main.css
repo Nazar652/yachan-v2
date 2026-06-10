@@ -22,3 +22,83 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
+
+/* rendered post markup — shared by the thread view and the catalog previews so
+   formatting looks identical everywhere a body_html is shown */
+.post-body blockquote,
+.post-body .greentext {
+  color: var(--color-greentext);
+}
+
+.post-body a.post-ref {
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.post-body a.post-ref:hover {
+  text-decoration: underline;
+}
+
+/* spoiler: solid box until hovered; children inherit the revealed colour so
+   nested markup (links, code) stays hidden too */
+.post-body .spoiler,
+.post-body .spoiler * {
+  background: var(--color-text);
+  color: transparent;
+}
+
+.post-body .spoiler {
+  border-radius: 2px;
+}
+
+.post-body .spoiler:hover {
+  color: var(--color-surface);
+}
+
+.post-body .spoiler:hover * {
+  color: inherit;
+}
+
+.post-body code {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  padding: 0 0.25em;
+}
+
+.post-body pre {
+  counter-reset: code-line;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem 0;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.post-body pre code {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: block;
+}
+
+.post-body .code-line {
+  display: block;
+  counter-increment: code-line;
+  position: relative;
+  padding-left: 2.5rem;
+  min-height: 1.5em;
+}
+
+.post-body .code-line::before {
+  content: counter(code-line);
+  position: absolute;
+  left: 0;
+  width: 1.75rem;
+  text-align: right;
+  color: var(--color-text-muted);
+  user-select: none;
+}

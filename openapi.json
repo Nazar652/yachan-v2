@@ -1704,6 +1704,17 @@
             ],
             "title": "Body"
           },
+          "body_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Html"
+          },
           "thumbnail_url": {
             "anyOf": [
               {
@@ -1719,6 +1730,7 @@
         "type": "object",
         "required": [
           "body",
+          "body_html",
           "thumbnail_url"
         ],
         "title": "OpPostPreview"
@@ -1905,6 +1917,17 @@
             "type": "integer",
             "title": "Id"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "body": {
             "anyOf": [
               {
@@ -1916,6 +1939,17 @@
             ],
             "title": "Body"
           },
+          "body_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Html"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1925,7 +1959,9 @@
         "type": "object",
         "required": [
           "id",
+          "name",
           "body",
+          "body_html",
           "created_at"
         ],
         "title": "ReplyPreview"

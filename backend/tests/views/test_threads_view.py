@@ -70,6 +70,7 @@ async def test_list_threads_maps_responses():
     assert all(isinstance(item, ThreadResponse) for item in result)
     assert result[0].op_post is not None
     assert result[0].op_post.body == "hi"
+    assert result[0].op_post.body_html == "<p>hi</p>"
     assert result[0].op_post.thumbnail_url == "/media/t.jpg"
     assert result[0].last_replies == []
 
@@ -82,12 +83,16 @@ async def test_list_threads_falls_back_to_full_image_without_thumbnail():
 
 
 async def test_list_threads_maps_last_replies():
-    reply = post_ns(id=77, body="reply body", created_at=datetime(2024, 6, 1))
+    reply = post_ns(
+        id=77, name="sdaf", body="reply body", body_html="<p>reply body</p>", created_at=datetime(2024, 6, 1)
+    )
     view, _ = build(replies=[reply])
     result = await view.list_threads("b")
     assert len(result[0].last_replies) == 1
     assert result[0].last_replies[0].id == 77
+    assert result[0].last_replies[0].name == "sdaf"
     assert result[0].last_replies[0].body == "reply body"
+    assert result[0].last_replies[0].body_html == "<p>reply body</p>"
 
 
 async def test_get_thread_includes_posts_with_attachments():

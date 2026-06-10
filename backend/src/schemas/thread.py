@@ -15,12 +15,15 @@ class ThreadCreate(BaseModel):
 
 class OpPostPreview(BaseModel):
     body: str | None
+    body_html: str | None
     thumbnail_url: str | None
 
 
 class ReplyPreview(BaseModel):
     id: int
+    name: str | None
     body: str | None
+    body_html: str | None
     created_at: datetime
 
 

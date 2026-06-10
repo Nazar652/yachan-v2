@@ -504,6 +504,8 @@ export interface components {
         OpPostPreview: {
             /** Body */
             body: string | null;
+            /** Body Html */
+            body_html: string | null;
             /** Thumbnail Url */
             thumbnail_url: string | null;
         };
@@ -569,8 +571,12 @@ export interface components {
         ReplyPreview: {
             /** Id */
             id: number;
+            /** Name */
+            name: string | null;
             /** Body */
             body: string | null;
+            /** Body Html */
+            body_html: string | null;
             /**
              * Created At
              * Format: date-time

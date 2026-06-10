@@ -14,7 +14,7 @@ Python specifics:
 - **Full names, no abbreviations.** `redis_client`, not `r`; `derived_key`, not `dk`.
 - **No leading underscores on variables or instance attributes.** `self.session`,
   not `self._s`. Leading `_` is allowed only on module-private constants
-  (`_ALPHABET`), private functions (`_post_ref_plugin`), and private methods
+  (`_ALPHABET`), private functions (`_prompt_password`), and private methods
   (`_full_path`).
   - Exception: a name dictated by an external typed API stays as required, e.g.
     the mistune plugin parameter must be `md` (see `src/utils/markup.py`).

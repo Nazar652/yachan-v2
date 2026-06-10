@@ -18,6 +18,26 @@ def test_renders_basic_markdown():
     assert "<strong>bold</strong>" in html
 
 
+def test_single_newline_becomes_line_break():
+    html = MarkupRenderer().render("line one\nline two")
+    assert "<br" in html
+    assert "line one" in html
+    assert "line two" in html
+
+
+def test_blank_lines_are_preserved_exactly():
+    one_blank = MarkupRenderer().render("a\n\nb")
+    two_blanks = MarkupRenderer().render("a\n\n\nb")
+    # every extra blank line survives as one more break instead of collapsing
+    assert two_blanks.count("<br") == one_blank.count("<br") + 1
+
+
+def test_code_block_blank_lines_stay_literal():
+    html = MarkupRenderer().render("```\na\n\nb\n```")
+    # blank lines inside a code fence are content, not spacing — no placeholder
+    assert "​" not in html
+
+
 def test_renders_underscore_italic():
     html = MarkupRenderer().render("_italic_")
     assert "<em>italic</em>" in html
