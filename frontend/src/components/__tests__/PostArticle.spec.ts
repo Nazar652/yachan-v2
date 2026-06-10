@@ -80,6 +80,12 @@ describe('PostArticle', () => {
     expect(wrapper.text()).toContain('(edited)')
   })
 
+  it('numbers the lines of code blocks in the body', () => {
+    const wrapper = mountPost({ body_html: '<pre><code>a\nb\n</code></pre>' })
+    const lines = wrapper.findAll('.code-line')
+    expect(lines.map((line) => line.text())).toEqual(['a', 'b'])
+  })
+
   it('renders an image attachment with its thumbnail', () => {
     const wrapper = mountPost({
       attachments: [{ id: 10, media_type: 'image', original_name: 'p.jpg', url: '/media/p.jpg', thumbnail_url: '/media/t.jpg', mime_type: 'image/jpeg', width: 1, height: 1, size_bytes: 10, duration_seconds: null }],
@@ -108,6 +114,13 @@ describe('PostArticle', () => {
     const wrapper = mountPost({ can_edit: true, body: 'current text' })
     await clickButton(wrapper, 'Edit').trigger('click')
     expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('current text')
+  })
+
+  it('shows the formatting toolbar only in edit mode', async () => {
+    const wrapper = mountPost({ can_edit: true })
+    expect(wrapper.find('button[title="Bold"]').exists()).toBe(false)
+    await clickButton(wrapper, 'Edit').trigger('click')
+    expect(wrapper.find('button[title="Bold"]').exists()).toBe(true)
   })
 
   it('saves an edit through useEditPost and closes the form', async () => {

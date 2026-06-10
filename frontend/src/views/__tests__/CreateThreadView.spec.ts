@@ -68,5 +68,12 @@ describe('CreateThreadView', () => {
     const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
     expect(wrapper.find('[data-testid="captcha"]').exists()).toBe(true)
   })
+
+  it('renders the formatting toolbar above the body field', () => {
+    stubCaptcha()
+    const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.find('button[title="Bold"]').exists()).toBe(true)
+    expect(wrapper.find('button[title="Quote"]').exists()).toBe(true)
+  })
 })
 

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 
 import { useModeration } from '@/composables/useModeration'
 import { useEditPost } from '@/composables/useEditPost'
 import { usePostHistory } from '@/composables/usePostHistory'
+import { numberCodeLines } from '@/utils/postHtml'
 import { useAuthStore } from '@/stores/auth'
 import type { AttachmentResponse, PostResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import MarkupTextarea from '@/components/ui/MarkupTextarea.vue'
 
 const props = defineProps<{
   post: PostResponse
@@ -53,6 +55,11 @@ async function saveEdit() {
 // show-original: fetch the pre-edit body lazily and only while the button is hovered
 const showOriginal = ref(false)
 const { data: original } = usePostHistory(toRef(props, 'slug'), props.post.post_number, showOriginal)
+
+const bodyHtml = computed(() => (props.post.body_html ? numberCodeLines(props.post.body_html) : null))
+const originalBodyHtml = computed(() =>
+  original.value?.original_body_html ? numberCodeLines(original.value.original_body_html) : null,
+)
 
 const isBanning = ref(false)
 const banReason = ref('')
@@ -162,12 +169,7 @@ function imageSrc(attachment: AttachmentResponse): string {
     </div>
 
     <div v-if="isEditing" class="flex flex-col gap-2">
-      <textarea
-        v-model="editDraft"
-        rows="4"
-        maxlength="5000"
-        class="w-full rounded border border-border bg-surface px-3 py-2 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-accent"
-      />
+      <MarkupTextarea v-model="editDraft" rows="4" maxlength="5000" />
       <p v-if="editError" class="text-sm text-red-500">{{ editError }}</p>
       <div class="flex gap-2">
         <BaseButton variant="primary" size="sm" :disabled="isSaving" @click="saveEdit">
@@ -180,9 +182,9 @@ function imageSrc(attachment: AttachmentResponse): string {
     <template v-else>
       <!-- body: server-rendered html (backlinks/greentext) styled via scoped css -->
       <div
-        v-if="post.body_html"
+        v-if="bodyHtml"
         class="prose prose-sm post-body"
-        v-html="post.body_html"
+        v-html="bodyHtml"
       />
       <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
 
@@ -190,7 +192,7 @@ function imageSrc(attachment: AttachmentResponse): string {
         v-if="showOriginal && original"
         class="mt-2 border-l-2 border-border pl-2 text-sm text-secondary"
       >
-        <div v-if="original.original_body_html" class="prose prose-sm post-body" v-html="original.original_body_html" />
+        <div v-if="originalBodyHtml" class="prose prose-sm post-body" v-html="originalBodyHtml" />
         <div v-else-if="original.original_body" class="whitespace-pre-wrap">{{ original.original_body }}</div>
         <div v-else class="italic">(empty)</div>
       </div>
@@ -227,5 +229,69 @@ function imageSrc(attachment: AttachmentResponse): string {
 
 .post-body :deep(a.post-ref:hover) {
   text-decoration: underline;
+}
+
+/* spoiler: solid box until hovered; children inherit the revealed colour so
+   nested markup (links, code) stays hidden too */
+.post-body :deep(.spoiler),
+.post-body :deep(.spoiler *) {
+  background: var(--color-text);
+  color: transparent;
+}
+
+.post-body :deep(.spoiler) {
+  border-radius: 2px;
+}
+
+.post-body :deep(.spoiler:hover) {
+  color: var(--color-surface);
+}
+
+.post-body :deep(.spoiler:hover *) {
+  color: inherit;
+}
+
+.post-body :deep(code) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  padding: 0 0.25em;
+}
+
+.post-body :deep(pre) {
+  counter-reset: code-line;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem 0;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.post-body :deep(pre code) {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: block;
+}
+
+.post-body :deep(.code-line) {
+  display: block;
+  counter-increment: code-line;
+  position: relative;
+  padding-left: 2.5rem;
+  min-height: 1.5em;
+}
+
+.post-body :deep(.code-line)::before {
+  content: counter(code-line);
+  position: absolute;
+  left: 0;
+  width: 1.75rem;
+  text-align: right;
+  color: var(--color-text-muted);
+  user-select: none;
 }
 </style>

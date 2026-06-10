@@ -18,6 +18,57 @@ def test_renders_basic_markdown():
     assert "<strong>bold</strong>" in html
 
 
+def test_renders_underscore_italic():
+    html = MarkupRenderer().render("_italic_")
+    assert "<em>italic</em>" in html
+
+
+def test_renders_underline():
+    html = MarkupRenderer().render("^^underlined^^")
+    assert "<ins>underlined</ins>" in html
+
+
+def test_backslash_escapes_disable_markup():
+    html = MarkupRenderer().render(r"\*\*not bold\*\* \%\%not spoiler\%\% \^\^not ins\^\^")
+    assert "<strong>" not in html
+    assert 'class="spoiler"' not in html
+    assert "<ins>" not in html
+    assert "**not bold** %%not spoiler%% ^^not ins^^" in html
+
+
+def test_backslash_escapes_disable_post_ref():
+    html = MarkupRenderer().render(r"\>>123")
+    assert "post-ref" not in html
+
+
+def test_renders_spoiler():
+    html = MarkupRenderer().render("a %%hidden%% b")
+    assert '<span class="spoiler">hidden</span>' in html
+
+
+def test_renders_spoiler_at_line_start():
+    html = MarkupRenderer().render("%%hidden%%")
+    assert '<span class="spoiler">hidden</span>' in html
+    assert "blockquote" not in html
+
+
+def test_renders_nested_markup_inside_spoiler():
+    html = MarkupRenderer().render("%%**bold** and `code`%%")
+    assert '<span class="spoiler"><strong>bold</strong> and <code>code</code></span>' in html
+
+
+def test_spoiler_spans_soft_line_break():
+    html = MarkupRenderer().render("%%first\nsecond%%")
+    assert '<span class="spoiler">' in html
+    assert "second" in html
+
+
+def test_escapes_raw_html_inside_spoiler():
+    html = MarkupRenderer().render("%%<b>x</b>%%")
+    assert "<b>" not in html
+    assert "&lt;b&gt;" in html
+
+
 def test_extract_post_refs_dedups_in_order():
     assert extract_post_refs("see >>10 and >>20 and >>10") == [10, 20]
 
