@@ -56,10 +56,17 @@ class ThreadsView:
                 )
                 response.op_post = OpPostPreview(
                     body=op_post.body,
+                    body_html=op_post.body_html,
                     thumbnail_url=thumbnail_url,
                 )
             response.last_replies = [
-                ReplyPreview(id=reply.id, body=reply.body, created_at=reply.created_at)
+                ReplyPreview(
+                    id=reply.id,
+                    name=reply.name,
+                    body=reply.body,
+                    body_html=reply.body_html,
+                    created_at=reply.created_at,
+                )
                 for reply in replies
             ]
             responses.append(response)

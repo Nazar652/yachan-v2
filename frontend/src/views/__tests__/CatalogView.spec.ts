@@ -103,13 +103,13 @@ describe('CatalogView', () => {
     expect(wrapper.text()).toContain('random board')
   })
 
-  it('renders op_post body preview when present', () => {
+  it('renders the rendered op_post body preview when present', () => {
     stubThreads({
       data: ref([
         {
           id: 5, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
           reply_count: 0, bump_at: '', created_at: '',
-          op_post: { body: 'hello preview', thumbnail_url: null },
+          op_post: { body: 'hello preview', body_html: '<p><strong>hello</strong> preview</p>', thumbnail_url: null },
           last_replies: [],
         },
       ]),
@@ -117,7 +117,9 @@ describe('CatalogView', () => {
       isError: ref(false),
     })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('hello preview')
+    const body = wrapper.find('.post-body')
+    expect(body.exists()).toBe(true)
+    expect(body.html()).toContain('<strong>hello</strong>')
   })
 
   it('shows "Nobody posted anything yet" when last_replies is empty', () => {
@@ -133,15 +135,15 @@ describe('CatalogView', () => {
     expect(wrapper.text()).toContain('Nobody posted anything yet')
   })
 
-  it('renders last replies with body and id', () => {
+  it('renders last replies with rendered body, id and custom name', () => {
     stubThreads({
       data: ref([
         {
           id: 8, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
           reply_count: 2, bump_at: '', created_at: '',
           last_replies: [
-            { id: 100, body: 'first reply', created_at: '2024-01-01T00:00:00' },
-            { id: 101, body: 'second reply', created_at: '2024-01-02T00:00:00' },
+            { id: 100, name: 'sdaf', body: 'first reply', body_html: '<p>first reply</p>', created_at: '2024-01-01T00:00:00' },
+            { id: 101, name: 'Anonymous', body: 'second reply', body_html: '<p>second reply</p>', created_at: '2024-01-02T00:00:00' },
           ],
         },
       ]),
@@ -151,7 +153,10 @@ describe('CatalogView', () => {
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('first reply')
     expect(wrapper.text()).toContain('second reply')
-    expect(wrapper.text()).toContain('№100')
+    expect(wrapper.text()).toContain('ID: 100')
+    // a custom name is shown, the default "Anonymous" is not
+    expect(wrapper.text()).toContain('sdaf')
+    expect(wrapper.text()).not.toContain('Anonymous')
   })
 
   it('shows sticky and locked icons', () => {
