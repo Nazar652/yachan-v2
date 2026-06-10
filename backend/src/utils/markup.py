@@ -2,6 +2,7 @@ import re
 from typing import cast
 
 import mistune
+from mistune.block_parser import BlockParser
 
 # matches imageboard post references like >>123
 _POST_REF_RE = re.compile(r">>(\d+)")
@@ -56,6 +57,17 @@ def post_ref_plugin(md: mistune.Markdown) -> None:
         md.renderer.register("post_ref", render_post_ref)
 
 
+class _PostRefBlockParser(BlockParser):
+    # a line starting with >>digits is an imageboard post reference, handled by
+    # the inline post_ref plugin. the negative lookahead keeps it out of the
+    # blockquote rule so it is not swallowed as greentext (which also pulled the
+    # following line into the quote). plain >text greentext still matches.
+    SPECIFICATION = {
+        **BlockParser.SPECIFICATION,
+        "block_quote": r"^ {0,3}>(?!>\d)(?P<quote_1>.*?)$",
+    }
+
+
 def parse_spoiler(inline, match, state):
     new_state = state.copy()
     new_state.src = match.group("spoiler_text")
@@ -83,6 +95,9 @@ class MarkupRenderer:
             hard_wrap=True,
             plugins=["strikethrough", "insert", "url", spoiler_plugin, post_ref_plugin],
         )
+        # swap in a block parser that leaves >>N references to the inline plugin;
+        # our plugins are all inline, so the block rules are otherwise unchanged
+        self.markdown.block = _PostRefBlockParser()
 
     def render(self, text: str) -> str:
         # markdown(text) returns str in html mode; the union also covers ast mode

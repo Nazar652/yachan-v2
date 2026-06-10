@@ -11,13 +11,28 @@ export function threadQueryKey(slug: string | Ref<string>, id: number | Ref<numb
 // match the server (which increments it on every reply). shared by the
 // optimistic reply append and the live new_post websocket event so both paths
 // stay consistent and a post added by one cannot be doubled by the other.
+// can_edit is viewer-specific and the broadcast websocket copy is always false,
+// so when both paths add the same post we keep edit capability if either has it
+// (otherwise a websocket frame arriving before the poster's own response would
+// hide the Edit button until a reload recomputed it server-side).
 export function appendPostToThread(
   thread: ThreadDetailResponse | undefined,
   post: PostResponse,
 ): ThreadDetailResponse | undefined {
   if (!thread) return thread
   const posts = thread.posts ?? []
-  if (posts.some((existing) => existing.id === post.id)) return thread
+  const existing = posts.find((candidate) => candidate.id === post.id)
+  if (existing) {
+    if (post.can_edit && !existing.can_edit) {
+      return {
+        ...thread,
+        posts: posts.map((candidate) =>
+          candidate.id === post.id ? { ...candidate, can_edit: true } : candidate,
+        ),
+      }
+    }
+    return thread
+  }
   return { ...thread, reply_count: thread.reply_count + 1, posts: [...posts, post] }
 }
 

@@ -75,6 +75,34 @@ describe('PostArticle', () => {
     expect(wrapper.find('.post-body').html()).toContain('<p>hi</p>')
   })
 
+  it('emits quote with the post number when the No. button is clicked', async () => {
+    const wrapper = mountPost()
+    await wrapper.find('button[title="Quote this post"]').trigger('click')
+    expect(wrapper.emitted('quote')).toEqual([[101]])
+  })
+
+  it('forwards navigate from a >>N reference clicked in the body', async () => {
+    const wrapper = mountPost({ body_html: '<a class="post-ref" data-post="55">&gt;&gt;55</a>' })
+    await wrapper.find('.post-body a.post-ref').trigger('click')
+    expect(wrapper.emitted('navigate')).toEqual([[55]])
+  })
+
+  it('renders the backlinks footer and emits navigate when a backlink is clicked', async () => {
+    const wrapper = mount(PostArticle, {
+      props: { post: basePost, slug: 'b', threadId: 42, backlinks: [102, 103] },
+      global: { stubs },
+    })
+    const refs = wrapper.findAll('.post-backlinks a.post-ref')
+    expect(refs.map((ref) => ref.text())).toEqual(['>>102', '>>103'])
+    await refs[0]!.trigger('click')
+    expect(wrapper.emitted('navigate')).toEqual([[102]])
+  })
+
+  it('omits the backlinks footer when there are no backlinks', () => {
+    const wrapper = mountPost()
+    expect(wrapper.find('.post-backlinks').exists()).toBe(false)
+  })
+
   it('shows the (edited) marker on edited posts', () => {
     const wrapper = mountPost({ is_edited: true })
     expect(wrapper.text()).toContain('(edited)')

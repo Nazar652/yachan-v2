@@ -37,12 +37,20 @@ function stubThread(state: Record<string, unknown>) {
   useThreadMock.mockReturnValue(state as ReturnType<typeof useThread>)
 }
 
+const quoteSpy = vi.fn()
+
 const globalStubs = {
   RouterLink: { template: '<a><slot /></a>' },
-  ReplyForm: { template: '<form class="reply-form-stub" />' },
+  ReplyForm: {
+    template: '<form class="reply-form-stub" />',
+    setup(_: unknown, { expose }: { expose: (exposed: Record<string, unknown>) => void }) {
+      expose({ quote: quoteSpy })
+    },
+  },
   PostArticle: {
-    template: '<article class="post-article-stub" :data-post="post.post_number" />',
-    props: ['post', 'slug', 'threadId'],
+    template: '<article class="post-article-stub" :id="`post-${post.post_number}`" :data-post="post.post_number" :data-backlinks="backlinks.join(\',\')" />',
+    props: ['post', 'slug', 'threadId', 'backlinks'],
+    emits: ['quote', 'navigate'],
   },
   BaseButton: { template: '<button @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
 }
@@ -58,6 +66,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setLockedMock.mockReset()
   setStickyMock.mockReset()
+  quoteSpy.mockReset()
 })
 
 const postFixture = {
@@ -156,5 +165,34 @@ describe('ThreadView', () => {
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')
     expect(setStickyMock).toHaveBeenCalledWith(true)
+  })
+
+  it('derives backlinks for a post from the references in other posts', () => {
+    stubThreadDetail({
+      posts: [
+        postFixture,
+        { ...postFixture, id: 2, post_number: 102, is_op: false, body_html: '<a class="post-ref" data-post="101">&gt;&gt;101</a>' },
+      ],
+    })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    const opStub = wrapper.find('.post-article-stub[data-post="101"]')
+    expect(opStub.attributes('data-backlinks')).toBe('102')
+  })
+
+  it('forwards a post quote to the reply form', async () => {
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    await (wrapper.findComponent('.post-article-stub') as VueWrapper).vm.$emit('quote', 101)
+    expect(quoteSpy).toHaveBeenCalledWith(101)
+  })
+
+  it('scrolls to the referenced post on navigate', async () => {
+    const scrollSpy = vi.fn()
+    Element.prototype.scrollIntoView = scrollSpy
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs }, attachTo: document.body })
+    await (wrapper.findComponent('.post-article-stub') as VueWrapper).vm.$emit('navigate', 101)
+    expect(scrollSpy).toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

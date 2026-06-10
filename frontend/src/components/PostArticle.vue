@@ -11,10 +11,19 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import MarkupTextarea from '@/components/ui/MarkupTextarea.vue'
 import PostBody from '@/components/ui/PostBody.vue'
 
-const props = defineProps<{
-  post: PostResponse
-  slug: string
-  threadId: number
+const props = withDefaults(
+  defineProps<{
+    post: PostResponse
+    slug: string
+    threadId: number
+    backlinks?: number[]
+  }>(),
+  { backlinks: () => [] },
+)
+
+const emit = defineEmits<{
+  quote: [postNumber: number]
+  navigate: [postNumber: number]
 }>()
 
 const auth = useAuthStore()
@@ -115,7 +124,14 @@ function imageSrc(attachment: AttachmentResponse): string {
         <span class="font-semibold text-accent">{{ post.name }}</span>
         <span v-if="post.tripcode" class="font-mono text-secondary">{{ post.tripcode }}</span>
         <span class="text-secondary">{{ formatDate(post.created_at) }}</span>
-        <span class="font-mono text-secondary">No.{{ post.post_number }}</span>
+        <button
+          type="button"
+          class="font-mono text-secondary cursor-pointer hover:text-accent hover:underline"
+          title="Quote this post"
+          @click="emit('quote', post.post_number)"
+        >
+          No.{{ post.post_number }}
+        </button>
         <span v-if="post.is_edited" class="text-xs text-secondary italic">(edited)</span>
         <span v-if="post.sage" class="text-xs text-secondary">sage</span>
       </div>
@@ -176,14 +192,24 @@ function imageSrc(attachment: AttachmentResponse): string {
 
     <template v-else>
       <!-- body: server-rendered html (backlinks/greentext) styled via global css -->
-      <PostBody v-if="post.body_html" :html="post.body_html" class="text-sm" />
+      <PostBody
+        v-if="post.body_html"
+        :html="post.body_html"
+        class="text-sm"
+        @navigate="emit('navigate', $event)"
+      />
       <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
 
       <div
         v-if="showOriginal && original"
         class="mt-2 border-l-2 border-border pl-2 text-sm text-secondary"
       >
-        <PostBody v-if="original.original_body_html" :html="original.original_body_html" class="text-sm" />
+        <PostBody
+          v-if="original.original_body_html"
+          :html="original.original_body_html"
+          class="text-sm"
+          @navigate="emit('navigate', $event)"
+        />
         <div v-else-if="original.original_body" class="whitespace-pre-wrap">{{ original.original_body }}</div>
         <div v-else class="italic">(empty)</div>
       </div>
@@ -192,6 +218,17 @@ function imageSrc(attachment: AttachmentResponse): string {
         <BaseButton variant="ghost" size="sm" @click="startEdit">Edit</BaseButton>
       </div>
     </template>
+
+    <!-- replies referencing this post; numbers derived from the thread's posts -->
+    <div v-if="backlinks.length" class="post-backlinks mt-2 flex flex-wrap gap-x-2 text-xs">
+      <a
+        v-for="backlinkNumber in backlinks"
+        :key="backlinkNumber"
+        class="post-ref"
+        :data-post="backlinkNumber"
+        @click.prevent="emit('navigate', backlinkNumber)"
+      >&gt;&gt;{{ backlinkNumber }}</a>
+    </div>
 
     <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-border pt-2">
       <div class="flex gap-2">
