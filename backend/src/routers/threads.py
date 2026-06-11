@@ -21,11 +21,12 @@ def thread_create_from_form(
 @router.get("", response_model=list[ThreadResponse])
 async def list_threads(
     board_slug: str,
+    request: Request,
     limit: int = 50,
     offset: int = 0,
     view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> list[ThreadResponse]:
-    return await view.list_threads(board_slug, limit, offset)
+    return await view.list_threads(board_slug, request, limit, offset)
 
 
 @router.get("/{thread_id}", response_model=ThreadDetailResponse)

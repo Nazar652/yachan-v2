@@ -24,6 +24,8 @@ def build(*, allowed=True):
     events.publish = AsyncMock()
     storage = MagicMock()
     storage.public_url = MagicMock(side_effect=lambda key: f"/media/{key}")
+    online_tracker = MagicMock()
+    online_tracker.touch = AsyncMock()
     view = PostsView(
         post_service=post_service,
         file_service=file_service,
@@ -32,6 +34,7 @@ def build(*, allowed=True):
         events=events,
         storage=storage,
         settings=settings_ns(),
+        online_tracker=online_tracker,
     )
     return view, SimpleNamespace(
         post_service=post_service,
@@ -39,6 +42,7 @@ def build(*, allowed=True):
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
         events=events,
+        online_tracker=online_tracker,
     )
 
 
@@ -54,6 +58,13 @@ async def test_create_reply_text_only_delegates():
     mocks.post_service.create_reply.assert_awaited_once()
     mocks.file_service.store_attachment.assert_not_called()
     mocks.events.publish.assert_awaited_once()
+
+
+async def test_create_reply_touches_board_presence():
+    view, mocks = build()
+    await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans")
+    mocks.online_tracker.touch.assert_awaited_once()
+    assert mocks.online_tracker.touch.await_args.args[1] == "b"
 
 
 async def test_create_reply_rate_limited():

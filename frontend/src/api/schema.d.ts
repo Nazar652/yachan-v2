@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/threads/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Latest Threads */
+        get: operations["list_latest_threads_api_threads_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/{board_slug}/threads": {
         parameters: {
             query?: never;
@@ -150,6 +167,23 @@ export interface paths {
         };
         /** Issue Captcha */
         get: operations["issue_captcha_api_captcha_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Site Stats */
+        get: operations["get_site_stats_api_stats_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -424,6 +458,17 @@ export interface components {
              */
             created_at: string;
         };
+        /** BoardStatsResponse */
+        BoardStatsResponse: {
+            /** Slug */
+            slug: string;
+            /** Thread Count */
+            thread_count: number;
+            /** Post Count */
+            post_count: number;
+            /** Online Count */
+            online_count: number;
+        };
         /** BoardUpdate */
         BoardUpdate: {
             /** Title */
@@ -483,6 +528,41 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** ImagePreview */
+        ImagePreview: {
+            /** Url */
+            url: string;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+        };
+        /** LatestThreadResponse */
+        LatestThreadResponse: {
+            /** Id */
+            id: number;
+            /** Board Slug */
+            board_slug: string;
+            /** Title */
+            title: string | null;
+            /** Reply Count */
+            reply_count: number;
+            /**
+             * Bump At
+             * Format: date-time
+             */
+            bump_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            last_reply?: components["schemas"]["ReplyPreview"] | null;
+        };
         /**
          * MediaType
          * @enum {string}
@@ -512,6 +592,8 @@ export interface components {
             width?: number | null;
             /** Height */
             height?: number | null;
+            /** Images */
+            images?: components["schemas"]["ImagePreview"][];
         };
         /** PostEditCreate */
         PostEditCreate: {
@@ -575,6 +657,8 @@ export interface components {
         ReplyPreview: {
             /** Id */
             id: number;
+            /** Post Number */
+            post_number: number;
             /** Name */
             name: string | null;
             /** Body */
@@ -609,6 +693,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** SiteStatsResponse */
+        SiteStatsResponse: {
+            /** Board Count */
+            board_count: number;
+            /** Thread Count */
+            thread_count: number;
+            /** Post Count */
+            post_count: number;
+            /** Online Count */
+            online_count: number;
+            /** Boards */
+            boards: components["schemas"]["BoardStatsResponse"][];
         };
         /** ThreadDetailResponse */
         ThreadDetailResponse: {
@@ -739,6 +836,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_latest_threads_api_threads_latest_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestThreadResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -1015,6 +1143,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaptchaChallengeResponse"];
+                };
+            };
+        };
+    };
+    get_site_stats_api_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteStatsResponse"];
                 };
             };
         };

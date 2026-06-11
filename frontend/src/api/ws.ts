@@ -20,6 +20,7 @@ export const WS_EVENT = {
   NEW_POST: 'new_post',
   POST_EDITED: 'post_edited',
   NEW_THREAD: 'new_thread',
+  THREAD_UPDATED: 'thread_updated',
 } as const
 
 // envelope pushed on every channel: { type, data }

@@ -17,7 +17,7 @@ describe('BaseCard', () => {
 
   it('adds hover class when interactive', () => {
     const wrapper = mount(BaseCard, { props: { interactive: true } })
-    expect(wrapper.classes()).toContain('hover:border-accent')
+    expect(wrapper.classes()).toContain('hover:border-gold')
   })
 })
 

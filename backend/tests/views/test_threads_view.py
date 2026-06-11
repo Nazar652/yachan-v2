@@ -18,16 +18,16 @@ from tests.views._factories import (
 )
 
 
-def build(*, allowed=True, replies=None, first_image=None):
-    if first_image is None:
-        first_image = attachment_ns(thumbnail_path="t.jpg")
+def build(*, allowed=True, replies=None, op_images=None):
+    if op_images is None:
+        op_images = [attachment_ns(thumbnail_path="t.jpg")]
     thread_service = MagicMock()
     thread_service.list_threads = AsyncMock(
         return_value=[
             (
                 thread_ns(),
                 post_ns(id=10, is_op=True, thread_id=5),
-                first_image,
+                op_images,
                 replies if replies is not None else [],
             )
         ]
@@ -46,6 +46,8 @@ def build(*, allowed=True, replies=None, first_image=None):
     events.publish = AsyncMock()
     storage = MagicMock()
     storage.public_url = MagicMock(side_effect=lambda key: f"/media/{key}")
+    online_tracker = MagicMock()
+    online_tracker.touch = AsyncMock()
     view = ThreadsView(
         thread_service=thread_service,
         file_service=file_service,
@@ -54,6 +56,7 @@ def build(*, allowed=True, replies=None, first_image=None):
         events=events,
         storage=storage,
         settings=settings_ns(),
+        online_tracker=online_tracker,
     )
     return view, SimpleNamespace(
         thread_service=thread_service,
@@ -61,12 +64,13 @@ def build(*, allowed=True, replies=None, first_image=None):
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
         events=events,
+        online_tracker=online_tracker,
     )
 
 
 async def test_list_threads_maps_responses():
     view, _ = build()
-    result = await view.list_threads("b")
+    result = await view.list_threads("b", request_ns())
     assert all(isinstance(item, ThreadResponse) for item in result)
     assert result[0].op_post is not None
     assert result[0].op_post.body == "hi"
@@ -76,31 +80,84 @@ async def test_list_threads_maps_responses():
 
 
 async def test_list_threads_falls_back_to_full_image_without_thumbnail():
-    view, _ = build(first_image=attachment_ns(thumbnail_path=None, file_path="full.jpg"))
-    result = await view.list_threads("b")
+    view, _ = build(op_images=[attachment_ns(thumbnail_path=None, file_path="full.jpg")])
+    result = await view.list_threads("b", request_ns())
     assert result[0].op_post is not None
     assert result[0].op_post.thumbnail_url == "/media/full.jpg"
 
 
 async def test_list_threads_exposes_op_image_dimensions():
-    view, _ = build(first_image=attachment_ns(thumbnail_path="t.jpg", width=800, height=200))
-    result = await view.list_threads("b")
+    view, _ = build(op_images=[attachment_ns(thumbnail_path="t.jpg", width=800, height=200)])
+    result = await view.list_threads("b", request_ns())
     assert result[0].op_post is not None
     assert result[0].op_post.width == 800
     assert result[0].op_post.height == 200
 
 
+async def test_list_threads_maps_all_op_images():
+    view, _ = build(
+        op_images=[
+            attachment_ns(thumbnail_path="t1.jpg", file_path="f1.png"),
+            attachment_ns(thumbnail_path=None, file_path="f2.png"),
+        ]
+    )
+    result = await view.list_threads("b", request_ns())
+    images = result[0].op_post.images
+    assert [image.thumbnail_url for image in images] == ["/media/t1.jpg", "/media/f2.png"]
+    assert [image.url for image in images] == ["/media/f1.png", "/media/f2.png"]
+
+
 async def test_list_threads_maps_last_replies():
     reply = post_ns(
-        id=77, name="sdaf", body="reply body", body_html="<p>reply body</p>", created_at=datetime(2024, 6, 1)
+        id=77,
+        post_number=42,
+        name="sdaf",
+        body="reply body",
+        body_html="<p>reply body</p>",
+        created_at=datetime(2024, 6, 1),
     )
     view, _ = build(replies=[reply])
-    result = await view.list_threads("b")
+    result = await view.list_threads("b", request_ns())
     assert len(result[0].last_replies) == 1
     assert result[0].last_replies[0].id == 77
+    assert result[0].last_replies[0].post_number == 42
     assert result[0].last_replies[0].name == "sdaf"
     assert result[0].last_replies[0].body == "reply body"
     assert result[0].last_replies[0].body_html == "<p>reply body</p>"
+
+
+async def test_list_threads_touches_board_presence():
+    view, mocks = build()
+    await view.list_threads("b", request_ns())
+    mocks.online_tracker.touch.assert_awaited_once()
+    assert mocks.online_tracker.touch.await_args.args[1] == "b"
+
+
+async def test_list_latest_threads_maps_responses():
+    view, mocks = build()
+    mocks.thread_service.list_latest_threads = AsyncMock(
+        return_value=[
+            (
+                thread_ns(),
+                "b",
+                attachment_ns(thumbnail_path="t.jpg"),
+                post_ns(id=15, post_number=88, body="latest", created_at=datetime(2026, 6, 10)),
+            ),
+            (thread_ns(id=6), "g", None, None),
+        ]
+    )
+
+    result = await view.list_latest_threads(limit=5)
+
+    mocks.thread_service.list_latest_threads.assert_awaited_once_with(5)
+    assert result[0].board_slug == "b"
+    assert result[0].thumbnail_url == "/media/t.jpg"
+    assert result[0].last_reply is not None
+    assert result[0].last_reply.post_number == 88
+    assert result[0].last_reply.body == "latest"
+    assert result[1].board_slug == "g"
+    assert result[1].thumbnail_url is None
+    assert result[1].last_reply is None
 
 
 async def test_get_thread_includes_posts_with_attachments():

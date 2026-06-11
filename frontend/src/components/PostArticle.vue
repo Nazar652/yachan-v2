@@ -116,36 +116,60 @@ function imageSrc(attachment: AttachmentResponse): string {
 <template>
   <article
     :id="`post-${post.post_number}`"
-    class="border border-border rounded p-4"
-    :class="{ 'bg-surface': post.is_op }"
+    class="scroll-mt-20 rounded-card border bg-surface p-4 shadow-card"
+    :class="
+      post.is_op
+        ? 'border-[color-mix(in_srgb,var(--color-gold)_32%,var(--color-border))] bg-surface-2'
+        : 'border-border'
+    "
   >
-    <div class="flex items-center justify-between gap-2 mb-2">
-      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-        <span class="font-semibold text-accent">{{ post.name }}</span>
-        <span v-if="post.tripcode" class="font-mono text-secondary">{{ post.tripcode }}</span>
-        <span class="text-secondary">{{ formatDate(post.created_at) }}</span>
+    <div class="mb-2 flex items-center justify-between gap-2">
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px]">
+        <span class="font-bold text-greentext">{{ post.name }}</span>
+        <span v-if="post.tripcode" class="font-mono text-text-muted">{{ post.tripcode }}</span>
+        <span class="font-mono text-xs text-text-muted">{{ formatDate(post.created_at) }}</span>
         <button
           type="button"
-          class="font-mono text-secondary cursor-pointer hover:text-accent hover:underline"
+          class="cursor-pointer font-mono text-xs text-text-muted hover:text-accent hover:underline"
           title="Quote this post"
           @click="emit('quote', post.post_number)"
         >
           No.{{ post.post_number }}
         </button>
-        <span v-if="post.is_edited" class="text-xs text-secondary italic">(edited)</span>
-        <span v-if="post.sage" class="text-xs text-secondary">sage</span>
+        <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
       </div>
 
-      <BaseButton
+      <!-- edited marker; hovering reveals the pre-edit body in a popover below -->
+      <div
         v-if="post.is_edited && !isEditing"
-        variant="ghost"
-        size="sm"
-        class="shrink-0"
+        class="edit-wrap relative shrink-0"
         @mouseenter="showOriginal = true"
         @mouseleave="showOriginal = false"
       >
-        <span class="inline-block w-28 text-right">{{ showOriginal ? 'original' : 'show original' }}</span>
-      </BaseButton>
+        <span class="edit-chip inline-flex cursor-help items-center gap-1 font-mono text-[11px] text-text-muted">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 8v4l3 2" />
+          </svg>
+          edited
+        </span>
+
+        <div v-if="showOriginal" class="edit-pop">
+          <span class="edit-pop-label">
+            Original{{ post.edited_at ? ` · before ${formatDate(post.edited_at)}` : '' }}
+          </span>
+          <PostBody
+            v-if="original && original.original_body_html"
+            :html="original.original_body_html"
+            class="text-sm"
+            @navigate="emit('navigate', $event)"
+          />
+          <div v-else-if="original && original.original_body" class="whitespace-pre-wrap text-sm">
+            {{ original.original_body }}
+          </div>
+          <div v-else class="text-sm italic text-text-muted">Loading…</div>
+        </div>
+      </div>
     </div>
 
     <div
@@ -159,7 +183,7 @@ function imageSrc(attachment: AttachmentResponse): string {
           :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
           controls
           preload="metadata"
-          class="max-h-64 max-w-full rounded border border-border"
+          class="max-h-64 max-w-full rounded-field border border-border"
         />
         <a v-else :href="att.url" target="_blank" rel="noopener" class="block cursor-pointer">
           <img
@@ -167,7 +191,7 @@ function imageSrc(attachment: AttachmentResponse): string {
             :src="imageSrc(att)"
             :alt="att.original_name"
             :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
-            class="max-h-64 max-w-full object-contain rounded border border-border"
+            class="max-h-64 max-w-full rounded-field border border-border object-contain"
           />
           <div
             v-else
@@ -181,7 +205,7 @@ function imageSrc(attachment: AttachmentResponse): string {
 
     <div v-if="isEditing" class="flex flex-col gap-2">
       <MarkupTextarea v-model="editDraft" rows="4" maxlength="5000" />
-      <p v-if="editError" class="text-sm text-red-500">{{ editError }}</p>
+      <p v-if="editError" class="text-sm text-danger">{{ editError }}</p>
       <div class="flex gap-2">
         <BaseButton variant="primary" size="sm" :disabled="isSaving" @click="saveEdit">
           {{ isSaving ? 'Saving…' : 'Edit' }}
@@ -200,20 +224,6 @@ function imageSrc(attachment: AttachmentResponse): string {
       />
       <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
 
-      <div
-        v-if="showOriginal && original"
-        class="mt-2 border-l-2 border-border pl-2 text-sm text-secondary"
-      >
-        <PostBody
-          v-if="original.original_body_html"
-          :html="original.original_body_html"
-          class="text-sm"
-          @navigate="emit('navigate', $event)"
-        />
-        <div v-else-if="original.original_body" class="whitespace-pre-wrap">{{ original.original_body }}</div>
-        <div v-else class="italic">(empty)</div>
-      </div>
-
       <div v-if="post.can_edit" class="mt-2 flex justify-end">
         <BaseButton variant="ghost" size="sm" @click="startEdit">Edit</BaseButton>
       </div>
@@ -230,7 +240,7 @@ function imageSrc(attachment: AttachmentResponse): string {
       >&gt;&gt;{{ backlinkNumber }}</a>
     </div>
 
-    <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-border pt-2">
+    <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-dashed border-border pt-2.5">
       <div class="flex gap-2">
         <BaseButton variant="danger" size="sm" @click="onDelete">Delete</BaseButton>
         <BaseButton variant="ghost" size="sm" @click="startBan">Ban</BaseButton>
@@ -243,3 +253,70 @@ function imageSrc(attachment: AttachmentResponse): string {
     </div>
   </article>
 </template>
+
+<style scoped>
+.edit-chip {
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+  padding-bottom: 1px;
+  transition: color 0.14s, border-color 0.14s;
+}
+.edit-wrap:hover .edit-chip {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-gold);
+}
+
+/* original-text popover, drops in below the chip on hover */
+.edit-pop {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  z-index: 20;
+  width: max-content;
+  min-width: 200px;
+  max-width: 360px;
+  text-align: left;
+  padding: 10px 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: var(--radius-field);
+  box-shadow: var(--shadow-deep);
+  animation: edit-pop-in 0.16s ease;
+}
+/* transparent bridge so the 8px gap doesn't drop the :hover */
+.edit-pop::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0;
+  right: 0;
+  height: 9px;
+}
+/* caret pointing up at the chip */
+.edit-pop::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 16px;
+  width: 9px;
+  height: 9px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  transform: rotate(45deg);
+}
+.edit-pop-label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+@keyframes edit-pop-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>

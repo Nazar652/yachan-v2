@@ -86,6 +86,14 @@ class PostRepository(BaseRepository):
         )
         return result.scalar_one()
 
+    async def count_by_board(self) -> dict[int, int]:
+        result = await self.session.execute(
+            select(col(Post.board_id), func.count())
+            .where(col(Post.deleted).is_(False))
+            .group_by(col(Post.board_id))
+        )
+        return {board_id: count for board_id, count in result.all()}
+
     async def get_thread_posts(self, thread_id: int) -> list[Post]:
         result = await self.session.execute(
             select(Post)

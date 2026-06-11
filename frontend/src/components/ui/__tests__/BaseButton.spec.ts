@@ -9,14 +9,24 @@ describe('BaseButton', () => {
     expect(wrapper.text()).toBe('Post')
   })
 
-  it('uses the primary variant by default', () => {
+  it('uses the gold primary variant by default', () => {
     const wrapper = mount(BaseButton)
-    expect(wrapper.classes()).toContain('bg-accent')
+    expect(wrapper.classes()).toContain('bg-gold')
   })
 
   it('applies the danger variant', () => {
     const wrapper = mount(BaseButton, { props: { variant: 'danger' } })
     expect(wrapper.classes()).toContain('bg-danger')
+  })
+
+  it('applies the ghost variant with a visible border', () => {
+    const wrapper = mount(BaseButton, { props: { variant: 'ghost' } })
+    expect(wrapper.classes()).toContain('border-border')
+  })
+
+  it('applies the link variant', () => {
+    const wrapper = mount(BaseButton, { props: { variant: 'link' } })
+    expect(wrapper.classes()).toContain('text-accent')
   })
 
   it('can be disabled', () => {

@@ -17,6 +17,23 @@ async def test_list_by_board(session, make_result):
     assert await repo.list_by_board(1, limit=10, offset=0) == threads
 
 
+async def test_list_latest(session, make_result):
+    threads = [object(), object()]
+    session.execute.return_value = make_result(all_=threads)
+    repo = ThreadRepository(session=session)
+
+    assert await repo.list_latest(limit=2) == threads
+
+
+async def test_count_by_board(session, make_result):
+    result = make_result()
+    result.all.return_value = [(1, 4), (2, 9)]
+    session.execute.return_value = result
+    repo = ThreadRepository(session=session)
+
+    assert await repo.count_by_board() == {1: 4, 2: 9}
+
+
 async def test_create(session):
     thread = object()
     repo = ThreadRepository(session=session)

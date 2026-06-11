@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
 import { useBoardWs } from '@/composables/useBoardWs'
-import { threadsQueryKey } from '@/composables/useThreads'
+import { threadsPageQueryKey } from '@/composables/useThreads'
 
 class MockWebSocket {
   static instances: MockWebSocket[] = []
@@ -53,12 +53,12 @@ describe('useBoardWs', () => {
 
   it('prepends a new_thread to the catalog cache', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsQueryKey('b'), [{ id: 1, title: 'first' }])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 1, title: 'first' }])
     mountBoardWs(queryClient)
 
     emit({ type: 'new_thread', data: { id: 2, title: 'second' } })
 
-    expect(queryClient.getQueryData(threadsQueryKey('b'))).toEqual([
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
       { id: 2, title: 'second' },
       { id: 1, title: 'first' },
     ])
@@ -66,22 +66,54 @@ describe('useBoardWs', () => {
 
   it('ignores a new_thread whose id is already in the cache', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsQueryKey('b'), [{ id: 2, title: 'second' }])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 2, title: 'second' }])
     mountBoardWs(queryClient)
 
     emit({ type: 'new_thread', data: { id: 2, title: 'second' } })
 
-    expect(queryClient.getQueryData(threadsQueryKey('b'))).toEqual([{ id: 2, title: 'second' }])
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 2, title: 'second' }])
+  })
+
+  it('merges flags and re-sorts a stickied thread to the top on thread_updated', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'thread_updated', data: { id: 2, is_sticky: true, is_locked: false } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+      { id: 2, is_sticky: true, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+    ])
+  })
+
+  it('leaves other threads untouched when locking one on thread_updated', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'thread_updated', data: { id: 1, is_sticky: false, is_locked: true } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+      { id: 1, is_sticky: false, is_locked: true, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
   })
 
   it('ignores unrelated event types', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsQueryKey('b'), [{ id: 1, title: 'first' }])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 1, title: 'first' }])
     mountBoardWs(queryClient)
 
     emit({ type: 'new_post', data: { id: 9, post_number: 9 } })
 
-    expect(queryClient.getQueryData(threadsQueryKey('b'))).toEqual([{ id: 1, title: 'first' }])
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 1, title: 'first' }])
   })
 
   it('closes the socket when the component unmounts', () => {

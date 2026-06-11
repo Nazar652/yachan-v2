@@ -129,7 +129,7 @@ describe('ModDashboardView', () => {
   it('shows an empty state when there are no reports', () => {
     stubReports({ data: ref([]) })
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('No reports')
+    expect(wrapper.text()).toContain('No open reports. The fields are calm.')
   })
 
   it('renders a report row with its reason and post id', () => {

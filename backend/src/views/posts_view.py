@@ -10,6 +10,7 @@ from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import PostService
 from src.utils.events import NEW_POST, POST_EDITED, EventPublisher, thread_channel
+from src.utils.online import OnlineTracker
 from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
 from src.views.serializers import post_response
@@ -30,6 +31,7 @@ class PostsView:
         events: EventPublisher,
         storage: Storage,
         settings: Settings,
+        online_tracker: OnlineTracker,
     ) -> None:
         self.post_service = post_service
         self.file_service = file_service
@@ -38,6 +40,7 @@ class PostsView:
         self.events = events
         self.storage = storage
         self.settings = settings
+        self.online_tracker = online_tracker
 
     async def create_reply(
         self,
@@ -50,6 +53,7 @@ class PostsView:
         captcha_answer: str,
     ) -> PostResponse:
         ip_hash = client_ip_hash(request, self.settings)
+        await self.online_tracker.touch(ip_hash, board_slug)
         await self.captcha_service.validate(captcha_token, captcha_answer)
         if not await self.rate_limiter.is_allowed(
             f"reply:{ip_hash}", REPLY_RATE_LIMIT, REPLY_RATE_WINDOW

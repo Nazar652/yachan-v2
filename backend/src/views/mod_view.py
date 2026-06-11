@@ -2,12 +2,15 @@ from kink import inject
 
 from src.core.exceptions import ForbiddenError
 from src.models.mod_account import ModAccount, ModRole
+from src.models.thread import Thread
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
+from src.schemas.thread import ThreadResponse
 from src.services.board_service import BoardService
 from src.services.mod_service import ModService
 from src.services.report_service import ReportService
+from src.utils.events import THREAD_UPDATED, EventPublisher, board_channel, thread_channel
 
 
 class ModView:
@@ -17,10 +20,12 @@ class ModView:
         mod_service: ModService,
         board_service: BoardService,
         report_service: ReportService,
+        events: EventPublisher,
     ) -> None:
         self.mod_service = mod_service
         self.board_service = board_service
         self.report_service = report_service
+        self.events = events
 
     async def login(self, data: ModLogin) -> TokenResponse:
         token, role = await self.mod_service.authenticate(data.username, data.password)
@@ -54,13 +59,15 @@ class ModView:
         self, token: str, board_slug: str, thread_id: int, locked: bool
     ) -> None:
         await self.mod_service.resolve_mod(token)
-        await self.mod_service.set_thread_locked(board_slug, thread_id, locked)
+        thread = await self.mod_service.set_thread_locked(board_slug, thread_id, locked)
+        await self._publish_thread_update(board_slug, thread)
 
     async def set_thread_sticky(
         self, token: str, board_slug: str, thread_id: int, sticky: bool
     ) -> None:
         await self.mod_service.resolve_mod(token)
-        await self.mod_service.set_thread_sticky(board_slug, thread_id, sticky)
+        thread = await self.mod_service.set_thread_sticky(board_slug, thread_id, sticky)
+        await self._publish_thread_update(board_slug, thread)
 
     async def ban_poster(
         self, token: str, board_slug: str, post_number: int, data: BanCreate
@@ -79,6 +86,13 @@ class ModView:
     async def resolve_report(self, token: str, report_id: int) -> None:
         mod = await self.mod_service.resolve_mod(token)
         await self.report_service.resolve(report_id, mod.id)
+
+    async def _publish_thread_update(self, board_slug: str, thread: Thread) -> None:
+        # notify open clients so a lock hides the reply form and a sticky reorders
+        # the catalog without a refetch
+        payload = ThreadResponse.model_validate(thread).model_dump(mode="json")
+        await self.events.publish(thread_channel(thread.id), THREAD_UPDATED, payload)
+        await self.events.publish(board_channel(board_slug), THREAD_UPDATED, payload)
 
     @staticmethod
     def _require_admin(mod: ModAccount) -> None:

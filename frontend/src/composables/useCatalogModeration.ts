@@ -1,19 +1,26 @@
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { threadsQueryKey } from '@/composables/useThreads'
+import { threadsPageQueryKey } from '@/composables/useThreads'
 import { setThreadLocked, setThreadSticky } from '@/api/mod'
 import type { ThreadResponse } from '@/api/types'
 
 // lock/sticky from the catalog. unlike useModeration (which patches one thread's
 // detail cache), this flips the flag on the matching item in the threads-list
 // cache so the card icon updates without a refetch.
-export function useCatalogModeration(slug: MaybeRefOrGetter<string>) {
+export function useCatalogModeration(
+  slug: MaybeRefOrGetter<string>,
+  page: MaybeRefOrGetter<number> = 1,
+) {
   const queryClient = useQueryClient()
 
   function patchThread(threadId: number, patch: Partial<ThreadResponse>) {
-    queryClient.setQueryData<ThreadResponse[]>(threadsQueryKey(toValue(slug)), (old) =>
-      old ? old.map((thread) => (thread.id === threadId ? { ...thread, ...patch } : thread)) : old,
+    queryClient.setQueryData<ThreadResponse[]>(
+      threadsPageQueryKey(toValue(slug), toValue(page)),
+      (old) =>
+        old
+          ? old.map((thread) => (thread.id === threadId ? { ...thread, ...patch } : thread))
+          : old,
     )
   }
 

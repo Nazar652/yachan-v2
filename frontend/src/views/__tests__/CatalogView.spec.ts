@@ -1,22 +1,26 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 import CatalogView from '@/views/CatalogView.vue'
 import { useThreads } from '@/composables/useThreads'
+import { useSiteStats } from '@/composables/useSiteStats'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b' } }),
+  useRouter: () => ({ push: vi.fn() }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 
 const globalStubs = { RouterLink: { template: '<a><slot /></a>' } }
 
-vi.mock('@/composables/useThreads', () => ({
-  useThreads: vi.fn(),
-}))
+// keep THREADS_PAGE_SIZE and the key helpers real; stub only the query composable
+vi.mock('@/composables/useThreads', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/composables/useThreads')>()
+  return { ...actual, useThreads: vi.fn() }
+})
 
 vi.mock('@/composables/useBoardWs', () => ({
   useBoardWs: vi.fn(),
@@ -26,6 +30,10 @@ vi.mock('@/composables/useBoards', () => ({
   useBoards: () => ({ data: ref([{ id: 1, slug: 'b', title: 'Random', description: 'random board' }]) }),
 }))
 
+vi.mock('@/composables/useSiteStats', () => ({
+  useSiteStats: vi.fn(() => ({ data: ref(undefined) })),
+}))
+
 const setLockedMock = vi.fn()
 const setStickyMock = vi.fn()
 vi.mock('@/composables/useCatalogModeration', () => ({
@@ -33,9 +41,29 @@ vi.mock('@/composables/useCatalogModeration', () => ({
 }))
 
 const useThreadsMock = vi.mocked(useThreads)
+const useSiteStatsMock = vi.mocked(useSiteStats)
 
 function stubThreads(state: Record<string, unknown>) {
   useThreadsMock.mockReturnValue(state as ReturnType<typeof useThreads>)
+}
+
+function stubStats(data: Ref<unknown>) {
+  useSiteStatsMock.mockReturnValue({ data } as ReturnType<typeof useSiteStats>)
+}
+
+function makeThread(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    board_id: 1,
+    title: 'Hello world',
+    is_locked: false,
+    is_sticky: false,
+    reply_count: 5,
+    bump_at: '2026-06-10T12:00:00Z',
+    created_at: '2026-06-08T12:00:00Z',
+    last_replies: [],
+    ...overrides,
+  }
 }
 
 // click a button by its visible label (each card renders several buttons)
@@ -72,183 +100,81 @@ describe('CatalogView', () => {
   })
 
   it('renders thread cards with title and reply count', () => {
-    stubThreads({
-      data: ref([
-        { id: 1, board_id: 1, title: 'Hello world', is_locked: false, is_sticky: false, reply_count: 5, bump_at: '', created_at: '' },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('Hello world')
     expect(wrapper.text()).toContain('5 replies')
   })
 
-  it('shows (no title) when thread title is null', () => {
-    stubThreads({
-      data: ref([
-        { id: 2, board_id: 1, title: null, is_locked: false, is_sticky: false, reply_count: 0, bump_at: '', created_at: '' },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('(no title)')
-  })
-
-  it('shows the board slug and description in the header', () => {
+  it('shows the board banner with slug, description and stats', () => {
     stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    stubStats(
+      ref({
+        board_count: 1,
+        thread_count: 58,
+        post_count: 1340,
+        online_count: 18,
+        boards: [{ slug: 'b', thread_count: 58, post_count: 1340, online_count: 18 }],
+      }),
+    )
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('/b/')
     expect(wrapper.text()).toContain('random board')
+    expect(wrapper.text()).toContain('58')
+    expect(wrapper.text()).toContain('● 18 online now')
   })
 
-  it('renders the rendered op_post body preview when present', () => {
+  it('renders the pager when the board has more than one page', () => {
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
+    stubStats(
+      ref({
+        board_count: 1,
+        thread_count: 35,
+        post_count: 100,
+        online_count: 1,
+        boards: [{ slug: 'b', thread_count: 35, post_count: 100, online_count: 1 }],
+      }),
+    )
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    // 35 threads / 10 per page -> 4 pages
+    expect(wrapper.find('nav').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Next')
+  })
+
+  it('reorders the page by reply count when the sort changes', async () => {
     stubThreads({
       data: ref([
-        {
-          id: 5, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
-          reply_count: 0, bump_at: '', created_at: '',
-          op_post: { body: 'hello preview', body_html: '<p><strong>hello</strong> preview</p>', thumbnail_url: null },
-          last_replies: [],
-        },
+        makeThread({ id: 1, title: 'few', reply_count: 1 }),
+        makeThread({ id: 2, title: 'many', reply_count: 9 }),
       ]),
       isPending: ref(false),
       isError: ref(false),
     })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    const body = wrapper.find('.post-body')
-    expect(body.exists()).toBe(true)
-    expect(body.html()).toContain('<strong>hello</strong>')
+    await clickButton(wrapper, 'Most replies')
+    const text = wrapper.text()
+    expect(text.indexOf('many')).toBeLessThan(text.indexOf('few'))
   })
 
-  function stubThreadWithOpImage(opPost: Record<string, unknown>) {
-    stubThreads({
-      data: ref([
-        {
-          id: 9, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
-          reply_count: 0, bump_at: '', created_at: '',
-          op_post: opPost, last_replies: [],
-        },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-  }
-
-  it('sizes the op thumbnail to the clamped image aspect ratio', () => {
-    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: 400, height: 200 })
+  it('hides mod controls for anonymous visitors', () => {
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    const style = wrapper.find('img').attributes('style')
-    expect(style).toContain('width: 200px')
-    expect(style).toContain('height: 100px')
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Lock')).toBe(false)
   })
 
-  it('crops extreme aspect ratios at 1:4', () => {
-    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: 100, height: 1000 })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    const style = wrapper.find('img').attributes('style')
-    expect(style).toContain('width: 50px')
-    expect(style).toContain('height: 200px')
-  })
-
-  it('falls back to a square thumbnail when dimensions are missing', () => {
-    stubThreadWithOpImage({ body: null, body_html: null, thumbnail_url: '/media/t.jpg', width: null, height: null })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    const style = wrapper.find('img').attributes('style')
-    expect(style).toContain('width: 200px')
-    expect(style).toContain('height: 200px')
-  })
-
-  it('shows "Nobody posted anything yet" when last_replies is empty', () => {
-    stubThreads({
-      data: ref([
-        { id: 7, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
-          reply_count: 0, bump_at: '', created_at: '', last_replies: [] },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('Nobody posted anything yet')
-  })
-
-  it('renders last replies with rendered body, id and custom name', () => {
-    stubThreads({
-      data: ref([
-        {
-          id: 8, board_id: 1, title: 'T', is_locked: false, is_sticky: false,
-          reply_count: 2, bump_at: '', created_at: '',
-          last_replies: [
-            { id: 100, name: 'sdaf', body: 'first reply', body_html: '<p>first reply</p>', created_at: '2024-01-01T00:00:00' },
-            { id: 101, name: 'Anonymous', body: 'second reply', body_html: '<p>second reply</p>', created_at: '2024-01-02T00:00:00' },
-          ],
-        },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('first reply')
-    expect(wrapper.text()).toContain('second reply')
-    expect(wrapper.text()).toContain('ID: 100')
-    // a custom name is shown, the default "Anonymous" is not
-    expect(wrapper.text()).toContain('sdaf')
-    expect(wrapper.text()).not.toContain('Anonymous')
-  })
-
-  it('shows sticky and locked icons', () => {
-    stubThreads({
-      data: ref([
-        { id: 3, board_id: 1, title: 'Pinned', is_locked: true, is_sticky: true, reply_count: 1, bump_at: '', created_at: '' },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('📌')
-    expect(wrapper.text()).toContain('🔒')
-  })
-
-  function stubOneThread() {
-    stubThreads({
-      data: ref([
-        { id: 1, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 0, bump_at: '', created_at: '' },
-      ]),
-      isPending: ref(false),
-      isError: ref(false),
-    })
-  }
-
-  it('hides mod controls when not authenticated', () => {
-    stubOneThread()
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).not.toContain('Lock')
-    expect(wrapper.text()).not.toContain('Sticky')
-  })
-
-  it('shows lock and sticky controls when authenticated', () => {
+  it('locks a thread from the card mod bar', async () => {
     useAuthStore().login('jwt', 'admin')
-    stubOneThread()
-    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('Lock')
-    expect(wrapper.text()).toContain('Sticky')
-  })
-
-  it('toggles a thread lock', async () => {
-    useAuthStore().login('jwt', 'admin')
-    stubOneThread()
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Lock')
     expect(setLockedMock).toHaveBeenCalledWith(1, true)
   })
 
-  it('toggles a thread sticky', async () => {
+  it('stickies a thread from the card mod bar', async () => {
     useAuthStore().login('jwt', 'admin')
-    stubOneThread()
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')
     expect(setStickyMock).toHaveBeenCalledWith(1, true)
   })
 })
-

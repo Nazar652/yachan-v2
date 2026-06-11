@@ -1,26 +1,130 @@
 @import 'tailwindcss';
 
-/* design tokens — single source of truth for colours, radii, spacing.
+/* design tokens — single source of truth for colours, fonts, radii, shadows.
    change a value here and it updates everywhere it is referenced
-   (e.g. --color-accent powers bg-accent / text-accent / border-accent). */
+   (e.g. --color-accent powers bg-accent / text-accent / border-accent).
+   warm-agrarian palette: parchment field + roasted grain, amber/gold accents. */
 @theme {
-  --color-bg: #d6daf0;
-  --color-surface: #eef2ff;
-  --color-surface-2: #d6daf0;
-  --color-border: #b7c5d9;
-  --color-text: #0f0c0c;
-  --color-text-muted: #707070;
-  --color-accent: #34345c;
-  --color-accent-hover: #28284a;
-  --color-danger: #af0a0f;
-  --color-greentext: #789922;
+  /* surfaces */
+  --color-bg: #efe6d3;
+  --color-surface: #fbf6ea;
+  --color-surface-2: #e8ddc4;
+  --color-surface-3: #e0d3b6;
+  --color-border: #d9c9a4;
+  --color-border-soft: #e6dabf;
 
-  --radius-card: 4px;
+  /* ink + text */
+  --color-text: #2a2018;
+  --color-text-muted: #8a7a5c;
+  --color-ink: #2a2018;
+  --color-on-gold: #2a2018;
+
+  /* brand */
+  --color-accent: #a8730c;
+  --color-accent-hover: #86590a;
+  --color-gold: #d99b1c;
+  --color-gold-2: #ec9a22;
+  --color-gold-soft: #f1d894;
+  --color-danger: #b3331f;
+  --color-danger-hover: #8f2718;
+  --color-greentext: #6f8f1f;
+
+  --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --radius-card: 7px;
+  --radius-field: 4px;
+  --radius-hero: 12px;
+
+  /* warm-tinted elevation (shadow-card / shadow-pop / shadow-deep) */
+  --shadow-card: 0 1px 2px rgba(43, 33, 24, 0.07);
+  --shadow-pop: 0 3px 14px rgba(43, 33, 24, 0.09);
+  --shadow-deep: 0 10px 34px rgba(43, 33, 24, 0.16);
+}
+
+/* dark theme re-declares the same custom properties; tailwind utilities
+   reference var(--color-*) so everything flips with the data attribute */
+[data-theme='dark'] {
+  --color-bg: #16110a;
+  --color-surface: #211a10;
+  --color-surface-2: #2b2316;
+  --color-surface-3: #352b1a;
+  --color-border: #3b3120;
+  --color-border-soft: #2c2417;
+
+  --color-text: #efe5cf;
+  --color-text-muted: #a9986f;
+  --color-ink: #efe5cf;
+  --color-on-gold: #221a0e;
+
+  --color-accent: #e6b748;
+  --color-accent-hover: #f3c869;
+  --color-gold: #e3b341;
+  --color-gold-2: #ec9a22;
+  --color-gold-soft: #5c4a1d;
+  --color-danger: #e1694c;
+  --color-danger-hover: #ec8064;
+  --color-greentext: #9fbf45;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 3px 14px rgba(0, 0, 0, 0.45);
+  --shadow-deep: 0 12px 40px rgba(0, 0, 0, 0.6);
+
+  --season-glow-a: rgba(217, 155, 28, 0.085);
+  --season-glow-b: rgba(217, 155, 28, 0.07);
+}
+
+:root {
+  --season-glow-a: rgba(217, 155, 28, 0.07);
+  --season-glow-b: rgba(217, 155, 28, 0.055);
 }
 
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* faint golden-field wash behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 18% 12%, var(--season-glow-a), transparent 42%),
+    radial-gradient(circle at 86% 78%, var(--season-glow-b), transparent 46%);
+}
+
+/* subtle paper-grain overlay; mounted once in App.vue */
+.grain-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+[data-theme='dark'] .grain-layer {
+  mix-blend-mode: soft-light;
+  opacity: 0.096;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /* rendered post markup — shared by the thread view and the catalog previews so
@@ -103,6 +207,35 @@ body {
   user-select: none;
 }
 
+/* themed thin scrollbar that follows the design tokens, so it stays subtle on
+   both light and dark themes instead of the bright native bar */
+.gallery-scroll,
+.post-body pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.gallery-scroll::-webkit-scrollbar,
+.post-body pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.gallery-scroll::-webkit-scrollbar-track,
+.post-body pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gallery-scroll::-webkit-scrollbar-thumb,
+.post-body pre::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.gallery-scroll:hover::-webkit-scrollbar-thumb,
+.post-body pre:hover::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+}
+
 /* backlinks footer: the >>N references to a post, rendered outside .post-body so
    they need their own copy of the reference styling */
 .post-backlinks .post-ref {
@@ -121,8 +254,8 @@ body {
 
 @keyframes post-highlight-fade {
   from {
-    background-color: var(--color-surface);
-    box-shadow: 0 0 0 2px var(--color-accent);
+    background-color: var(--color-surface-3);
+    box-shadow: 0 0 0 2px var(--color-gold);
   }
   to {
     background-color: transparent;

@@ -14,7 +14,7 @@ from src.core.exceptions import (
     UnauthorizedError,
 )
 from src.middleware.scope import ScopeMiddleware
-from src.routers import boards, captcha, mod, posts, reports, threads, ws
+from src.routers import boards, captcha, latest_threads, mod, posts, reports, stats, threads, ws
 
 
 def create_app() -> FastAPI:
@@ -61,10 +61,13 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=401, content={"detail": str(exc)})
 
     app.include_router(boards.router, prefix="/api")
+    # the fixed /threads/latest path is registered before the /{board_slug}/threads routes
+    app.include_router(latest_threads.router, prefix="/api")
     app.include_router(threads.router, prefix="/api")
     app.include_router(posts.router, prefix="/api")
     app.include_router(reports.router, prefix="/api")
     app.include_router(captcha.router, prefix="/api")
+    app.include_router(stats.router, prefix="/api")
     app.include_router(mod.router, prefix="/api")
     app.include_router(ws.router, prefix="/api")
 

@@ -82,15 +82,19 @@ class ModService:
 
     async def set_thread_locked(
         self, board_slug: str, thread_id: int, locked: bool
-    ) -> None:
+    ) -> Thread:
         thread = await self._require_thread(board_slug, thread_id)
         await self.thread_repo.set_locked(thread.id, locked)
+        thread.is_locked = locked
+        return thread
 
     async def set_thread_sticky(
         self, board_slug: str, thread_id: int, sticky: bool
-    ) -> None:
+    ) -> Thread:
         thread = await self._require_thread(board_slug, thread_id)
         await self.thread_repo.set_sticky(thread.id, sticky)
+        thread.is_sticky = sticky
+        return thread
 
     async def ban_poster(
         self, board_slug: str, post_number: int, data: BanCreate, mod: ModAccount

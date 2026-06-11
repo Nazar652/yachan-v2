@@ -7,7 +7,7 @@ from src.models.mod_account import ModRole
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.views.mod_view import ModView
-from tests.views._factories import ban_ns, board_ns
+from tests.views._factories import ban_ns, board_ns, thread_ns
 
 
 def build(*, role=ModRole.ADMIN):
@@ -16,7 +16,8 @@ def build(*, role=ModRole.ADMIN):
     mod_service.authenticate = AsyncMock(return_value=("jwt-token", role))
     mod_service.resolve_mod = AsyncMock(return_value=mod)
     mod_service.delete_post = AsyncMock()
-    mod_service.set_thread_locked = AsyncMock()
+    mod_service.set_thread_locked = AsyncMock(return_value=thread_ns(is_locked=True))
+    mod_service.set_thread_sticky = AsyncMock(return_value=thread_ns(is_sticky=True))
     mod_service.ban_poster = AsyncMock(return_value=ban_ns())
     board_service = MagicMock()
     board_service.create_board = AsyncMock(return_value=board_ns())
@@ -25,13 +26,19 @@ def build(*, role=ModRole.ADMIN):
     report_service = MagicMock()
     report_service.list_unresolved = AsyncMock(return_value=[])
     report_service.resolve = AsyncMock()
+    events = MagicMock()
+    events.publish = AsyncMock()
     view = ModView(
         mod_service=mod_service,
         board_service=board_service,
         report_service=report_service,
+        events=events,
     )
     return view, SimpleNamespace(
-        mod_service=mod_service, board_service=board_service, report_service=report_service
+        mod_service=mod_service,
+        board_service=board_service,
+        report_service=report_service,
+        events=events,
     )
 
 
@@ -102,3 +109,28 @@ async def test_resolve_report_uses_mod_id():
     view, mocks = build()
     await view.resolve_report("tok", 7)
     mocks.report_service.resolve.assert_awaited_once_with(7, 99)
+
+
+async def test_set_thread_locked_publishes_to_both_channels():
+    view, mocks = build()
+    await view.set_thread_locked("tok", "b", 5, True)
+
+    mocks.mod_service.set_thread_locked.assert_awaited_once_with("b", 5, True)
+    channels = [call.args[0] for call in mocks.events.publish.await_args_list]
+    assert channels == ["ws:thread:5", "ws:board:b"]
+    for call in mocks.events.publish.await_args_list:
+        assert call.args[1] == "thread_updated"
+        assert call.args[2]["id"] == 5
+        assert call.args[2]["is_locked"] is True
+
+
+async def test_set_thread_sticky_publishes_to_both_channels():
+    view, mocks = build()
+    await view.set_thread_sticky("tok", "b", 5, True)
+
+    mocks.mod_service.set_thread_sticky.assert_awaited_once_with("b", 5, True)
+    channels = [call.args[0] for call in mocks.events.publish.await_args_list]
+    assert channels == ["ws:thread:5", "ws:board:b"]
+    for call in mocks.events.publish.await_args_list:
+        assert call.args[1] == "thread_updated"
+        assert call.args[2]["is_sticky"] is True
