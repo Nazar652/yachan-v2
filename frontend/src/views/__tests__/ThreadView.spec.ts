@@ -117,11 +117,11 @@ describe('ThreadView', () => {
     expect(wrapper.findAll('.post-article-stub')).toHaveLength(2)
   })
 
-  it('shows sticky and locked icons', () => {
+  it('shows sticky and locked flags', () => {
     stubThreadDetail({ is_locked: true, is_sticky: true, posts: [] })
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('📌')
-    expect(wrapper.text()).toContain('🔒')
+    expect(wrapper.text()).toContain('★ sticky')
+    expect(wrapper.text()).toContain('⊘ locked')
   })
 
   it('shows the reply form when the thread is not locked', () => {

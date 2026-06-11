@@ -9,6 +9,7 @@ import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import SealDivider from '@/components/ui/SealDivider.vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -66,25 +67,38 @@ async function onToggleSticky() {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-6">
-    <div class="mb-4 text-sm text-secondary">
-      <RouterLink :to="`/${slug}`" class="cursor-pointer hover:text-accent hover:underline">← /{{ slug }}/</RouterLink>
-    </div>
+  <div class="mx-auto max-w-[880px] py-4">
+    <RouterLink
+      :to="`/${slug}`"
+      class="mb-1 inline-flex cursor-pointer items-center gap-1.5 rounded-field px-1.5 py-1 font-mono text-[13px] text-accent transition-all hover:gap-2.5 hover:bg-surface-3 hover:text-accent-hover"
+    >
+      ‹ /{{ slug }}/
+    </RouterLink>
 
-    <div v-if="isPending" class="text-secondary py-8 text-center">Loading…</div>
+    <div v-if="isPending" class="py-8 text-center text-text-muted">Loading…</div>
 
-    <div v-else-if="isError" class="text-red-500 py-8 text-center">
+    <div v-else-if="isError" class="py-8 text-center text-danger">
       Failed to load thread
     </div>
 
     <template v-else-if="thread">
-      <div class="mb-4 flex items-center gap-2">
-        <h1 class="text-xl font-semibold">
+      <div class="mb-3 flex flex-wrap items-baseline gap-3">
+        <h1 class="text-3xl font-extrabold tracking-tight">
           {{ thread.title ?? '(no title)' }}
         </h1>
-        <span v-if="thread.is_sticky" title="Sticky">📌</span>
-        <span v-if="thread.is_locked" title="Locked">🔒</span>
-        <span class="ml-auto text-sm text-secondary">{{ thread.reply_count }} replies</span>
+        <span
+          v-if="thread.is_sticky"
+          class="rounded-full bg-gold/25 px-2 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide text-accent"
+        >
+          ★ sticky
+        </span>
+        <span
+          v-if="thread.is_locked"
+          class="rounded-full bg-danger/15 px-2 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide text-danger"
+        >
+          ⊘ locked
+        </span>
+        <span class="ml-auto font-mono text-xs text-text-muted">{{ thread.reply_count }} replies</span>
       </div>
 
       <div v-if="auth.isAuthenticated" class="mb-4 flex gap-2">
@@ -96,7 +110,7 @@ async function onToggleSticky() {
         </BaseButton>
       </div>
 
-      <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-2.5">
         <PostArticle
           v-for="post in thread.posts ?? []"
           :key="post.id"
@@ -109,12 +123,12 @@ async function onToggleSticky() {
         />
       </div>
 
-      <div class="mt-6">
-        <p v-if="thread.is_locked" class="text-sm text-secondary italic py-4 text-center">
-          🔒 This thread is locked.
-        </p>
-        <ReplyForm v-else ref="replyForm" :slug="slug" :thread-id="threadId" />
-      </div>
+      <SealDivider />
+
+      <p v-if="thread.is_locked" class="py-4 text-center text-sm italic text-text-muted">
+        ⊘ This thread is locked.
+      </p>
+      <ReplyForm v-else ref="replyForm" :slug="slug" :thread-id="threadId" />
     </template>
   </div>
 </template>

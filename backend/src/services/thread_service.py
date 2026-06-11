@@ -17,7 +17,8 @@ from src.services.ban_service import BanService
 from src.services.markup_service import MarkupService
 from src.utils.names import parse_name
 
-ThreadWithPreview = tuple[Thread, Post | None, Attachment | None, list[Post]]
+ThreadWithPreview = tuple[Thread, Post | None, list[Attachment], list[Post]]
+LatestThreadPreview = tuple[Thread, str, Attachment | None, Post | None]
 
 
 class ThreadService:
@@ -98,13 +99,42 @@ class ThreadService:
 
         op_posts = await self.post_repo.get_op_posts_by_thread_ids(thread_ids)
         op_post_ids = [p.id for p in op_posts.values()]
-        first_images = await self.attachment_repo.get_first_images_by_post_ids(op_post_ids)
+        op_images = await self.attachment_repo.list_images_by_post_ids(op_post_ids)
         last_replies = await self.post_repo.get_last_replies_by_thread_ids(thread_ids)
 
         result: list[ThreadWithPreview] = []
         for thread in threads:
             op_post = op_posts.get(thread.id)
+            images = op_images.get(op_post.id, []) if op_post else []
+            replies = last_replies.get(thread.id, [])
+            result.append((thread, op_post, images, replies))
+        return result
+
+    async def list_latest_threads(self, limit: int = 5) -> list[LatestThreadPreview]:
+        threads = await self.thread_repo.list_latest(limit)
+        thread_ids = [t.id for t in threads]
+
+        boards = await self.board_repo.list_all()
+        slug_by_board_id = {board.id: board.slug for board in boards}
+
+        op_posts = await self.post_repo.get_op_posts_by_thread_ids(thread_ids)
+        op_post_ids = [p.id for p in op_posts.values()]
+        first_images = await self.attachment_repo.get_first_images_by_post_ids(op_post_ids)
+        last_replies = await self.post_repo.get_last_replies_by_thread_ids(
+            thread_ids, limit_per_thread=1
+        )
+
+        result: list[LatestThreadPreview] = []
+        for thread in threads:
+            op_post = op_posts.get(thread.id)
             first_image = first_images.get(op_post.id) if op_post else None
             replies = last_replies.get(thread.id, [])
-            result.append((thread, op_post, first_image, replies))
+            result.append(
+                (
+                    thread,
+                    slug_by_board_id.get(thread.board_id, ""),
+                    first_image,
+                    replies[0] if replies else None,
+                )
+            )
         return result

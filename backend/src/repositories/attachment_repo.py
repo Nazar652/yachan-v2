@@ -42,6 +42,22 @@ class AttachmentRepository(BaseRepository):
         )
         return {att.post_id: att for att in result.scalars().all()}
 
+    async def list_images_by_post_ids(self, post_ids: list[int]) -> dict[int, list[Attachment]]:
+        if not post_ids:
+            return {}
+        result = await self.session.execute(
+            select(Attachment)
+            .where(
+                col(Attachment.post_id).in_(post_ids),
+                col(Attachment.media_type).in_([MediaType.IMAGE, MediaType.GIF]),
+            )
+            .order_by(col(Attachment.id).asc())
+        )
+        images_by_post: dict[int, list[Attachment]] = {}
+        for attachment in result.scalars().all():
+            images_by_post.setdefault(attachment.post_id, []).append(attachment)
+        return images_by_post
+
     async def list_by_post_ids(self, post_ids: list[int]) -> dict[int, list[Attachment]]:
         if not post_ids:
             return {}

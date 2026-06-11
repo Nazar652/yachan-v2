@@ -116,24 +116,28 @@ function imageSrc(attachment: AttachmentResponse): string {
 <template>
   <article
     :id="`post-${post.post_number}`"
-    class="border border-border rounded p-4"
-    :class="{ 'bg-surface': post.is_op }"
+    class="rounded-card border bg-surface p-4 shadow-card"
+    :class="
+      post.is_op
+        ? 'border-[color-mix(in_srgb,var(--color-gold)_32%,var(--color-border))] bg-surface-2'
+        : 'border-border'
+    "
   >
-    <div class="flex items-center justify-between gap-2 mb-2">
-      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-        <span class="font-semibold text-accent">{{ post.name }}</span>
-        <span v-if="post.tripcode" class="font-mono text-secondary">{{ post.tripcode }}</span>
-        <span class="text-secondary">{{ formatDate(post.created_at) }}</span>
+    <div class="mb-2 flex items-center justify-between gap-2">
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px]">
+        <span class="font-bold text-greentext">{{ post.name }}</span>
+        <span v-if="post.tripcode" class="font-mono text-text-muted">{{ post.tripcode }}</span>
+        <span class="font-mono text-xs text-text-muted">{{ formatDate(post.created_at) }}</span>
         <button
           type="button"
-          class="font-mono text-secondary cursor-pointer hover:text-accent hover:underline"
+          class="cursor-pointer font-mono text-xs text-text-muted hover:text-accent hover:underline"
           title="Quote this post"
           @click="emit('quote', post.post_number)"
         >
           No.{{ post.post_number }}
         </button>
-        <span v-if="post.is_edited" class="text-xs text-secondary italic">(edited)</span>
-        <span v-if="post.sage" class="text-xs text-secondary">sage</span>
+        <span v-if="post.is_edited" class="text-xs italic text-text-muted">(edited)</span>
+        <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
       </div>
 
       <BaseButton
@@ -159,7 +163,7 @@ function imageSrc(attachment: AttachmentResponse): string {
           :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
           controls
           preload="metadata"
-          class="max-h-64 max-w-full rounded border border-border"
+          class="max-h-64 max-w-full rounded-field border border-border"
         />
         <a v-else :href="att.url" target="_blank" rel="noopener" class="block cursor-pointer">
           <img
@@ -167,7 +171,7 @@ function imageSrc(attachment: AttachmentResponse): string {
             :src="imageSrc(att)"
             :alt="att.original_name"
             :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
-            class="max-h-64 max-w-full object-contain rounded border border-border"
+            class="max-h-64 max-w-full rounded-field border border-border object-contain"
           />
           <div
             v-else
@@ -181,7 +185,7 @@ function imageSrc(attachment: AttachmentResponse): string {
 
     <div v-if="isEditing" class="flex flex-col gap-2">
       <MarkupTextarea v-model="editDraft" rows="4" maxlength="5000" />
-      <p v-if="editError" class="text-sm text-red-500">{{ editError }}</p>
+      <p v-if="editError" class="text-sm text-danger">{{ editError }}</p>
       <div class="flex gap-2">
         <BaseButton variant="primary" size="sm" :disabled="isSaving" @click="saveEdit">
           {{ isSaving ? 'Saving…' : 'Edit' }}
@@ -202,7 +206,7 @@ function imageSrc(attachment: AttachmentResponse): string {
 
       <div
         v-if="showOriginal && original"
-        class="mt-2 border-l-2 border-border pl-2 text-sm text-secondary"
+        class="mt-2 border-l-2 border-border pl-2 text-sm text-text-muted"
       >
         <PostBody
           v-if="original.original_body_html"
@@ -230,7 +234,7 @@ function imageSrc(attachment: AttachmentResponse): string {
       >&gt;&gt;{{ backlinkNumber }}</a>
     </div>
 
-    <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-border pt-2">
+    <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-dashed border-border pt-2.5">
       <div class="flex gap-2">
         <BaseButton variant="danger" size="sm" @click="onDelete">Delete</BaseButton>
         <BaseButton variant="ghost" size="sm" @click="startBan">Ban</BaseButton>

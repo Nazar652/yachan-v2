@@ -13,12 +13,20 @@ class ThreadCreate(BaseModel):
     sage: bool = False
 
 
+class ImagePreview(BaseModel):
+    url: str
+    thumbnail_url: str
+    width: int | None = None
+    height: int | None = None
+
+
 class OpPostPreview(BaseModel):
     body: str | None
     body_html: str | None
     thumbnail_url: str | None
     width: int | None = None
     height: int | None = None
+    images: list[ImagePreview] = Field(default_factory=list)
 
 
 class ReplyPreview(BaseModel):
@@ -46,3 +54,15 @@ class ThreadResponse(BaseModel):
 
 class ThreadDetailResponse(ThreadResponse):
     posts: list[PostResponse] = Field(default_factory=list)
+
+
+class LatestThreadResponse(BaseModel):
+    # cross-board "latest activity" strip on the home page
+    id: int
+    board_slug: str
+    title: str | None
+    reply_count: int
+    bump_at: datetime
+    created_at: datetime
+    thumbnail_url: str | None = None
+    last_reply: ReplyPreview | None = None

@@ -23,15 +23,18 @@ from src.services.markup_service import MarkupService
 from src.services.mod_service import ModService
 from src.services.post_service import PostService
 from src.services.report_service import ReportService
+from src.services.stats_service import StatsService
 from src.services.thread_service import ThreadService
 from src.utils.events import EventPublisher
 from src.utils.markup import MarkupRenderer
+from src.utils.online import OnlineTracker
 from src.utils.rate_limit import RateLimiter
 from src.views.boards_view import BoardsView
 from src.views.captcha_view import CaptchaView
 from src.views.mod_view import ModView
 from src.views.posts_view import PostsView
 from src.views.reports_view import ReportsView
+from src.views.stats_view import StatsView
 from src.views.threads_view import ThreadsView
 from src.views.ws_view import WsView
 
@@ -50,6 +53,7 @@ def setup_di() -> None:
     di[Redis] = redis_instance
     di[RateLimiter] = RateLimiter(redis_instance)
     di[EventPublisher] = EventPublisher(redis_instance)
+    di[OnlineTracker] = OnlineTracker(redis_instance)
 
     di.factories[AsyncSession] = lambda container: resolve_scoped(AsyncSession, factory=new_session)
 
@@ -75,6 +79,7 @@ def setup_di() -> None:
     di.factories[ReportService] = lambda container: resolve_scoped(ReportService, ReportService)
     di.factories[CaptchaService] = lambda container: resolve_scoped(CaptchaService, CaptchaService)
     di.factories[ModService] = lambda container: resolve_scoped(ModService, ModService)
+    di.factories[StatsService] = lambda container: resolve_scoped(StatsService, StatsService)
 
     # views
     di.factories[BoardsView] = lambda container: resolve_scoped(BoardsView, BoardsView)
@@ -83,6 +88,7 @@ def setup_di() -> None:
     di.factories[ThreadsView] = lambda container: resolve_scoped(ThreadsView, ThreadsView)
     di.factories[PostsView] = lambda container: resolve_scoped(PostsView, PostsView)
     di.factories[ReportsView] = lambda container: resolve_scoped(ReportsView, ReportsView)
+    di.factories[StatsView] = lambda container: resolve_scoped(StatsView, StatsView)
     di.factories[WsView] = lambda container: resolve_scoped(WsView, WsView)
 
 

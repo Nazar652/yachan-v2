@@ -5,13 +5,22 @@ from starlette.requests import Request
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
 from src.core.storage import Storage
-from src.schemas.thread import OpPostPreview, ReplyPreview, ThreadCreate, ThreadDetailResponse, ThreadResponse
+from src.schemas.thread import (
+    ImagePreview,
+    LatestThreadResponse,
+    OpPostPreview,
+    ReplyPreview,
+    ThreadCreate,
+    ThreadDetailResponse,
+    ThreadResponse,
+)
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import post_is_editable
 from src.services.thread_service import ThreadService
 from src.utils.clock import utcnow
 from src.utils.events import NEW_THREAD, EventPublisher, board_channel
+from src.utils.online import OnlineTracker
 from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
 from src.views.serializers import post_response
@@ -32,6 +41,7 @@ class ThreadsView:
         events: EventPublisher,
         storage: Storage,
         settings: Settings,
+        online_tracker: OnlineTracker,
     ) -> None:
         self.thread_service = thread_service
         self.file_service = file_service
@@ -40,15 +50,18 @@ class ThreadsView:
         self.events = events
         self.storage = storage
         self.settings = settings
+        self.online_tracker = online_tracker
 
     async def list_threads(
-        self, board_slug: str, limit: int = 50, offset: int = 0
+        self, board_slug: str, request: Request, limit: int = 50, offset: int = 0
     ) -> list[ThreadResponse]:
+        await self.online_tracker.touch(client_ip_hash(request, self.settings), board_slug)
         thread_data = await self.thread_service.list_threads(board_slug, limit, offset)
         responses: list[ThreadResponse] = []
-        for thread, op_post, first_image, replies in thread_data:
+        for thread, op_post, op_images, replies in thread_data:
             response = ThreadResponse.model_validate(thread)
             if op_post:
+                first_image = op_images[0] if op_images else None
                 thumbnail_url = (
                     self.storage.public_url(first_image.thumbnail_path or first_image.file_path)
                     if first_image
@@ -60,6 +73,17 @@ class ThreadsView:
                     thumbnail_url=thumbnail_url,
                     width=first_image.width if first_image else None,
                     height=first_image.height if first_image else None,
+                    images=[
+                        ImagePreview(
+                            url=self.storage.public_url(image.file_path),
+                            thumbnail_url=self.storage.public_url(
+                                image.thumbnail_path or image.file_path
+                            ),
+                            width=image.width,
+                            height=image.height,
+                        )
+                        for image in op_images
+                    ],
                 )
             response.last_replies = [
                 ReplyPreview(
@@ -74,11 +98,43 @@ class ThreadsView:
             responses.append(response)
         return responses
 
+    async def list_latest_threads(self, limit: int = 5) -> list[LatestThreadResponse]:
+        latest = await self.thread_service.list_latest_threads(limit)
+        responses: list[LatestThreadResponse] = []
+        for thread, board_slug, first_image, last_reply in latest:
+            thumbnail_url = (
+                self.storage.public_url(first_image.thumbnail_path or first_image.file_path)
+                if first_image
+                else None
+            )
+            responses.append(
+                LatestThreadResponse(
+                    id=thread.id,
+                    board_slug=board_slug,
+                    title=thread.title,
+                    reply_count=thread.reply_count,
+                    bump_at=thread.bump_at,
+                    created_at=thread.created_at,
+                    thumbnail_url=thumbnail_url,
+                    last_reply=ReplyPreview(
+                        id=last_reply.id,
+                        name=last_reply.name,
+                        body=last_reply.body,
+                        body_html=last_reply.body_html,
+                        created_at=last_reply.created_at,
+                    )
+                    if last_reply
+                    else None,
+                )
+            )
+        return responses
+
     async def get_thread(
         self, board_slug: str, thread_id: int, request: Request
     ) -> ThreadDetailResponse:
         viewer_ip_hash = client_ip_hash(request, self.settings)
         now = utcnow()
+        await self.online_tracker.touch(viewer_ip_hash, board_slug)
 
         thread, posts, attachments_by_post = await self.thread_service.get_thread_detail(
             board_slug, thread_id
@@ -104,6 +160,7 @@ class ThreadsView:
         captcha_answer: str,
     ) -> ThreadDetailResponse:
         ip_hash = client_ip_hash(request, self.settings)
+        await self.online_tracker.touch(ip_hash, board_slug)
         await self.captcha_service.validate(captcha_token, captcha_answer)
         if not await self.rate_limiter.is_allowed(
             f"thread:{ip_hash}", THREAD_RATE_LIMIT, THREAD_RATE_WINDOW

@@ -72,6 +72,53 @@
         }
       }
     },
+    "/api/threads/latest": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "List Latest Threads",
+        "operationId": "list_latest_threads_api_threads_latest_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LatestThreadResponse"
+                  },
+                  "title": "Response List Latest Threads Api Threads Latest Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/{board_slug}/threads": {
       "get": {
         "tags": [
@@ -529,6 +576,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CaptchaChallengeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Get Site Stats",
+        "operationId": "get_site_stats_api_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteStatsResponse"
                 }
               }
             }
@@ -1473,6 +1541,34 @@
         ],
         "title": "BoardResponse"
       },
+      "BoardStatsResponse": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "thread_count": {
+            "type": "integer",
+            "title": "Thread Count"
+          },
+          "post_count": {
+            "type": "integer",
+            "title": "Post Count"
+          },
+          "online_count": {
+            "type": "integer",
+            "title": "Online Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "thread_count",
+          "post_count",
+          "online_count"
+        ],
+        "title": "BoardStatsResponse"
+      },
       "BoardUpdate": {
         "properties": {
           "title": {
@@ -1653,6 +1749,114 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "ImagePreview": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "title": "Thumbnail Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "thumbnail_url"
+        ],
+        "title": "ImagePreview"
+      },
+      "LatestThreadResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "board_slug": {
+            "type": "string",
+            "title": "Board Slug"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "reply_count": {
+            "type": "integer",
+            "title": "Reply Count"
+          },
+          "bump_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bump At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "last_reply": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplyPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "board_slug",
+          "title",
+          "reply_count",
+          "bump_at",
+          "created_at"
+        ],
+        "title": "LatestThreadResponse"
+      },
       "MediaType": {
         "type": "string",
         "enum": [
@@ -1747,6 +1951,13 @@
               }
             ],
             "title": "Height"
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/ImagePreview"
+            },
+            "type": "array",
+            "title": "Images"
           }
         },
         "type": "object",
@@ -2058,6 +2269,42 @@
           "created_at"
         ],
         "title": "ReportResponse"
+      },
+      "SiteStatsResponse": {
+        "properties": {
+          "board_count": {
+            "type": "integer",
+            "title": "Board Count"
+          },
+          "thread_count": {
+            "type": "integer",
+            "title": "Thread Count"
+          },
+          "post_count": {
+            "type": "integer",
+            "title": "Post Count"
+          },
+          "online_count": {
+            "type": "integer",
+            "title": "Online Count"
+          },
+          "boards": {
+            "items": {
+              "$ref": "#/components/schemas/BoardStatsResponse"
+            },
+            "type": "array",
+            "title": "Boards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "board_count",
+          "thread_count",
+          "post_count",
+          "online_count",
+          "boards"
+        ],
+        "title": "SiteStatsResponse"
       },
       "ThreadDetailResponse": {
         "properties": {

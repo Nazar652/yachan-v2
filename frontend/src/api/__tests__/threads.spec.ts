@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { apiClient } from '@/api/client'
-import { listThreads, getThread, createThread, createReply } from '@/api/threads'
+import { listThreads, listLatestThreads, getThread, createThread, createReply } from '@/api/threads'
 
 vi.mock('@/api/client', () => ({
   apiClient: { GET: vi.fn() },
@@ -18,7 +18,16 @@ describe('listThreads', () => {
 
     await expect(listThreads('b')).resolves.toBe(threads)
     expect(getMock).toHaveBeenCalledWith('/api/{board_slug}/threads', {
-      params: { path: { board_slug: 'b' } },
+      params: { path: { board_slug: 'b' }, query: { limit: 50, offset: 0 } },
+    })
+  })
+
+  it('passes the page window through as limit and offset', async () => {
+    getMock.mockResolvedValue({ data: [], error: undefined })
+
+    await listThreads('b', 10, 20)
+    expect(getMock).toHaveBeenCalledWith('/api/{board_slug}/threads', {
+      params: { path: { board_slug: 'b' }, query: { limit: 10, offset: 20 } },
     })
   })
 
@@ -27,6 +36,27 @@ describe('listThreads', () => {
     getMock.mockResolvedValue({ data: undefined, error })
 
     await expect(listThreads('b')).rejects.toBe(error)
+  })
+})
+
+describe('listLatestThreads', () => {
+  beforeEach(() => getMock.mockReset())
+
+  it('returns the data on success', async () => {
+    const latest = [{ id: 1, board_slug: 'b', title: 'hello', reply_count: 2, bump_at: '', created_at: '' }]
+    getMock.mockResolvedValue({ data: latest, error: undefined })
+
+    await expect(listLatestThreads()).resolves.toBe(latest)
+    expect(getMock).toHaveBeenCalledWith('/api/threads/latest', {
+      params: { query: { limit: 5 } },
+    })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'boom' }
+    getMock.mockResolvedValue({ data: undefined, error })
+
+    await expect(listLatestThreads()).rejects.toBe(error)
   })
 })
 

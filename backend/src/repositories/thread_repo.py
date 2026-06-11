@@ -29,6 +29,18 @@ class ThreadRepository(BaseRepository):
         )
         return list(result.scalars().all())
 
+    async def list_latest(self, limit: int = 5) -> list[Thread]:
+        result = await self.session.execute(
+            select(Thread).order_by(col(Thread.bump_at).desc()).limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def count_by_board(self) -> dict[int, int]:
+        result = await self.session.execute(
+            select(col(Thread.board_id), func.count()).group_by(col(Thread.board_id))
+        )
+        return {board_id: count for board_id, count in result.all()}
+
     async def create(self, thread: Thread) -> Thread:
         self.session.add(thread)
         await self.session.flush()

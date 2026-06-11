@@ -18,12 +18,12 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex flex-col gap-2">
-    <label class="text-sm font-medium">Captcha</label>
+    <label class="text-[13px] font-bold">Captcha</label>
 
     <div class="flex items-center gap-3">
-      <div class="w-36 h-14 flex items-center justify-center rounded border border-border bg-surface">
-        <span v-if="isPending" class="text-xs text-secondary">Loading…</span>
-        <span v-else-if="isError" class="text-xs text-red-500">Failed</span>
+      <div class="flex h-14 w-36 items-center justify-center rounded-field border border-border bg-surface-2">
+        <span v-if="isPending" class="text-xs text-text-muted">Loading…</span>
+        <span v-else-if="isError" class="text-xs text-danger">Failed</span>
         <img
           v-else-if="captcha"
           :src="`data:image/png;base64,${captcha.image_base64}`"
@@ -32,7 +32,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <BaseButton type="button" variant="ghost" size="sm" @click="emit('refresh')">
+      <BaseButton type="button" variant="link" size="sm" @click="emit('refresh')">
         ↺ Refresh
       </BaseButton>
     </div>

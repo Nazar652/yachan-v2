@@ -1,12 +1,12 @@
 import { onScopeDispose, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { threadsQueryKey } from '@/composables/useThreads'
+import { threadsPageQueryKey } from '@/composables/useThreads'
 import { wsUrl, WS_EVENT, type WsEnvelope } from '@/api/ws'
 import type { ThreadResponse } from '@/api/types'
 
 // subscribes to a board's realtime feed and prepends new threads to the
-// catalog query cache (deduped by thread id).
+// first catalog page's query cache (deduped by thread id).
 export function useBoardWs(slug: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   let socket: WebSocket | null = null
@@ -14,7 +14,7 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
   function applyEvent(envelope: WsEnvelope) {
     if (envelope.type !== WS_EVENT.NEW_THREAD) return
     const thread = envelope.data as ThreadResponse
-    queryClient.setQueryData<ThreadResponse[]>(threadsQueryKey(toValue(slug)), (old) => {
+    queryClient.setQueryData<ThreadResponse[]>(threadsPageQueryKey(toValue(slug), 1), (old) => {
       if (!old) return old
       if (old.some((existing) => existing.id === thread.id)) return old
       return [thread, ...old]

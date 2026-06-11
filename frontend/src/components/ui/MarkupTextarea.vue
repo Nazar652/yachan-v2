@@ -70,7 +70,7 @@ async function onFormat(format: TextFormat) {
       ref="bodyTextarea"
       v-model="model"
       v-bind="$attrs"
-      class="w-full rounded border border-border bg-surface px-3 py-2 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+      class="min-h-32 w-full resize-y rounded-field border border-border bg-bg px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-text-muted focus:border-gold focus:ring-[3px] focus:ring-gold/25"
       @input="refusalReason = null"
     />
 

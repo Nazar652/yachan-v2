@@ -1,11 +1,28 @@
 import { apiClient } from '@/api/client'
-import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
+import type {
+  LatestThreadResponse,
+  PostResponse,
+  ThreadDetailResponse,
+  ThreadResponse,
+} from '@/api/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
-export async function listThreads(boardSlug: string): Promise<ThreadResponse[]> {
+export async function listThreads(
+  boardSlug: string,
+  limit = 50,
+  offset = 0,
+): Promise<ThreadResponse[]> {
   const { data, error } = await apiClient.GET('/api/{board_slug}/threads', {
-    params: { path: { board_slug: boardSlug } },
+    params: { path: { board_slug: boardSlug }, query: { limit, offset } },
+  })
+  if (error) throw error
+  return data
+}
+
+export async function listLatestThreads(limit = 5): Promise<LatestThreadResponse[]> {
+  const { data, error } = await apiClient.GET('/api/threads/latest', {
+    params: { query: { limit } },
   })
   if (error) throw error
   return data

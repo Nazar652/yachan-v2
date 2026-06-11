@@ -108,16 +108,22 @@ async function onSubmit() {
 </script>
 
 <template>
-  <form ref="formElement" class="flex flex-col gap-4 border border-border rounded p-4 bg-surface" @submit.prevent="onSubmit">
-    <h2 class="text-lg font-semibold">Reply</h2>
+  <form
+    ref="formElement"
+    class="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-card"
+    @submit.prevent="onSubmit"
+  >
+    <h2 class="flex items-center gap-2.5 text-2xl font-extrabold">
+      <span class="text-gold-2" aria-hidden="true">↩</span> Reply
+    </h2>
 
-    <div class="flex flex-col gap-1">
-      <label for="reply-name" class="text-sm font-medium">Name</label>
+    <div class="flex flex-col gap-1.5">
+      <label for="reply-name" class="text-[13px] font-bold">Name</label>
       <BaseInput id="reply-name" v-model="name" placeholder="Anonymous" maxlength="100" />
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label for="reply-body" class="text-sm font-medium">Body</label>
+    <div class="flex flex-col gap-1.5">
+      <label for="reply-body" class="text-[13px] font-bold">Body</label>
       <MarkupTextarea
         id="reply-body"
         v-model="body"
@@ -127,23 +133,23 @@ async function onSubmit() {
       />
     </div>
 
-    <div class="flex flex-col gap-1">
-      <label for="reply-files" class="text-sm font-medium">
-        Files <span class="text-secondary font-normal ml-1">(optional)</span>
+    <div class="flex flex-col gap-1.5">
+      <label for="reply-files" class="text-[13px] font-bold">
+        Files <span class="ml-1 text-xs font-normal text-text-muted">(optional)</span>
       </label>
       <input
         id="reply-files"
         type="file"
         accept="image/*,video/*"
         multiple
-        class="text-sm"
+        class="text-sm text-text-muted file:mr-3 file:cursor-pointer file:rounded-field file:border file:border-dashed file:border-border file:bg-surface file:px-3.5 file:py-2 file:text-[13px] file:font-semibold file:text-text hover:file:border-gold hover:file:text-accent"
         @change="onFileChange"
       />
     </div>
 
-    <label class="flex items-center gap-2 text-sm">
-      <input v-model="sage" type="checkbox" />
-      sage <span class="text-secondary">(don't bump the thread)</span>
+    <label class="flex items-center gap-2 text-[13.5px]">
+      <input v-model="sage" type="checkbox" class="h-4 w-4 accent-gold" />
+      <b>sage</b> <span class="text-text-muted">(don't bump the thread)</span>
     </label>
 
     <CaptchaWidget
@@ -154,13 +160,13 @@ async function onSubmit() {
       @refresh="refreshCaptcha"
     />
 
-    <p v-if="submitError" class="text-sm text-red-500">{{ submitError }}</p>
+    <p v-if="submitError" class="text-sm text-danger">{{ submitError }}</p>
 
-    <div class="flex gap-3 mt-2">
+    <div class="mt-1 flex items-center gap-3.5">
       <BaseButton type="submit" variant="primary" :disabled="isSubmitting">
         {{ isSubmitting ? 'Posting…' : 'Post reply' }}
       </BaseButton>
-      <BaseButton type="button" variant="ghost" :disabled="isSubmitting" @click="resetForm">
+      <BaseButton type="button" variant="link" size="sm" :disabled="isSubmitting" @click="resetForm">
         Clear
       </BaseButton>
     </div>

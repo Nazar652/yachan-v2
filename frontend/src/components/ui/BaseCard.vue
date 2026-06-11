@@ -3,10 +3,10 @@ import { tv, type VariantProps } from 'tailwind-variants'
 
 // reusable card shell — pages compose content inside, never repeat border/bg classes
 const card = tv({
-  base: 'rounded-card border border-border bg-surface p-4',
+  base: 'rounded-card border border-border bg-surface p-4 shadow-card',
   variants: {
     interactive: {
-      true: 'transition-colors hover:border-accent',
+      true: 'transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-pop',
     },
   },
   defaultVariants: { interactive: false },
@@ -25,4 +25,3 @@ const props = withDefaults(
     <slot />
   </div>
 </template>
-

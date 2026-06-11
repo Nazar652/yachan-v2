@@ -6,6 +6,7 @@ import { modLogin } from '@/api/mod'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import MonogramSeal from '@/components/brand/MonogramSeal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -38,17 +39,24 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="max-w-sm mx-auto px-4 py-10">
-    <h1 class="text-xl font-semibold mb-6">Mod login</h1>
+  <div class="mx-auto my-14 max-w-[380px]">
+    <div class="mb-5 grid place-items-center">
+      <MonogramSeal :size="92" />
+    </div>
 
-    <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
-      <div class="flex flex-col gap-1">
-        <label for="mod-username" class="text-sm font-medium">Username</label>
+    <form
+      class="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-card"
+      @submit.prevent="onSubmit"
+    >
+      <h1 class="text-center text-2xl font-extrabold">Mod login</h1>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="mod-username" class="text-[13px] font-bold">Username</label>
         <BaseInput id="mod-username" v-model="username" autocomplete="username" />
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label for="mod-password" class="text-sm font-medium">Password</label>
+      <div class="flex flex-col gap-1.5">
+        <label for="mod-password" class="text-[13px] font-bold">Password</label>
         <BaseInput
           id="mod-password"
           v-model="password"
@@ -57,9 +65,9 @@ async function onSubmit() {
         />
       </div>
 
-      <p v-if="error" class="text-sm text-red-500">{{ error }}</p>
+      <p v-if="error" class="text-sm text-danger">{{ error }}</p>
 
-      <BaseButton type="submit" variant="primary" :disabled="isSubmitting">
+      <BaseButton type="submit" variant="primary" class="mt-1 w-full" :disabled="isSubmitting">
         {{ isSubmitting ? 'Signing in…' : 'Sign in' }}
       </BaseButton>
     </form>
