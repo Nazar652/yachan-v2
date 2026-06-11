@@ -78,16 +78,21 @@ async function onToggleSticky(thread: ThreadResponse) {
   <section class="pt-2">
     <!-- board banner -->
     <div
-      class="flex items-center gap-4 rounded-card border border-border border-l-4 border-l-gold bg-surface px-5 py-4 shadow-card"
+      class="flex flex-col gap-3 rounded-card border border-border border-l-4 border-l-gold bg-surface px-5 py-4 shadow-card sm:flex-row sm:items-center sm:gap-4"
     >
-      <span class="font-mono text-[26px] font-bold text-gold-2">/{{ slug }}/</span>
-      <div class="min-w-0">
-        <div v-if="board" class="font-display text-lg font-bold">{{ board.title }}</div>
-        <div v-if="board?.description" class="text-[15px] text-text-muted">
-          {{ board.description }}
+      <div class="flex min-w-0 items-center gap-4">
+        <span class="font-mono text-[26px] font-bold text-gold-2">/{{ slug }}/</span>
+        <div class="min-w-0">
+          <div v-if="board" class="font-display text-lg font-bold">{{ board.title }}</div>
+          <div v-if="board?.description" class="text-[15px] text-text-muted">
+            {{ board.description }}
+          </div>
         </div>
       </div>
-      <div v-if="boardStats" class="ml-auto shrink-0 text-right font-mono text-xs text-text-muted">
+      <div
+        v-if="boardStats"
+        class="shrink-0 font-mono text-xs text-text-muted sm:ml-auto sm:text-right"
+      >
         <div>
           <b class="text-text">{{ boardStats.thread_count }}</b> threads ·
           <b class="text-text">{{ boardStats.post_count }}</b> posts
@@ -97,13 +102,13 @@ async function onToggleSticky(thread: ThreadResponse) {
     </div>
 
     <!-- toolbar -->
-    <div class="my-4 flex items-center gap-3">
-      <div class="inline-flex overflow-hidden rounded-field border border-border">
+    <div class="my-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+      <div class="flex w-full overflow-hidden rounded-field border border-border sm:inline-flex sm:w-auto">
         <button
           v-for="[key, label] in sortOptions"
           :key="key"
           type="button"
-          class="cursor-pointer border-border px-3 py-1.5 font-mono text-xs transition-colors not-first:border-l"
+          class="flex-1 cursor-pointer border-border px-3 py-1.5 font-mono text-xs transition-colors not-first:border-l sm:flex-none"
           :class="
             sort === key
               ? 'bg-gold font-bold text-on-gold'
@@ -114,9 +119,9 @@ async function onToggleSticky(thread: ThreadResponse) {
           {{ label }}
         </button>
       </div>
-      <div class="flex-1" />
-      <RouterLink :to="`/${slug}/new`">
-        <BaseButton variant="primary">+ New thread</BaseButton>
+      <div class="hidden flex-1 sm:block" />
+      <RouterLink :to="`/${slug}/new`" class="block w-full sm:w-auto">
+        <BaseButton variant="primary" class="w-full sm:w-auto">+ New thread</BaseButton>
       </RouterLink>
     </div>
 

@@ -31,7 +31,10 @@ const isOnBoardPage = computed(
       </RouterLink>
 
       <!-- board tabs — visible on board / thread pages -->
-      <nav v-if="isOnBoardPage && boards?.length" class="flex min-w-0 flex-wrap gap-1">
+      <nav
+        v-if="isOnBoardPage && boards?.length"
+        class="flex min-w-0 flex-nowrap gap-1 overflow-x-auto"
+      >
         <RouterLink
           v-for="board in boards"
           :key="board.slug"
