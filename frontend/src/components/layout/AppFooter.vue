@@ -4,11 +4,13 @@ import BarleyEar from '@/components/brand/BarleyEar.vue'
 
 <template>
   <footer class="mt-14 border-t border-border py-8">
-    <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 text-[13px] text-text-muted">
+    <div
+      class="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 text-center text-[13px] text-text-muted sm:flex-row sm:gap-4 sm:text-left"
+    >
       <BarleyEar :height="26" />
       <span class="font-display font-extrabold text-text">я<b class="text-gold-2">чан</b></span>
       <span class="font-mono text-xs uppercase tracking-[0.12em] text-accent">est. 2026</span>
-      <span class="ml-auto inline-flex items-center gap-4">
+      <span class="inline-flex flex-col items-center gap-3 sm:ml-auto sm:flex-row sm:gap-4">
         <a
           href="https://github.com/Nazar652/yachan-v2"
           target="_blank"
