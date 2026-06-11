@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { createThread } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
+import { useOwnPosts } from '@/composables/useOwnPosts'
 import { threadsQueryKey } from '@/composables/useThreads'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -16,6 +17,7 @@ const router = useRouter()
 const queryClient = useQueryClient()
 
 const slug = computed(() => route.params.slug as string)
+const { markOwn } = useOwnPosts(slug)
 
 const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha()
 
@@ -68,6 +70,8 @@ async function onSubmit() {
       captcha.value.token,
       captchaAnswer.value.trim(),
     )
+    // remember the OP as one of "your" posts so it renders a (You) tag
+    if (thread.posts?.[0]) markOwn(thread.posts[0].post_number)
     await queryClient.invalidateQueries({ queryKey: threadsQueryKey(slug.value) })
     await router.push({ name: 'thread', params: { slug: slug.value, id: thread.id } })
   } catch (error: unknown) {

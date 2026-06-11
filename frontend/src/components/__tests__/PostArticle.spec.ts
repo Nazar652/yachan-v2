@@ -6,15 +6,20 @@ import { createPinia, setActivePinia } from 'pinia'
 import PostArticle from '@/components/PostArticle.vue'
 import { useAuthStore } from '@/stores/auth'
 
-const { editPostMock, removePostMock, banMock, usePostHistoryMock } = vi.hoisted(() => ({
+const { editPostMock, removePostMock, banMock, usePostHistoryMock, isOwnMock } = vi.hoisted(() => ({
   editPostMock: vi.fn(),
   removePostMock: vi.fn(),
   banMock: vi.fn(),
   usePostHistoryMock: vi.fn(),
+  isOwnMock: vi.fn(),
 }))
 
 vi.mock('@/composables/useEditPost', () => ({
   useEditPost: () => ({ editPost: editPostMock }),
+}))
+
+vi.mock('@/composables/useOwnPosts', () => ({
+  useOwnPosts: () => ({ isOwn: isOwnMock }),
 }))
 
 vi.mock('@/composables/useModeration', () => ({
@@ -63,6 +68,7 @@ beforeEach(() => {
   removePostMock.mockReset().mockResolvedValue(undefined)
   banMock.mockReset().mockResolvedValue(undefined)
   usePostHistoryMock.mockReset().mockReturnValue({ data: ref(undefined) })
+  isOwnMock.mockReset().mockReturnValue(false)
 })
 
 describe('PostArticle', () => {
@@ -73,6 +79,17 @@ describe('PostArticle', () => {
     expect(wrapper.text()).toContain('!abc')
     expect(wrapper.text()).toContain('sage')
     expect(wrapper.find('.post-body').html()).toContain('<p>hi</p>')
+  })
+
+  it('tags the header with (You) for your own post', () => {
+    isOwnMock.mockImplementation((postNumber: number) => postNumber === 101)
+    const wrapper = mountPost()
+    expect(wrapper.find('.post-you').text()).toBe('(You)')
+  })
+
+  it('omits the (You) tag on posts that are not yours', () => {
+    const wrapper = mountPost()
+    expect(wrapper.find('.post-you').exists()).toBe(false)
   })
 
   it('emits quote with the post number when the No. button is clicked', async () => {
@@ -96,6 +113,17 @@ describe('PostArticle', () => {
     expect(refs.map((ref) => ref.text())).toEqual(['>>102', '>>103'])
     await refs[0]!.trigger('click')
     expect(wrapper.emitted('navigate')).toEqual([[102]])
+  })
+
+  it('tags a backlink from your own post with (You)', () => {
+    isOwnMock.mockImplementation((postNumber: number) => postNumber === 102)
+    const wrapper = mount(PostArticle, {
+      props: { post: basePost, slug: 'b', threadId: 42, backlinks: [102, 103] },
+      global: { stubs },
+    })
+    const tagged = wrapper.findAll('.post-backlinks .post-you')
+    expect(tagged).toHaveLength(1)
+    expect(tagged[0]!.text()).toBe('(You)')
   })
 
   it('omits the backlinks footer when there are no backlinks', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { numberCodeLines } from '@/utils/postHtml'
+import { annotateOwnRefs, numberCodeLines } from '@/utils/postHtml'
 
 describe('numberCodeLines', () => {
   it('wraps each code block line in a numbered span', () => {
@@ -30,5 +30,30 @@ describe('numberCodeLines', () => {
 
   it('leaves inline code untouched', () => {
     expect(numberCodeLines('<p><code>x</code></p>')).toBe('<p><code>x</code></p>')
+  })
+})
+
+describe('annotateOwnRefs', () => {
+  const ownRef = '<a class="post-ref" data-post="101">&gt;&gt;101</a>'
+  const otherRef = '<a class="post-ref" data-post="202">&gt;&gt;202</a>'
+
+  it('appends a (You) marker after a reference to an own post', () => {
+    expect(annotateOwnRefs(ownRef, new Set([101]))).toBe(
+      `${ownRef}<span class="post-you"> (You)</span>`,
+    )
+  })
+
+  it('leaves references to other posts untouched', () => {
+    expect(annotateOwnRefs(otherRef, new Set([101]))).toBe(otherRef)
+  })
+
+  it('annotates only the own references among several', () => {
+    const result = annotateOwnRefs(`${ownRef}${otherRef}`, new Set([101]))
+    expect(result.match(/post-you/g)).toHaveLength(1)
+    expect(result).toBe(`${ownRef}<span class="post-you"> (You)</span>${otherRef}`)
+  })
+
+  it('returns the html unchanged when there are no own posts', () => {
+    expect(annotateOwnRefs(ownRef, new Set())).toBe(ownRef)
   })
 })

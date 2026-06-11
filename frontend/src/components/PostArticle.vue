@@ -3,6 +3,7 @@ import { ref, toRef } from 'vue'
 
 import { useModeration } from '@/composables/useModeration'
 import { useEditPost } from '@/composables/useEditPost'
+import { useOwnPosts } from '@/composables/useOwnPosts'
 import { usePostHistory } from '@/composables/usePostHistory'
 import { useAuthStore } from '@/stores/auth'
 import type { AttachmentResponse, PostResponse } from '@/api/types'
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const auth = useAuthStore()
+const { isOwn, ownNumbers } = useOwnPosts(() => props.slug)
 const moderation = useModeration(() => props.slug, () => props.threadId)
 const { editPost } = useEditPost(() => props.slug, () => props.threadId)
 
@@ -136,6 +138,7 @@ function imageSrc(attachment: AttachmentResponse): string {
         >
           No.{{ post.post_number }}
         </button>
+        <span v-if="isOwn(post.post_number)" class="post-you font-mono text-xs font-bold">(You)</span>
         <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
       </div>
 
@@ -161,6 +164,7 @@ function imageSrc(attachment: AttachmentResponse): string {
           <PostBody
             v-if="original && original.original_body_html"
             :html="original.original_body_html"
+            :own-numbers="ownNumbers"
             class="text-sm"
             @navigate="emit('navigate', $event)"
           />
@@ -219,6 +223,7 @@ function imageSrc(attachment: AttachmentResponse): string {
       <PostBody
         v-if="post.body_html"
         :html="post.body_html"
+        :own-numbers="ownNumbers"
         class="text-sm"
         @navigate="emit('navigate', $event)"
       />
@@ -231,13 +236,14 @@ function imageSrc(attachment: AttachmentResponse): string {
 
     <!-- replies referencing this post; numbers derived from the thread's posts -->
     <div v-if="backlinks.length" class="post-backlinks mt-2 flex flex-wrap gap-x-2 text-xs">
-      <a
-        v-for="backlinkNumber in backlinks"
-        :key="backlinkNumber"
-        class="post-ref"
-        :data-post="backlinkNumber"
-        @click.prevent="emit('navigate', backlinkNumber)"
-      >&gt;&gt;{{ backlinkNumber }}</a>
+      <span v-for="backlinkNumber in backlinks" :key="backlinkNumber">
+        <a
+          class="post-ref"
+          :data-post="backlinkNumber"
+          @click.prevent="emit('navigate', backlinkNumber)"
+        >&gt;&gt;{{ backlinkNumber }}</a>
+        <span v-if="isOwn(backlinkNumber)" class="post-you"> (You)</span>
+      </span>
     </div>
 
     <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-dashed border-border pt-2.5">

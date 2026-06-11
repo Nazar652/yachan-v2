@@ -28,6 +28,7 @@
   --color-danger: #b3331f;
   --color-danger-hover: #8f2718;
   --color-greentext: #6f8f1f;
+  --color-you: #c0392b;
 
   --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
@@ -66,6 +67,7 @@
   --color-danger: #e1694c;
   --color-danger-hover: #ec8064;
   --color-greentext: #9fbf45;
+  --color-you: #e8705a;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pop: 0 3px 14px rgba(0, 0, 0, 0.45);
@@ -141,6 +143,11 @@ h4 {
 
 .post-body a.post-ref:hover {
   text-decoration: underline;
+}
+
+/* "(You)" marker on your own posts and on references pointing at them */
+.post-you {
+  color: var(--color-you);
 }
 
 /* spoiler: solid box until hovered; children inherit the revealed colour so
