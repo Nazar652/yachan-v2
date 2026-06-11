@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { createReply } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
+import { useOwnPosts } from '@/composables/useOwnPosts'
 import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
 import type { ThreadDetailResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>()
 
 const queryClient = useQueryClient()
+const { markOwn } = useOwnPosts(() => props.slug)
 
 const formElement = ref<HTMLFormElement | null>(null)
 
@@ -89,6 +91,8 @@ async function onSubmit() {
       captcha.value.token,
       captchaAnswer.value.trim(),
     )
+    // remember this as one of "your" posts so it renders a (You) tag
+    markOwn(post.post_number)
     // append the new post to the cached thread so it shows without a refetch
     queryClient.setQueryData<ThreadDetailResponse>(
       threadQueryKey(props.slug, props.threadId),

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
+import RefPreviews from '@/components/RefPreviews.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import SealDivider from '@/components/ui/SealDivider.vue'
 
@@ -150,6 +151,8 @@ async function onToggleSticky() {
           @navigate="onNavigate"
         />
       </div>
+
+      <RefPreviews :posts="thread.posts ?? []" :slug="slug" @navigate="onNavigate" />
 
       <SealDivider />
 

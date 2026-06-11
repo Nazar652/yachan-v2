@@ -57,6 +57,7 @@ const globalStubs = {
     emits: ['quote', 'navigate'],
   },
   BaseButton: { template: '<button @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
+  RefPreviews: { template: '<div class="ref-previews-stub" />', props: ['posts', 'slug'], emits: ['navigate'] },
 }
 
 function clickButton(wrapper: VueWrapper, label: string) {

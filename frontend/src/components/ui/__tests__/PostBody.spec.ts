@@ -19,6 +19,26 @@ describe('PostBody', () => {
     expect(wrapper.findAll('.code-line')).toHaveLength(0)
   })
 
+  it('tags a reference to an own post with (You)', () => {
+    const wrapper = mount(PostBody, {
+      props: {
+        html: '<a class="post-ref" data-post="101">&gt;&gt;101</a>',
+        ownNumbers: new Set([101]),
+      },
+    })
+    expect(wrapper.find('.post-you').text()).toBe('(You)')
+  })
+
+  it('does not tag references to other posts', () => {
+    const wrapper = mount(PostBody, {
+      props: {
+        html: '<a class="post-ref" data-post="202">&gt;&gt;202</a>',
+        ownNumbers: new Set([101]),
+      },
+    })
+    expect(wrapper.find('.post-you').exists()).toBe(false)
+  })
+
   it('emits navigate with the referenced post number when a post-ref is clicked', async () => {
     const wrapper = mount(PostBody, {
       props: { html: '<a class="post-ref" data-post="101">&gt;&gt;101</a>' },
