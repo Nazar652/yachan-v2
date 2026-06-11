@@ -109,12 +109,18 @@ async def test_list_threads_maps_all_op_images():
 
 async def test_list_threads_maps_last_replies():
     reply = post_ns(
-        id=77, name="sdaf", body="reply body", body_html="<p>reply body</p>", created_at=datetime(2024, 6, 1)
+        id=77,
+        post_number=42,
+        name="sdaf",
+        body="reply body",
+        body_html="<p>reply body</p>",
+        created_at=datetime(2024, 6, 1),
     )
     view, _ = build(replies=[reply])
     result = await view.list_threads("b", request_ns())
     assert len(result[0].last_replies) == 1
     assert result[0].last_replies[0].id == 77
+    assert result[0].last_replies[0].post_number == 42
     assert result[0].last_replies[0].name == "sdaf"
     assert result[0].last_replies[0].body == "reply body"
     assert result[0].last_replies[0].body_html == "<p>reply body</p>"
@@ -135,7 +141,7 @@ async def test_list_latest_threads_maps_responses():
                 thread_ns(),
                 "b",
                 attachment_ns(thumbnail_path="t.jpg"),
-                post_ns(id=15, body="latest", created_at=datetime(2026, 6, 10)),
+                post_ns(id=15, post_number=88, body="latest", created_at=datetime(2026, 6, 10)),
             ),
             (thread_ns(id=6), "g", None, None),
         ]
@@ -147,6 +153,7 @@ async def test_list_latest_threads_maps_responses():
     assert result[0].board_slug == "b"
     assert result[0].thumbnail_url == "/media/t.jpg"
     assert result[0].last_reply is not None
+    assert result[0].last_reply.post_number == 88
     assert result[0].last_reply.body == "latest"
     assert result[1].board_slug == "g"
     assert result[1].thumbnail_url is None

@@ -657,6 +657,8 @@ export interface components {
         ReplyPreview: {
             /** Id */
             id: number;
+            /** Post Number */
+            post_number: number;
             /** Name */
             name: string | null;
             /** Body */

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import BaseButton from '@/components/ui/BaseButton.vue'
 import PostBody from '@/components/ui/PostBody.vue'
 import { formatDateTime } from '@/utils/display'
-import type { ThreadResponse } from '@/api/types'
+import type { ImagePreview, ThreadResponse } from '@/api/types'
 
 // catalog thread card, "variant D": single image -> image + op text in the
 // left column, latest replies on the right; several images -> gallery across
@@ -21,7 +21,16 @@ const emit = defineEmits<{
   'toggle-sticky': []
 }>()
 
+const router = useRouter()
 const threadTo = computed(() => `/${props.slug}/thread/${props.thread.id}`)
+
+function openThread() {
+  router.push(threadTo.value)
+}
+
+function replyTo(replyPostNumber: number): string {
+  return `${threadTo.value}#post-${replyPostNumber}`
+}
 const images = computed(() => props.thread.op_post?.images ?? [])
 const isSingleImage = computed(() => images.value.length <= 1)
 const lastReplies = computed(() => props.thread.last_replies ?? [])
@@ -30,10 +39,43 @@ const LONG_TEXT_THRESHOLD = 320
 const isLongText = computed(
   () => (props.thread.op_post?.body?.length ?? 0) > LONG_TEXT_THRESHOLD,
 )
+
+// thumbnails keep the image's own aspect ratio; only ratios beyond 1:4 are
+// clamped, so object-cover crops nothing but the extreme cases
+const MAX_ASPECT_RATIO = 4
+const SINGLE_MAX_WIDTH = 340
+const SINGLE_MAX_HEIGHT = 260
+const GALLERY_HEIGHT = 114
+
+function clampedRatio(image: ImagePreview): number | null {
+  if (!image.width || !image.height) return null
+  return Math.min(Math.max(image.width / image.height, 1 / MAX_ASPECT_RATIO), MAX_ASPECT_RATIO)
+}
+
+function singleImageStyle(image: ImagePreview): { width: string; height: string } {
+  const ratio = clampedRatio(image)
+  if (ratio === null) return { width: '200px', height: '200px' }
+  let width = SINGLE_MAX_WIDTH
+  let height = width / ratio
+  if (height > SINGLE_MAX_HEIGHT) {
+    height = SINGLE_MAX_HEIGHT
+    width = height * ratio
+  }
+  return { width: `${Math.round(width)}px`, height: `${Math.round(height)}px` }
+}
+
+function galleryImageStyle(image: ImagePreview): { width: string; height: string } {
+  const ratio = clampedRatio(image)
+  if (ratio === null) return { width: '148px', height: `${GALLERY_HEIGHT}px` }
+  return { width: `${Math.round(GALLERY_HEIGHT * ratio)}px`, height: `${GALLERY_HEIGHT}px` }
+}
 </script>
 
 <template>
-  <article class="flex flex-col rounded-card border border-border bg-surface shadow-card">
+  <article
+    class="flex cursor-pointer flex-col rounded-card border border-border bg-surface shadow-card transition-colors hover:border-gold hover:bg-[color-mix(in_srgb,var(--color-gold)_6%,var(--color-surface))]"
+    @click="openThread"
+  >
     <div class="flex flex-col gap-3.5 p-5">
       <!-- head -->
       <div class="flex flex-wrap items-baseline gap-2.5">
@@ -64,13 +106,14 @@ const isLongText = computed(
       </div>
 
       <!-- several images: gallery across the top -->
-      <div v-if="!isSingleImage" class="flex gap-2 overflow-x-auto pb-0.5">
+      <div v-if="!isSingleImage" class="gallery-scroll flex gap-2 overflow-x-auto pb-1.5">
         <RouterLink v-for="(image, index) in images" :key="index" :to="threadTo" class="shrink-0">
           <img
             :src="image.thumbnail_url"
+            :style="galleryImageStyle(image)"
             alt=""
             loading="lazy"
-            class="h-[114px] w-[148px] rounded-field bg-surface-2 object-cover"
+            class="rounded-field bg-surface-2 object-cover"
           />
         </RouterLink>
       </div>
@@ -78,12 +121,13 @@ const isLongText = computed(
       <!-- lower split: op text left, latest replies right -->
       <div class="grid items-start gap-6 md:grid-cols-[1fr_288px]">
         <div class="min-w-0">
-          <RouterLink v-if="isSingleImage && images[0]" :to="threadTo" class="mb-3 block max-w-[340px]">
+          <RouterLink v-if="isSingleImage && images[0]" :to="threadTo" class="mb-3 inline-block">
             <img
               :src="images[0].thumbnail_url"
+              :style="singleImageStyle(images[0])"
               alt=""
               loading="lazy"
-              class="max-h-[196px] w-full rounded-field bg-surface-2 object-cover"
+              class="max-w-full rounded-field bg-surface-2 object-cover"
             />
           </RouterLink>
           <template v-if="thread.op_post?.body_html">
@@ -116,11 +160,12 @@ const isLongText = computed(
           <RouterLink
             v-for="reply in lastReplies"
             :key="reply.id"
-            :to="threadTo"
+            :to="replyTo(reply.post_number)"
             class="min-w-0 rounded-field border border-border-soft bg-surface-2 px-2.5 py-1.5 transition-colors hover:border-gold"
+            @click.stop
           >
             <div class="flex justify-between font-mono text-[11px] text-text-muted">
-              <span class="text-accent">No.{{ reply.id }}</span>
+              <span class="text-accent">No.{{ reply.post_number }}</span>
               <span>{{ formatDateTime(reply.created_at) }}</span>
             </div>
             <PostBody
@@ -137,6 +182,7 @@ const isLongText = computed(
     <div
       v-if="isMod"
       class="flex gap-3.5 rounded-b-card border-t border-border bg-[color-mix(in_srgb,var(--color-gold)_7%,var(--color-surface))] px-5 py-2"
+      @click.stop
     >
       <BaseButton variant="ghost" size="sm" @click="emit('toggle-lock')">
         {{ thread.is_locked ? 'Unlock' : 'Lock' }}

@@ -92,6 +92,26 @@ describe('useThreadWs', () => {
     })
   })
 
+  it('reflects lock/sticky flags on thread_updated', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadQueryKey('b', 42), {
+      id: 42,
+      is_locked: false,
+      is_sticky: false,
+      posts: [{ id: 1, post_number: 1 }],
+    })
+    mountThreadWs(queryClient)
+
+    emit({ type: 'thread_updated', data: { id: 42, is_locked: true, is_sticky: true } })
+
+    expect(queryClient.getQueryData(threadQueryKey('b', 42))).toEqual({
+      id: 42,
+      is_locked: true,
+      is_sticky: true,
+      posts: [{ id: 1, post_number: 1 }],
+    })
+  })
+
   it('ignores malformed frames', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadQueryKey('b', 42), { id: 42, posts: [] })

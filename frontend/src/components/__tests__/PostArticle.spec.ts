@@ -103,9 +103,9 @@ describe('PostArticle', () => {
     expect(wrapper.find('.post-backlinks').exists()).toBe(false)
   })
 
-  it('shows the (edited) marker on edited posts', () => {
+  it('shows the edited chip on edited posts', () => {
     const wrapper = mountPost({ is_edited: true })
-    expect(wrapper.text()).toContain('(edited)')
+    expect(wrapper.text()).toContain('edited')
   })
 
   it('numbers the lines of code blocks in the body', () => {
@@ -171,19 +171,18 @@ describe('PostArticle', () => {
     expect(wrapper.find('textarea').exists()).toBe(false)
   })
 
-  it('shows the original text on hover and toggles the button label', async () => {
+  it('reveals the original text in a popover on hover', async () => {
     usePostHistoryMock.mockReturnValue({
       data: ref({ post_id: 1, original_body: 'before edit', original_body_html: '<p>before edit</p>', edited_at: '' }),
     })
     const wrapper = mountPost({ is_edited: true })
 
-    const toggle = clickButton(wrapper, 'show original')
-    await toggle.trigger('mouseenter')
+    await wrapper.find('.edit-wrap').trigger('mouseenter')
 
     expect(wrapper.text()).toContain('before edit')
-    expect(wrapper.text()).toContain('original')
+    expect(wrapper.text()).toContain('Original')
 
-    await toggle.trigger('mouseleave')
+    await wrapper.find('.edit-wrap').trigger('mouseleave')
     expect(wrapper.text()).not.toContain('before edit')
   })
 

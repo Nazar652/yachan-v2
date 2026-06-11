@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
@@ -47,15 +47,43 @@ function onQuote(postNumber: number) {
   replyForm.value?.quote(postNumber)
 }
 
-function onNavigate(postNumber: number) {
+function scrollToPost(postNumber: number, smooth: boolean): boolean {
   const target = document.getElementById(`post-${postNumber}`)
-  if (!target) return
+  if (!target) return false
   if (typeof target.scrollIntoView === 'function') {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    target.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
   }
   target.classList.add('post-highlight')
   window.setTimeout(() => target.classList.remove('post-highlight'), 1500)
+  return true
 }
+
+function onNavigate(postNumber: number) {
+  scrollToPost(postNumber, true)
+}
+
+// arriving from the catalog with a #post-N hash: jump to that post once the
+// thread has loaded. the post may render a flush after the data lands, so retry
+// across frames until the element exists instead of relying on a single tick
+function scrollToHashPost() {
+  const match = /^#post-(\d+)$/.exec(route.hash)
+  if (!match) return
+  const postNumber = Number(match[1])
+  let attempts = 0
+  const attempt = () => {
+    if (scrollToPost(postNumber, false) || ++attempts > 20) return
+    requestAnimationFrame(attempt)
+  }
+  attempt()
+}
+
+watch(
+  thread,
+  (loaded) => {
+    if (loaded) nextTick(scrollToHashPost)
+  },
+  { immediate: true },
+)
 
 async function onToggleLock() {
   if (thread.value) await moderation.setLocked(!thread.value.is_locked)

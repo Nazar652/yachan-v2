@@ -31,6 +31,7 @@ class OpPostPreview(BaseModel):
 
 class ReplyPreview(BaseModel):
     id: int
+    post_number: int
     name: str | None
     body: str | None
     body_html: str | None

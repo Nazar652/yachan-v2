@@ -88,6 +88,7 @@ class ThreadsView:
             response.last_replies = [
                 ReplyPreview(
                     id=reply.id,
+                    post_number=reply.post_number,
                     name=reply.name,
                     body=reply.body,
                     body_html=reply.body_html,
@@ -118,6 +119,7 @@ class ThreadsView:
                     thumbnail_url=thumbnail_url,
                     last_reply=ReplyPreview(
                         id=last_reply.id,
+                        post_number=last_reply.post_number,
                         name=last_reply.name,
                         body=last_reply.body,
                         body_html=last_reply.body_html,

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
 import { wsUrl, WS_EVENT, type WsEnvelope } from '@/api/ws'
-import type { PostResponse, ThreadDetailResponse } from '@/api/types'
+import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 // subscribes to a thread's realtime feed and merges events into the thread
 // query cache: new_post appends, post_edited replaces. appends are deduped by
@@ -32,6 +32,13 @@ export function useThreadWs(
           ),
         }
       })
+    } else if (envelope.type === WS_EVENT.THREAD_UPDATED) {
+      // a mod locked/stickied the thread: reflect the flags so the lock hides
+      // the reply form for everyone, not just the mod who flipped it
+      const thread = envelope.data as ThreadResponse
+      queryClient.setQueryData<ThreadDetailResponse>(key, (old) =>
+        old ? { ...old, is_locked: thread.is_locked, is_sticky: thread.is_sticky } : old,
+      )
     }
   }
 

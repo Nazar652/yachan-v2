@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b' } }),
+  useRouter: () => ({ push: vi.fn() }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 

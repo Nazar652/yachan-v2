@@ -116,7 +116,7 @@ function imageSrc(attachment: AttachmentResponse): string {
 <template>
   <article
     :id="`post-${post.post_number}`"
-    class="rounded-card border bg-surface p-4 shadow-card"
+    class="scroll-mt-20 rounded-card border bg-surface p-4 shadow-card"
     :class="
       post.is_op
         ? 'border-[color-mix(in_srgb,var(--color-gold)_32%,var(--color-border))] bg-surface-2'
@@ -136,20 +136,40 @@ function imageSrc(attachment: AttachmentResponse): string {
         >
           No.{{ post.post_number }}
         </button>
-        <span v-if="post.is_edited" class="text-xs italic text-text-muted">(edited)</span>
         <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
       </div>
 
-      <BaseButton
+      <!-- edited marker; hovering reveals the pre-edit body in a popover below -->
+      <div
         v-if="post.is_edited && !isEditing"
-        variant="ghost"
-        size="sm"
-        class="shrink-0"
+        class="edit-wrap relative shrink-0"
         @mouseenter="showOriginal = true"
         @mouseleave="showOriginal = false"
       >
-        <span class="inline-block w-28 text-right">{{ showOriginal ? 'original' : 'show original' }}</span>
-      </BaseButton>
+        <span class="edit-chip inline-flex cursor-help items-center gap-1 font-mono text-[11px] text-text-muted">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 8v4l3 2" />
+          </svg>
+          edited
+        </span>
+
+        <div v-if="showOriginal" class="edit-pop">
+          <span class="edit-pop-label">
+            Original{{ post.edited_at ? ` · before ${formatDate(post.edited_at)}` : '' }}
+          </span>
+          <PostBody
+            v-if="original && original.original_body_html"
+            :html="original.original_body_html"
+            class="text-sm"
+            @navigate="emit('navigate', $event)"
+          />
+          <div v-else-if="original && original.original_body" class="whitespace-pre-wrap text-sm">
+            {{ original.original_body }}
+          </div>
+          <div v-else class="text-sm italic text-text-muted">Loading…</div>
+        </div>
+      </div>
     </div>
 
     <div
@@ -204,20 +224,6 @@ function imageSrc(attachment: AttachmentResponse): string {
       />
       <div v-else-if="post.body" class="text-sm whitespace-pre-wrap">{{ post.body }}</div>
 
-      <div
-        v-if="showOriginal && original"
-        class="mt-2 border-l-2 border-border pl-2 text-sm text-text-muted"
-      >
-        <PostBody
-          v-if="original.original_body_html"
-          :html="original.original_body_html"
-          class="text-sm"
-          @navigate="emit('navigate', $event)"
-        />
-        <div v-else-if="original.original_body" class="whitespace-pre-wrap">{{ original.original_body }}</div>
-        <div v-else class="italic">(empty)</div>
-      </div>
-
       <div v-if="post.can_edit" class="mt-2 flex justify-end">
         <BaseButton variant="ghost" size="sm" @click="startEdit">Edit</BaseButton>
       </div>
@@ -247,3 +253,70 @@ function imageSrc(attachment: AttachmentResponse): string {
     </div>
   </article>
 </template>
+
+<style scoped>
+.edit-chip {
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+  padding-bottom: 1px;
+  transition: color 0.14s, border-color 0.14s;
+}
+.edit-wrap:hover .edit-chip {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-gold);
+}
+
+/* original-text popover, drops in below the chip on hover */
+.edit-pop {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  z-index: 20;
+  width: max-content;
+  min-width: 200px;
+  max-width: 360px;
+  text-align: left;
+  padding: 10px 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: var(--radius-field);
+  box-shadow: var(--shadow-deep);
+  animation: edit-pop-in 0.16s ease;
+}
+/* transparent bridge so the 8px gap doesn't drop the :hover */
+.edit-pop::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0;
+  right: 0;
+  height: 9px;
+}
+/* caret pointing up at the chip */
+.edit-pop::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 16px;
+  width: 9px;
+  height: 9px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  transform: rotate(45deg);
+}
+.edit-pop-label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+@keyframes edit-pop-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>

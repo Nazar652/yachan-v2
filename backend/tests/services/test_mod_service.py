@@ -175,10 +175,29 @@ async def test_set_thread_locked():
     board_repo = MagicMock()
     board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
     thread_repo = MagicMock()
-    thread_repo.get_by_id = AsyncMock(return_value=SimpleNamespace(id=5, board_id=1))
+    thread_repo.get_by_id = AsyncMock(
+        return_value=SimpleNamespace(id=5, board_id=1, is_locked=False)
+    )
     thread_repo.set_locked = AsyncMock()
     service, _ = build(board_repo=board_repo, thread_repo=thread_repo)
 
-    await service.set_thread_locked("b", 5, True)
+    thread = await service.set_thread_locked("b", 5, True)
 
     thread_repo.set_locked.assert_awaited_once_with(5, True)
+    assert thread.is_locked is True
+
+
+async def test_set_thread_sticky():
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
+    thread_repo = MagicMock()
+    thread_repo.get_by_id = AsyncMock(
+        return_value=SimpleNamespace(id=5, board_id=1, is_sticky=False)
+    )
+    thread_repo.set_sticky = AsyncMock()
+    service, _ = build(board_repo=board_repo, thread_repo=thread_repo)
+
+    thread = await service.set_thread_sticky("b", 5, True)
+
+    thread_repo.set_sticky.assert_awaited_once_with(5, True)
+    assert thread.is_sticky is True

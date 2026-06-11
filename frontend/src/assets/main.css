@@ -207,6 +207,35 @@ h4 {
   user-select: none;
 }
 
+/* themed thin scrollbar that follows the design tokens, so it stays subtle on
+   both light and dark themes instead of the bright native bar */
+.gallery-scroll,
+.post-body pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.gallery-scroll::-webkit-scrollbar,
+.post-body pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.gallery-scroll::-webkit-scrollbar-track,
+.post-body pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gallery-scroll::-webkit-scrollbar-thumb,
+.post-body pre::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.gallery-scroll:hover::-webkit-scrollbar-thumb,
+.post-body pre:hover::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+}
+
 /* backlinks footer: the >>N references to a post, rendered outside .post-body so
    they need their own copy of the reference styling */
 .post-backlinks .post-ref {

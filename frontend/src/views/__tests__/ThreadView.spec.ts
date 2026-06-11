@@ -7,8 +7,12 @@ import ThreadView from '@/views/ThreadView.vue'
 import { useThread } from '@/composables/useThread'
 import { useAuthStore } from '@/stores/auth'
 
+const { routeStub } = vi.hoisted(() => ({
+  routeStub: { params: { slug: 'b', id: '42' }, hash: '' },
+}))
+
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { slug: 'b', id: '42' } }),
+  useRoute: () => routeStub,
   RouterLink: { template: '<a><slot /></a>' },
 }))
 
@@ -67,6 +71,7 @@ beforeEach(() => {
   setLockedMock.mockReset()
   setStickyMock.mockReset()
   quoteSpy.mockReset()
+  routeStub.hash = ''
 })
 
 const postFixture = {
@@ -192,6 +197,17 @@ describe('ThreadView', () => {
     stubThreadDetail()
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs }, attachTo: document.body })
     await (wrapper.findComponent('.post-article-stub') as VueWrapper).vm.$emit('navigate', 101)
+    expect(scrollSpy).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('scrolls to the post named in the url hash once the thread loads', async () => {
+    const scrollSpy = vi.fn()
+    Element.prototype.scrollIntoView = scrollSpy
+    routeStub.hash = '#post-101'
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs }, attachTo: document.body })
+    await new Promise((resolve) => setTimeout(resolve))
     expect(scrollSpy).toHaveBeenCalled()
     wrapper.unmount()
   })

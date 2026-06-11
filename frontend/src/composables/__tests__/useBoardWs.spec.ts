@@ -74,6 +74,38 @@ describe('useBoardWs', () => {
     expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 2, title: 'second' }])
   })
 
+  it('merges flags and re-sorts a stickied thread to the top on thread_updated', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'thread_updated', data: { id: 2, is_sticky: true, is_locked: false } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+      { id: 2, is_sticky: true, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+    ])
+  })
+
+  it('leaves other threads untouched when locking one on thread_updated', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'thread_updated', data: { id: 1, is_sticky: false, is_locked: true } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+      { id: 1, is_sticky: false, is_locked: true, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+  })
+
   it('ignores unrelated event types', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 1, title: 'first' }])
