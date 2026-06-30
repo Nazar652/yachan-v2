@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from botocore.exceptions import ClientError
 
@@ -22,31 +22,48 @@ def _s3_settings():
     )
 
 
+def _async_cm(value):
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=value)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    return cm
+
+
 def _s3_storage():
-    with patch("src.core.storage.boto3.client", return_value=MagicMock()):
-        return S3Storage(_s3_settings())
+    """Returns (storage, client). The aioboto3 session is mocked so `session.client(...)`
+    yields the returned client as an async context manager."""
+    client = MagicMock()
+    client.put_object = AsyncMock()
+    client.get_object = AsyncMock()
+    client.delete_object = AsyncMock()
+    client.head_object = AsyncMock()
+    session = MagicMock()
+    session.client = MagicMock(return_value=_async_cm(client))
+    with patch("src.core.storage.aioboto3.Session", return_value=session):
+        storage = S3Storage(_s3_settings())
+    return storage, client
 
 
-def test_save_and_read_roundtrip(tmp_path):
+async def test_save_and_read_roundtrip(tmp_path):
     storage = _storage(tmp_path)
-    key = storage.save("a/b/file.bin", b"data")
+    key = await storage.save("a/b/file.bin", b"data")
     assert key == "a/b/file.bin"
-    assert storage.read("a/b/file.bin") == b"data"
+    assert await storage.read("a/b/file.bin") == b"data"
 
 
-def test_exists(tmp_path):
+async def test_exists(tmp_path):
     storage = _storage(tmp_path)
-    assert storage.exists("missing") is False
-    storage.save("here.txt", b"x")
-    assert storage.exists("here.txt") is True
+    assert await storage.exists("missing") is False
+    await storage.save("here.txt", b"x")
+    assert await storage.exists("here.txt") is True
 
 
-def test_delete_is_idempotent(tmp_path):
+async def test_delete_is_idempotent(tmp_path):
     storage = _storage(tmp_path)
-    storage.save("f.txt", b"x")
-    storage.delete("f.txt")
-    assert storage.exists("f.txt") is False
-    storage.delete("f.txt")  # no error on missing
+    await storage.save("f.txt", b"x")
+    await storage.delete("f.txt")
+    assert await storage.exists("f.txt") is False
+    await storage.delete("f.txt")  # no error on missing
 
 
 def test_public_url_strips_trailing_slash(tmp_path):
@@ -54,50 +71,50 @@ def test_public_url_strips_trailing_slash(tmp_path):
     assert storage.public_url("a/b.png") == "/media/a/b.png"
 
 
-def test_s3_save_puts_object_with_guessed_content_type():
-    storage = _s3_storage()
-    key = storage.save("abc.png", b"data")
+async def test_s3_save_puts_object_with_guessed_content_type():
+    storage, client = _s3_storage()
+    key = await storage.save("abc.png", b"data")
     assert key == "abc.png"
-    storage.client.put_object.assert_called_once_with(
+    client.put_object.assert_awaited_once_with(
         Bucket="media", Key="abc.png", Body=b"data", ContentType="image/png"
     )
 
 
-def test_s3_save_falls_back_to_octet_stream():
-    storage = _s3_storage()
-    storage.save("noext", b"x")
-    assert storage.client.put_object.call_args.kwargs["ContentType"] == "application/octet-stream"
+async def test_s3_save_falls_back_to_octet_stream():
+    storage, client = _s3_storage()
+    await storage.save("noext", b"x")
+    assert client.put_object.await_args.kwargs["ContentType"] == "application/octet-stream"
 
 
-def test_s3_read_returns_body_bytes():
-    storage = _s3_storage()
-    storage.client.get_object.return_value = {"Body": MagicMock(read=lambda: b"bytes")}
-    assert storage.read("k") == b"bytes"
-    storage.client.get_object.assert_called_once_with(Bucket="media", Key="k")
+async def test_s3_read_returns_body_bytes():
+    storage, client = _s3_storage()
+    stream = MagicMock()
+    stream.read = AsyncMock(return_value=b"bytes")
+    client.get_object.return_value = {"Body": _async_cm(stream)}
+    assert await storage.read("k") == b"bytes"
+    client.get_object.assert_awaited_once_with(Bucket="media", Key="k")
 
 
-def test_s3_delete_calls_delete_object():
-    storage = _s3_storage()
-    storage.delete("k")
-    storage.client.delete_object.assert_called_once_with(Bucket="media", Key="k")
+async def test_s3_delete_calls_delete_object():
+    storage, client = _s3_storage()
+    await storage.delete("k")
+    client.delete_object.assert_awaited_once_with(Bucket="media", Key="k")
 
 
-def test_s3_exists_true_when_head_succeeds():
-    storage = _s3_storage()
-    assert storage.exists("k") is True
-    storage.client.head_object.assert_called_once_with(Bucket="media", Key="k")
+async def test_s3_exists_true_when_head_succeeds():
+    storage, client = _s3_storage()
+    assert await storage.exists("k") is True
+    client.head_object.assert_awaited_once_with(Bucket="media", Key="k")
 
 
-def test_s3_exists_false_on_client_error():
-    storage = _s3_storage()
-    storage.client.head_object.side_effect = ClientError(
-        {"Error": {"Code": "404"}}, "HeadObject"
-    )
-    assert storage.exists("missing") is False
+async def test_s3_exists_false_on_client_error():
+    storage, client = _s3_storage()
+    client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
+    assert await storage.exists("missing") is False
 
 
 def test_s3_public_url_strips_trailing_slash():
-    storage = _s3_storage()
+    storage, _ = _s3_storage()
     assert storage.public_url("a/b.png") == "/media/a/b.png"
 
 
@@ -111,5 +128,5 @@ def test_build_storage_returns_local_by_default(tmp_path):
 def test_build_storage_returns_s3_when_selected():
     settings = _s3_settings()
     settings.storage_backend = "s3"
-    with patch("src.core.storage.boto3.client", return_value=MagicMock()):
+    with patch("src.core.storage.aioboto3.Session", return_value=MagicMock()):
         assert isinstance(build_storage(settings), S3Storage)

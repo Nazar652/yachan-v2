@@ -41,7 +41,7 @@ class FileService:
         # identical bytes are stored once and reused across posts
         key = existing.file_path if existing is not None else f"{md5}{extension}"
         if existing is None:
-            self.storage.save(key, content)
+            await self.storage.save(key, content)
 
         return await self.attachment_repo.create(
             Attachment(
@@ -60,7 +60,7 @@ class FileService:
         if attachment is None or attachment.media_type not in (MediaType.IMAGE, MediaType.GIF):
             return
 
-        data = self.storage.read(attachment.file_path)
+        data = await self.storage.read(attachment.file_path)
         with Image.open(io.BytesIO(data)) as image:
             width, height = image.size
             image.thumbnail(THUMBNAIL_SIZE)
@@ -68,7 +68,7 @@ class FileService:
             image.convert("RGB").save(buffer, format="JPEG")
 
         thumbnail_key = f"thumb/{attachment.md5}.jpg"
-        self.storage.save(thumbnail_key, buffer.getvalue())
+        await self.storage.save(thumbnail_key, buffer.getvalue())
         await self.attachment_repo.set_media_info(
             attachment_id,
             thumbnail_path=thumbnail_key,
