@@ -6,6 +6,7 @@ import {
   listReports,
   resolveReport,
   deletePost,
+  deleteThread,
   setThreadLocked,
   setThreadSticky,
   banPoster,
@@ -165,6 +166,26 @@ describe('deletePost', () => {
     deleteMock.mockResolvedValue({ data: undefined, error } as never)
 
     await expect(deletePost('b', 101)).rejects.toMatchObject(error)
+  })
+})
+
+describe('deleteThread', () => {
+  beforeEach(() => deleteMock.mockReset())
+
+  it('deletes the thread on success', async () => {
+    deleteMock.mockResolvedValue({ data: undefined, error: undefined } as never)
+
+    await expect(deleteThread('b', 42)).resolves.toBeUndefined()
+    expect(deleteMock).toHaveBeenCalledWith('/api/mod/{board_slug}/threads/{thread_id}', {
+      params: { path: { board_slug: 'b', thread_id: 42 } },
+    })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'admin privileges required' }
+    deleteMock.mockResolvedValue({ data: undefined, error } as never)
+
+    await expect(deleteThread('b', 42)).rejects.toMatchObject(error)
   })
 })
 

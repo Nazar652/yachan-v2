@@ -214,5 +214,6 @@ npm run test:unit -- --run             # vitest once
 make openapi                           # (repo root) regenerate src/api/schema.d.ts from the backend
 ```
 
-`make lint` (repo root) runs `npm run lint` as its frontend step; run
-`type-check` and `test:unit` separately to fully verify a change.
+`make lint-frontend` (repo root) is the full frontend gate — it runs `npm run
+lint`, `test:unit -- --run` and `type-check` together. Use `make lint-all` when a
+change also touches the backend. Always lint via `make`, not raw tools.

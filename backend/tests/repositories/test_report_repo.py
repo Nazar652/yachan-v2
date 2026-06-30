@@ -48,3 +48,19 @@ async def test_count_unresolved_for_post(session, make_result):
     repo = ReportRepository(session=session)
 
     assert await repo.count_unresolved_for_post(7) == 4
+
+
+async def test_delete_by_post_ids(session):
+    repo = ReportRepository(session=session)
+
+    await repo.delete_by_post_ids([1, 2])
+
+    session.execute.assert_awaited_once()
+
+
+async def test_delete_by_post_ids_empty_input(session):
+    repo = ReportRepository(session=session)
+
+    await repo.delete_by_post_ids([])
+
+    session.execute.assert_not_awaited()

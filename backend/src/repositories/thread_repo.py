@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -66,3 +66,6 @@ class ThreadRepository(BaseRepository):
         await self.session.execute(
             update(Thread).where(col(Thread.id) == thread_id).values(is_sticky=sticky)
         )
+
+    async def delete(self, thread_id: int) -> None:
+        await self.session.execute(delete(Thread).where(col(Thread.id) == thread_id))

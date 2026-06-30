@@ -25,3 +25,19 @@ async def test_create_many_adds_all_and_flushes(session):
 
     session.add_all.assert_called_once_with(links)
     session.flush.assert_awaited_once()
+
+
+async def test_delete_by_post_ids(session):
+    repo = PostBacklinkRepository(session=session)
+
+    await repo.delete_by_post_ids([1, 2])
+
+    session.execute.assert_awaited_once()
+
+
+async def test_delete_by_post_ids_empty_input(session):
+    repo = PostBacklinkRepository(session=session)
+
+    await repo.delete_by_post_ids([])
+
+    session.execute.assert_not_awaited()

@@ -8,12 +8,14 @@ import { useThread } from '@/composables/useThread'
 import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
-const { routeStub } = vi.hoisted(() => ({
+const { routeStub, pushMock } = vi.hoisted(() => ({
   routeStub: { params: { slug: 'b', id: '42' }, hash: '' },
+  pushMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => routeStub,
+  useRouter: () => ({ push: pushMock }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 
@@ -27,11 +29,13 @@ vi.mock('@/composables/useThreadWs', () => ({
 
 const setLockedMock = vi.fn()
 const setStickyMock = vi.fn()
+const removeThreadMock = vi.fn()
 vi.mock('@/composables/useModeration', () => ({
   useModeration: () => ({
     setLocked: setLockedMock,
     setSticky: setStickyMock,
     removePost: vi.fn(),
+    removeThread: removeThreadMock,
     ban: vi.fn(),
   }),
 }))
@@ -72,6 +76,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setLockedMock.mockReset()
   setStickyMock.mockReset()
+  removeThreadMock.mockReset()
+  pushMock.mockReset()
   quoteSpy.mockReset()
   routeStub.hash = ''
 })
@@ -174,6 +180,48 @@ describe('ThreadView', () => {
     expect(setStickyMock).toHaveBeenCalledWith(true)
   })
 
+  it('hides the delete-thread button for a moderator', () => {
+    useAuthStore().login('jwt', 'moderator')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Delete thread')
+  })
+
+  it('shows the delete-thread button for an admin', () => {
+    useAuthStore().login('jwt', 'admin')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Delete thread')
+  })
+
+  it('deletes the thread and navigates to the board on confirm', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    removeThreadMock.mockResolvedValue(undefined)
+    useAuthStore().login('jwt', 'admin')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Delete thread')
+    await flushPromises()
+
+    expect(removeThreadMock).toHaveBeenCalled()
+    expect(pushMock).toHaveBeenCalledWith('/b')
+    confirmSpy.mockRestore()
+  })
+
+  it('does not delete the thread when the confirm is dismissed', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    useAuthStore().login('jwt', 'admin')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Delete thread')
+
+    expect(removeThreadMock).not.toHaveBeenCalled()
+    expect(pushMock).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
   it('shows the api detail when toggling the lock fails', async () => {
     useAuthStore().login('jwt', 'admin')
     setLockedMock.mockRejectedValue(new ApiError('session expired', 401))
@@ -181,7 +229,7 @@ describe('ThreadView', () => {
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Lock')
     await flushPromises()
-    expect(wrapper.find('.text-danger').text()).toBe('session expired')
+    expect(wrapper.find('p.text-danger').text()).toBe('session expired')
   })
 
   it('derives backlinks for a post from the references in other posts', () => {

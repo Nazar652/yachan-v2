@@ -113,6 +113,22 @@ async def test_soft_delete_executes_update(session):
     session.execute.assert_awaited_once()
 
 
+async def test_list_ids_by_thread_returns_list(session, make_result):
+    session.execute.return_value = make_result(all_=[1, 2, 3])
+    repo = PostRepository(session=session)
+
+    assert await repo.list_ids_by_thread(7) == [1, 2, 3]
+    session.execute.assert_awaited_once()
+
+
+async def test_delete_by_thread_executes_delete(session):
+    repo = PostRepository(session=session)
+
+    await repo.delete_by_thread(7)
+
+    session.execute.assert_awaited_once()
+
+
 async def test_get_last_replies_by_thread_ids_returns_grouped(session, make_result):
     from types import SimpleNamespace
 

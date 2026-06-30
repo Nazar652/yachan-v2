@@ -2,9 +2,9 @@ import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { threadQueryKey } from '@/composables/useThread'
-import { threadsQueryKey } from '@/composables/useThreads'
-import { banPoster, deletePost, setThreadLocked, setThreadSticky } from '@/api/mod'
-import type { BanCreate, BanResponse, ThreadDetailResponse } from '@/api/types'
+import { threadsPageQueryKey, threadsQueryKey } from '@/composables/useThreads'
+import { banPoster, deletePost, deleteThread, setThreadLocked, setThreadSticky } from '@/api/mod'
+import type { BanCreate, BanResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 // mod-only actions scoped to one thread. each call hits the api, then patches
 // the thread cache so the change shows immediately, and invalidates the catalog
@@ -59,9 +59,20 @@ export function useModeration(
     )
   }
 
+  // admin-only: hard-delete the whole thread, then drop it from the catalog
+  // cache and invalidate so every page refetches without it
+  async function removeThread() {
+    await deleteThread(toValue(slug), toValue(threadId))
+    queryClient.setQueryData<ThreadResponse[]>(
+      threadsPageQueryKey(toValue(slug), 1),
+      (old) => (old ? old.filter((thread) => thread.id !== toValue(threadId)) : old),
+    )
+    await invalidateCatalog()
+  }
+
   async function ban(postNumber: number, data: BanCreate): Promise<BanResponse> {
     return banPoster(toValue(slug), postNumber, data)
   }
 
-  return { setLocked, setSticky, removePost, ban }
+  return { setLocked, setSticky, removePost, removeThread, ban }
 }

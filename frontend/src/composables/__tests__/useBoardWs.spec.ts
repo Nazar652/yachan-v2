@@ -106,6 +106,19 @@ describe('useBoardWs', () => {
     ])
   })
 
+  it('drops a thread from the catalog cache on thread_deleted', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 1, title: 'first' },
+      { id: 2, title: 'second' },
+    ])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'thread_deleted', data: { id: 1 } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 2, title: 'second' }])
+  })
+
   it('ignores unrelated event types', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 1, title: 'first' }])

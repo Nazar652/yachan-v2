@@ -68,3 +68,9 @@ async def test_set_sticky(session):
     repo = ThreadRepository(session=session)
     await repo.set_sticky(1, True)
     session.execute.assert_awaited_once()
+
+
+async def test_delete(session):
+    repo = ThreadRepository(session=session)
+    await repo.delete(1)
+    session.execute.assert_awaited_once()

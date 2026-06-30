@@ -42,6 +42,11 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
           ),
         )
       })
+    } else if (envelope.type === WS_EVENT.THREAD_DELETED) {
+      const { id } = envelope.data as { id: number }
+      queryClient.setQueryData<ThreadResponse[]>(key, (old) =>
+        old ? old.filter((existing) => existing.id !== id) : old,
+      )
     }
   }
 

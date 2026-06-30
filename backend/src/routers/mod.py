@@ -53,6 +53,16 @@ async def delete_post(
     await view.delete_post(token, board_slug, post_number)
 
 
+@router.delete("/{board_slug}/threads/{thread_id}", status_code=204)
+async def delete_thread(
+    board_slug: str,
+    thread_id: int,
+    token: str = Depends(bearer_token),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
+) -> None:
+    await view.delete_thread(token, board_slug, thread_id)
+
+
 @router.post("/{board_slug}/threads/{thread_id}/lock", status_code=204)
 async def lock_thread(
     board_slug: str,

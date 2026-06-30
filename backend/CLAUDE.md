@@ -316,7 +316,7 @@ like the http middleware), and one file per command (e.g. `create_admin.py`,
 
 ## Commands
 
-Backend tooling runs in the **root `.venv`** (used by `make lint`/pyright/hooks),
+Backend tooling runs in the **root `.venv`** (used by `make lint-backend`/pyright/hooks),
 which Poetry is also pointed at (`backend/poetry.toml` → `virtualenvs.create =
 false`). Activate `.venv` first, then `poetry` installs into it — see the root
 `CLAUDE.md` for the dependency workflow.

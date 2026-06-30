@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import func, select, text, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -137,3 +137,14 @@ class PostRepository(BaseRepository):
             .where(col(Post.id) == post_id)
             .values(deleted=True, deleted_by=deleted_by)
         )
+
+    async def list_ids_by_thread(self, thread_id: int) -> list[int]:
+        # every post id in the thread, soft-deleted ones included, so a hard
+        # thread delete reaches their attachments and backlinks too
+        result = await self.session.execute(
+            select(col(Post.id)).where(col(Post.thread_id) == thread_id)
+        )
+        return list(result.scalars().all())
+
+    async def delete_by_thread(self, thread_id: int) -> None:
+        await self.session.execute(delete(Post).where(col(Post.thread_id) == thread_id))

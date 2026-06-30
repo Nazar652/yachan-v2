@@ -94,6 +94,38 @@ async def test_list_by_post(session, make_result):
     assert await repo.list_by_post(5) == attachments
 
 
+async def test_list_by_thread(session, make_result):
+    attachments = [object(), object()]
+    session.execute.return_value = make_result(all_=attachments)
+    repo = AttachmentRepository(session=session)
+
+    assert await repo.list_by_thread(7) == attachments
+    session.execute.assert_awaited_once()
+
+
+async def test_count_by_file_path(session, make_result):
+    session.execute.return_value = make_result(one=3)
+    repo = AttachmentRepository(session=session)
+
+    assert await repo.count_by_file_path("abc.jpg") == 3
+
+
+async def test_delete_by_post_ids(session):
+    repo = AttachmentRepository(session=session)
+
+    await repo.delete_by_post_ids([1, 2])
+
+    session.execute.assert_awaited_once()
+
+
+async def test_delete_by_post_ids_empty_input(session):
+    repo = AttachmentRepository(session=session)
+
+    await repo.delete_by_post_ids([])
+
+    session.execute.assert_not_awaited()
+
+
 async def test_create(session):
     attachment = object()
     repo = AttachmentRepository(session=session)

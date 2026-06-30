@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef, watch } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
 import { useModeration } from '@/composables/useModeration'
@@ -14,6 +14,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import SealDivider from '@/components/ui/SealDivider.vue'
 
 const route = useRoute()
+const router = useRouter()
 const slug = computed(() => route.params.slug as string)
 const threadId = computed(() => Number(route.params.id))
 
@@ -108,6 +109,19 @@ async function onToggleSticky() {
     modError.value = errorDetail(error, 'Failed to update thread.')
   }
 }
+
+async function onDeleteThread() {
+  if (!window.confirm('Delete this thread and all its posts and files? This cannot be undone.')) {
+    return
+  }
+  modError.value = null
+  try {
+    await moderation.removeThread()
+    await router.push(`/${slug.value}`)
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to delete thread.')
+  }
+}
 </script>
 
 <template>
@@ -151,6 +165,15 @@ async function onToggleSticky() {
         </BaseButton>
         <BaseButton variant="ghost" size="sm" @click="onToggleSticky">
           {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
+        </BaseButton>
+        <BaseButton
+          v-if="auth.isAdmin"
+          variant="ghost"
+          size="sm"
+          class="ml-auto text-danger"
+          @click="onDeleteThread"
+        >
+          Delete thread
         </BaseButton>
       </div>
 
