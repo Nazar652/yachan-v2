@@ -5,12 +5,16 @@ from src.core.exceptions import (
     OpRequiresImageError,
     ThreadNotFoundError,
 )
+from src.core.storage import Storage
 from src.models.attachment import Attachment
 from src.models.post import Post
 from src.models.thread import Thread
 from src.repositories.attachment_repo import AttachmentRepository
 from src.repositories.board_repo import BoardRepository
+from src.repositories.post_backlink_repo import PostBacklinkRepository
+from src.repositories.post_edit_repo import PostEditRepository
 from src.repositories.post_repo import PostRepository
+from src.repositories.report_repo import ReportRepository
 from src.repositories.thread_repo import ThreadRepository
 from src.schemas.thread import ThreadCreate
 from src.services.ban_service import BanService
@@ -29,6 +33,10 @@ class ThreadService:
         post_repo: PostRepository,
         board_repo: BoardRepository,
         attachment_repo: AttachmentRepository,
+        backlink_repo: PostBacklinkRepository,
+        post_edit_repo: PostEditRepository,
+        report_repo: ReportRepository,
+        storage: Storage,
         markup: MarkupService,
         ban_service: BanService,
     ) -> None:
@@ -36,6 +44,10 @@ class ThreadService:
         self.post_repo = post_repo
         self.board_repo = board_repo
         self.attachment_repo = attachment_repo
+        self.backlink_repo = backlink_repo
+        self.post_edit_repo = post_edit_repo
+        self.report_repo = report_repo
+        self.storage = storage
         self.markup = markup
         self.ban_service = ban_service
 
@@ -86,6 +98,44 @@ class ThreadService:
         post_ids = [post.id for post in posts]
         attachments_by_post = await self.attachment_repo.list_by_post_ids(post_ids)
         return thread, posts, attachments_by_post
+
+    async def delete_thread(self, board_slug: str, thread_id: int) -> Thread:
+        board = await self.board_repo.get_by_slug(board_slug)
+        if board is None:
+            raise BoardNotFoundError(board_slug)
+
+        thread = await self.thread_repo.get_by_id(thread_id)
+        if thread is None or thread.board_id != board.id:
+            raise ThreadNotFoundError(thread_id)
+
+        post_ids = await self.post_repo.list_ids_by_thread(thread_id)
+        attachments = await self.attachment_repo.list_by_thread(thread_id)
+
+        # drop every child row first; nothing here cascades at the db level
+        await self.backlink_repo.delete_by_post_ids(post_ids)
+        await self.post_edit_repo.delete_by_post_ids(post_ids)
+        await self.report_repo.delete_by_post_ids(post_ids)
+        await self.attachment_repo.delete_by_post_ids(post_ids)
+        await self.post_repo.delete_by_thread(thread_id)
+        await self.thread_repo.delete(thread_id)
+        # make the deletes visible to the orphan check below
+        await self.thread_repo.flush()
+
+        await self._delete_orphaned_blobs(attachments)
+        return thread
+
+    async def _delete_orphaned_blobs(self, attachments: list[Attachment]) -> None:
+        # files are deduped by md5, so a blob is only removed once no surviving
+        # attachment references it; thumbnails share the same md5 as their blob
+        thumbnails_by_path: dict[str, str | None] = {}
+        for attachment in attachments:
+            thumbnails_by_path.setdefault(attachment.file_path, attachment.thumbnail_path)
+        for file_path, thumbnail_path in thumbnails_by_path.items():
+            if await self.attachment_repo.count_by_file_path(file_path) > 0:
+                continue
+            await self.storage.delete(file_path)
+            if thumbnail_path is not None:
+                await self.storage.delete(thumbnail_path)
 
     async def list_threads(
         self, board_slug: str, limit: int = 50, offset: int = 0

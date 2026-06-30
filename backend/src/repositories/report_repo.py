@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -35,6 +35,13 @@ class ReportRepository(BaseRepository):
             update(Report)
             .where(col(Report.id) == report_id)
             .values(is_resolved=True, resolved_by=resolved_by)
+        )
+
+    async def delete_by_post_ids(self, post_ids: list[int]) -> None:
+        if not post_ids:
+            return
+        await self.session.execute(
+            delete(Report).where(col(Report.post_id).in_(post_ids))
         )
 
     async def count_unresolved_for_post(self, post_id: int) -> int:

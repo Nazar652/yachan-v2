@@ -1,9 +1,10 @@
 from kink import inject
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from src.models.attachment import Attachment, MediaType
+from src.models.post import Post
 
 from .base import BaseRepository
 
@@ -74,6 +75,31 @@ class AttachmentRepository(BaseRepository):
             select(Attachment).where(col(Attachment.post_id) == post_id)
         )
         return list(result.scalars().all())
+
+    async def list_by_thread(self, thread_id: int) -> list[Attachment]:
+        result = await self.session.execute(
+            select(Attachment)
+            .join(Post, col(Attachment.post_id) == col(Post.id))
+            .where(col(Post.thread_id) == thread_id)
+        )
+        return list(result.scalars().all())
+
+    async def count_by_file_path(self, file_path: str) -> int:
+        # how many attachment rows still reference this blob; files are deduped by
+        # md5, so a shared blob must survive while any other post points at it
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Attachment)
+            .where(col(Attachment.file_path) == file_path)
+        )
+        return result.scalar_one()
+
+    async def delete_by_post_ids(self, post_ids: list[int]) -> None:
+        if not post_ids:
+            return
+        await self.session.execute(
+            delete(Attachment).where(col(Attachment.post_id).in_(post_ids))
+        )
 
     async def create(self, attachment: Attachment) -> Attachment:
         self.session.add(attachment)

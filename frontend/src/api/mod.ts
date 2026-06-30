@@ -59,6 +59,13 @@ export async function deletePost(boardSlug: string, postNumber: number): Promise
   if (error) throw toApiError(error, response)
 }
 
+export async function deleteThread(boardSlug: string, threadId: number): Promise<void> {
+  const { error, response } = await apiClient.DELETE('/api/mod/{board_slug}/threads/{thread_id}', {
+    params: { path: { board_slug: boardSlug, thread_id: threadId } },
+  })
+  if (error) throw toApiError(error, response)
+}
+
 export async function setThreadLocked(
   boardSlug: string,
   threadId: number,

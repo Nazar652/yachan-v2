@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -24,3 +24,10 @@ class PostEditRepository(BaseRepository):
         await self.session.flush()
         await self.session.refresh(edit)
         return edit
+
+    async def delete_by_post_ids(self, post_ids: list[int]) -> None:
+        if not post_ids:
+            return
+        await self.session.execute(
+            delete(PostEdit).where(col(PostEdit.post_id).in_(post_ids))
+        )

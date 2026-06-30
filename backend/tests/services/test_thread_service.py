@@ -34,6 +34,21 @@ def build(*, board=_UNSET):
     attachment_repo.list_by_post_ids = AsyncMock(return_value={})
     attachment_repo.list_images_by_post_ids = AsyncMock(return_value={})
     attachment_repo.get_first_images_by_post_ids = AsyncMock(return_value={})
+    attachment_repo.list_by_thread = AsyncMock(return_value=[])
+    attachment_repo.delete_by_post_ids = AsyncMock()
+    attachment_repo.count_by_file_path = AsyncMock(return_value=0)
+    post_repo.list_ids_by_thread = AsyncMock(return_value=[op_post.id])
+    post_repo.delete_by_thread = AsyncMock()
+    thread_repo.delete = AsyncMock()
+    thread_repo.flush = AsyncMock()
+    backlink_repo = MagicMock()
+    backlink_repo.delete_by_post_ids = AsyncMock()
+    post_edit_repo = MagicMock()
+    post_edit_repo.delete_by_post_ids = AsyncMock()
+    report_repo = MagicMock()
+    report_repo.delete_by_post_ids = AsyncMock()
+    storage = MagicMock()
+    storage.delete = AsyncMock()
     markup = MagicMock()
     markup.render = MagicMock(return_value="<p>x</p>")
     ban_service = MagicMock()
@@ -44,6 +59,10 @@ def build(*, board=_UNSET):
         post_repo=post_repo,
         board_repo=board_repo,
         attachment_repo=attachment_repo,
+        backlink_repo=backlink_repo,
+        post_edit_repo=post_edit_repo,
+        report_repo=report_repo,
+        storage=storage,
         markup=markup,
         ban_service=ban_service,
     )
@@ -52,6 +71,10 @@ def build(*, board=_UNSET):
         thread_repo=thread_repo,
         post_repo=post_repo,
         attachment_repo=attachment_repo,
+        backlink_repo=backlink_repo,
+        post_edit_repo=post_edit_repo,
+        report_repo=report_repo,
+        storage=storage,
         ban_service=ban_service,
         thread=thread_obj,
         op_post=op_post,
@@ -105,6 +128,57 @@ async def test_get_thread_detail_wrong_board():
     mocks.thread_repo.get_by_id = AsyncMock(return_value=SimpleNamespace(id=5, board_id=999))
     with pytest.raises(ThreadNotFoundError):
         await service.get_thread_detail("b", 5)
+
+
+async def test_delete_thread_removes_rows_and_returns_thread():
+    service, mocks = build()
+
+    result = await service.delete_thread("b", 5)
+
+    assert result is mocks.thread
+    mocks.backlink_repo.delete_by_post_ids.assert_awaited_once_with([mocks.op_post.id])
+    mocks.post_edit_repo.delete_by_post_ids.assert_awaited_once_with([mocks.op_post.id])
+    mocks.report_repo.delete_by_post_ids.assert_awaited_once_with([mocks.op_post.id])
+    mocks.attachment_repo.delete_by_post_ids.assert_awaited_once_with([mocks.op_post.id])
+    mocks.post_repo.delete_by_thread.assert_awaited_once_with(5)
+    mocks.thread_repo.delete.assert_awaited_once_with(5)
+
+
+async def test_delete_thread_unknown_board():
+    service, _ = build(board=None)
+    with pytest.raises(BoardNotFoundError):
+        await service.delete_thread("b", 5)
+
+
+async def test_delete_thread_wrong_board():
+    service, mocks = build()
+    mocks.thread_repo.get_by_id = AsyncMock(return_value=SimpleNamespace(id=5, board_id=999))
+    with pytest.raises(ThreadNotFoundError):
+        await service.delete_thread("b", 5)
+
+
+async def test_delete_thread_deletes_only_orphaned_blobs():
+    service, mocks = build()
+    shared = SimpleNamespace(file_path="shared.jpg", thumbnail_path="thumb/shared.jpg")
+    orphan = SimpleNamespace(file_path="orphan.png", thumbnail_path=None)
+    mocks.attachment_repo.list_by_thread = AsyncMock(return_value=[shared, orphan])
+    # shared.jpg still referenced elsewhere, orphan.png is not
+    mocks.attachment_repo.count_by_file_path = AsyncMock(side_effect=[1, 0])
+
+    await service.delete_thread("b", 5)
+
+    mocks.storage.delete.assert_awaited_once_with("orphan.png")
+
+
+async def test_delete_thread_deletes_blob_and_thumbnail():
+    service, mocks = build()
+    att = SimpleNamespace(file_path="a.jpg", thumbnail_path="thumb/a.jpg")
+    mocks.attachment_repo.list_by_thread = AsyncMock(return_value=[att])
+    mocks.attachment_repo.count_by_file_path = AsyncMock(return_value=0)
+
+    await service.delete_thread("b", 5)
+
+    assert mocks.storage.delete.await_count == 2
 
 
 async def test_list_threads_returns_tuples_with_preview():

@@ -26,18 +26,22 @@ def build(*, role=ModRole.ADMIN):
     report_service = MagicMock()
     report_service.list_unresolved = AsyncMock(return_value=[])
     report_service.resolve = AsyncMock()
+    thread_service = MagicMock()
+    thread_service.delete_thread = AsyncMock(return_value=thread_ns(id=5))
     events = MagicMock()
     events.publish = AsyncMock()
     view = ModView(
         mod_service=mod_service,
         board_service=board_service,
         report_service=report_service,
+        thread_service=thread_service,
         events=events,
     )
     return view, SimpleNamespace(
         mod_service=mod_service,
         board_service=board_service,
         report_service=report_service,
+        thread_service=thread_service,
         events=events,
     )
 
@@ -97,6 +101,27 @@ async def test_delete_post_delegates_with_mod():
     view, mocks = build()
     await view.delete_post("tok", "b", 5)
     mocks.mod_service.delete_post.assert_awaited_once()
+
+
+async def test_delete_thread_admin_publishes_to_both_channels():
+    view, mocks = build(role=ModRole.ADMIN)
+
+    await view.delete_thread("tok", "b", 5)
+
+    mocks.thread_service.delete_thread.assert_awaited_once_with("b", 5)
+    channels = [call.args[0] for call in mocks.events.publish.await_args_list]
+    assert channels == ["ws:thread:5", "ws:board:b"]
+    for call in mocks.events.publish.await_args_list:
+        assert call.args[1] == "thread_deleted"
+        assert call.args[2] == {"id": 5}
+
+
+async def test_delete_thread_rejects_non_admin():
+    view, mocks = build(role=ModRole.MODERATOR)
+    with pytest.raises(ForbiddenError):
+        await view.delete_thread("tok", "b", 5)
+    mocks.thread_service.delete_thread.assert_not_called()
+    mocks.events.publish.assert_not_called()
 
 
 async def test_ban_poster_returns_response():

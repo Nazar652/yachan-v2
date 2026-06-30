@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -30,3 +30,17 @@ class PostBacklinkRepository(BaseRepository):
     async def create_many(self, links: list[PostBacklink]) -> None:
         self.session.add_all(links)
         await self.session.flush()
+
+    async def delete_by_post_ids(self, post_ids: list[int]) -> None:
+        # drop links on either side: posts in this thread may be referenced by
+        # posts elsewhere, and those backlink rows must go too
+        if not post_ids:
+            return
+        await self.session.execute(
+            delete(PostBacklink).where(
+                or_(
+                    col(PostBacklink.source_post_id).in_(post_ids),
+                    col(PostBacklink.target_post_id).in_(post_ids),
+                )
+            )
+        )

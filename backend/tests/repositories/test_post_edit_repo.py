@@ -27,3 +27,19 @@ async def test_create(session):
     session.add.assert_called_once_with(edit)
     session.flush.assert_awaited_once()
     session.refresh.assert_awaited_once_with(edit)
+
+
+async def test_delete_by_post_ids(session):
+    repo = PostEditRepository(session=session)
+
+    await repo.delete_by_post_ids([1, 2])
+
+    session.execute.assert_awaited_once()
+
+
+async def test_delete_by_post_ids_empty_input(session):
+    repo = PostEditRepository(session=session)
+
+    await repo.delete_by_post_ids([])
+
+    session.execute.assert_not_awaited()

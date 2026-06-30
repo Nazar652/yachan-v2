@@ -29,6 +29,7 @@ describe('WS_EVENT', () => {
       POST_EDITED: 'post_edited',
       NEW_THREAD: 'new_thread',
       THREAD_UPDATED: 'thread_updated',
+      THREAD_DELETED: 'thread_deleted',
     })
   })
 })

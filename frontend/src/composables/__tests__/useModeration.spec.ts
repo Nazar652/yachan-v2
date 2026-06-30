@@ -5,25 +5,28 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
 import { useModeration } from '@/composables/useModeration'
 import { threadQueryKey } from '@/composables/useThread'
-import { threadsQueryKey } from '@/composables/useThreads'
-import { banPoster, deletePost, setThreadLocked, setThreadSticky } from '@/api/mod'
+import { threadsPageQueryKey, threadsQueryKey } from '@/composables/useThreads'
+import { banPoster, deletePost, deleteThread, setThreadLocked, setThreadSticky } from '@/api/mod'
 
 vi.mock('@/api/mod', () => ({
   setThreadLocked: vi.fn(),
   setThreadSticky: vi.fn(),
   deletePost: vi.fn(),
+  deleteThread: vi.fn(),
   banPoster: vi.fn(),
 }))
 
 const setThreadLockedMock = vi.mocked(setThreadLocked)
 const setThreadStickyMock = vi.mocked(setThreadSticky)
 const deletePostMock = vi.mocked(deletePost)
+const deleteThreadMock = vi.mocked(deleteThread)
 const banPosterMock = vi.mocked(banPoster)
 
 beforeEach(() => {
   setThreadLockedMock.mockReset().mockResolvedValue(undefined)
   setThreadStickyMock.mockReset().mockResolvedValue(undefined)
   deletePostMock.mockReset().mockResolvedValue(undefined)
+  deleteThreadMock.mockReset().mockResolvedValue(undefined)
   banPosterMock.mockReset()
 })
 
@@ -102,6 +105,22 @@ describe('useModeration', () => {
       reply_count: 3,
       posts: [],
     })
+  })
+
+  it('removeThread deletes via the api, drops the card and invalidates the catalog', async () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+      { id: 42, title: 'doomed' },
+      { id: 7, title: 'safe' },
+    ])
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    const api = mountModeration(queryClient)
+
+    await api.removeThread()
+
+    expect(deleteThreadMock).toHaveBeenCalledWith('b', 42)
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 7, title: 'safe' }])
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: threadsQueryKey('b') })
   })
 
   it('ban delegates to banPoster and returns the result', async () => {

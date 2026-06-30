@@ -10,7 +10,14 @@ from src.schemas.thread import ThreadResponse
 from src.services.board_service import BoardService
 from src.services.mod_service import ModService
 from src.services.report_service import ReportService
-from src.utils.events import THREAD_UPDATED, EventPublisher, board_channel, thread_channel
+from src.services.thread_service import ThreadService
+from src.utils.events import (
+    THREAD_DELETED,
+    THREAD_UPDATED,
+    EventPublisher,
+    board_channel,
+    thread_channel,
+)
 
 
 class ModView:
@@ -20,11 +27,13 @@ class ModView:
         mod_service: ModService,
         board_service: BoardService,
         report_service: ReportService,
+        thread_service: ThreadService,
         events: EventPublisher,
     ) -> None:
         self.mod_service = mod_service
         self.board_service = board_service
         self.report_service = report_service
+        self.thread_service = thread_service
         self.events = events
 
     async def login(self, data: ModLogin) -> TokenResponse:
@@ -54,6 +63,15 @@ class ModView:
     async def delete_post(self, token: str, board_slug: str, post_number: int) -> None:
         mod = await self.mod_service.resolve_mod(token)
         await self.mod_service.delete_post(board_slug, post_number, mod)
+
+    async def delete_thread(self, token: str, board_slug: str, thread_id: int) -> None:
+        mod = await self.mod_service.resolve_mod(token)
+        self._require_admin(mod)
+        thread = await self.thread_service.delete_thread(board_slug, thread_id)
+        # notify open clients so the catalog drops the card and viewers see it gone
+        payload = {"id": thread.id}
+        await self.events.publish(thread_channel(thread.id), THREAD_DELETED, payload)
+        await self.events.publish(board_channel(board_slug), THREAD_DELETED, payload)
 
     async def set_thread_locked(
         self, token: str, board_slug: str, thread_id: int, locked: bool
