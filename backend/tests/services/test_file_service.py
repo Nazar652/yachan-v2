@@ -31,11 +31,12 @@ async def test_store_attachment_saves_new_file():
     attachment_repo.get_by_md5 = AsyncMock(return_value=None)
     attachment_repo.create = AsyncMock(return_value=SimpleNamespace(id=1))
     storage = MagicMock()
+    storage.save = AsyncMock()
     service = FileService(attachment_repo=attachment_repo, storage=storage)
 
     await service.store_attachment(5, "cat.png", b"bytes", "image/png")
 
-    storage.save.assert_called_once()
+    storage.save.assert_awaited_once()
     attachment_repo.create.assert_awaited_once()
 
 
@@ -46,11 +47,12 @@ async def test_store_attachment_dedups_existing_md5():
     )
     attachment_repo.create = AsyncMock(return_value=SimpleNamespace(id=2))
     storage = MagicMock()
+    storage.save = AsyncMock()
     service = FileService(attachment_repo=attachment_repo, storage=storage)
 
     await service.store_attachment(5, "dup.png", b"bytes", "image/png")
 
-    storage.save.assert_not_called()
+    storage.save.assert_not_awaited()
     attachment_repo.create.assert_awaited_once()
 
 
@@ -76,12 +78,13 @@ async def test_process_attachment_image_sets_dimensions_and_thumbnail():
     attachment_repo.get_by_id = AsyncMock(return_value=attachment)
     attachment_repo.set_media_info = AsyncMock()
     storage = MagicMock()
-    storage.read = MagicMock(return_value=_png_bytes((20, 10)))
+    storage.read = AsyncMock(return_value=_png_bytes((20, 10)))
+    storage.save = AsyncMock()
     service = FileService(attachment_repo=attachment_repo, storage=storage)
 
     await service.process_attachment(1)
 
-    storage.save.assert_called_once()
+    storage.save.assert_awaited_once()
     attachment_repo.set_media_info.assert_awaited_once()
     kwargs = attachment_repo.set_media_info.await_args.kwargs
     assert kwargs["width"] == 20

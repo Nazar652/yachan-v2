@@ -1,6 +1,7 @@
 import hashlib
 import io
 
+import anyio.to_thread
 from kink import inject
 from PIL import Image
 
@@ -35,13 +36,14 @@ class FileService:
         if len(content) > MAX_UPLOAD_BYTES:
             raise FileTooLargeError(filename)
 
-        # usedforsecurity=False: md5 is only a content fingerprint for dedup
-        md5 = hashlib.md5(content, usedforsecurity=False).hexdigest()
+        # usedforsecurity=False: md5 is only a content fingerprint for dedup.
+        # hashing up to 25 MiB is cpu-bound, so run it off the event loop
+        md5 = await anyio.to_thread.run_sync(self._md5, content)
         existing = await self.attachment_repo.get_by_md5(md5)
         # identical bytes are stored once and reused across posts
         key = existing.file_path if existing is not None else f"{md5}{extension}"
         if existing is None:
-            self.storage.save(key, content)
+            await self.storage.save(key, content)
 
         return await self.attachment_repo.create(
             Attachment(
@@ -60,7 +62,7 @@ class FileService:
         if attachment is None or attachment.media_type not in (MediaType.IMAGE, MediaType.GIF):
             return
 
-        data = self.storage.read(attachment.file_path)
+        data = await self.storage.read(attachment.file_path)
         with Image.open(io.BytesIO(data)) as image:
             width, height = image.size
             image.thumbnail(THUMBNAIL_SIZE)
@@ -68,7 +70,7 @@ class FileService:
             image.convert("RGB").save(buffer, format="JPEG")
 
         thumbnail_key = f"thumb/{attachment.md5}.jpg"
-        self.storage.save(thumbnail_key, buffer.getvalue())
+        await self.storage.save(thumbnail_key, buffer.getvalue())
         await self.attachment_repo.set_media_info(
             attachment_id,
             thumbnail_path=thumbnail_key,
@@ -76,6 +78,10 @@ class FileService:
             height=height,
             duration_seconds=None,
         )
+
+    @staticmethod
+    def _md5(content: bytes) -> str:
+        return hashlib.md5(content, usedforsecurity=False).hexdigest()
 
     @staticmethod
     def media_type_for(content_type: str) -> MediaType:

@@ -273,10 +273,13 @@ hashed and must never reach Sentry.
 - `views/serializers.py` — builds `AttachmentResponse`/`PostResponse` with public
   URLs from `Storage.public_url` (`storage_base_url` = `/media`; nginx proxies
   `/media/` to the minio bucket, or in prod set it to the bucket/CDN url).
-- **Storage backends** (`core/storage.py`): `Storage` (ABC) defines
-  `save/read/delete/exists/public_url`. `LocalStorage` writes to the filesystem;
-  `S3Storage` (boto3, path-style addressing) targets any s3-compatible store —
-  minio in docker, AWS S3 in prod. The backend is selected once in DI via
+- **Storage backends** (`core/storage.py`): `Storage` (ABC) defines async
+  `save/read/delete/exists` plus sync `public_url`, so a request never blocks the
+  event loop on storage io. `LocalStorage` writes to the filesystem (blocking
+  disk io offloaded via `anyio.to_thread`); `S3Storage` (**aioboto3**, path-style
+  addressing) targets any s3-compatible store — minio in docker, AWS S3 in prod;
+  it opens a fresh client per operation (aioboto3 clients are loop-bound async
+  context managers, not singletons). The backend is selected once in DI via
   `build_storage`; `FileService` and the views depend only on the `Storage`
   abstraction.
 - Rule: a **new thread's OP must include an image** (`ThreadService` raises
