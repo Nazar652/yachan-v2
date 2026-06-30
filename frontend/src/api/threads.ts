@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client'
+import { toApiError } from '@/api/errors'
 import type {
   LatestThreadResponse,
   PostResponse,
@@ -13,18 +14,18 @@ export async function listThreads(
   limit = 50,
   offset = 0,
 ): Promise<ThreadResponse[]> {
-  const { data, error } = await apiClient.GET('/api/{board_slug}/threads', {
+  const { data, error, response } = await apiClient.GET('/api/{board_slug}/threads', {
     params: { path: { board_slug: boardSlug }, query: { limit, offset } },
   })
-  if (error) throw error
+  if (error) throw toApiError(error, response)
   return data
 }
 
 export async function listLatestThreads(limit = 5): Promise<LatestThreadResponse[]> {
-  const { data, error } = await apiClient.GET('/api/threads/latest', {
+  const { data, error, response } = await apiClient.GET('/api/threads/latest', {
     params: { query: { limit } },
   })
-  if (error) throw error
+  if (error) throw toApiError(error, response)
   return data
 }
 
@@ -32,10 +33,10 @@ export async function getThread(
   boardSlug: string,
   threadId: number,
 ): Promise<ThreadDetailResponse> {
-  const { data, error } = await apiClient.GET('/api/{board_slug}/threads/{thread_id}', {
+  const { data, error, response } = await apiClient.GET('/api/{board_slug}/threads/{thread_id}', {
     params: { path: { board_slug: boardSlug, thread_id: threadId } },
   })
-  if (error) throw error
+  if (error) throw toApiError(error, response)
   return data
 }
 
@@ -74,7 +75,8 @@ export async function createThread(
   })
 
   if (!response.ok) {
-    throw await response.json().catch(() => ({ detail: response.statusText }))
+    const body = await response.json().catch(() => ({ detail: response.statusText }))
+    throw toApiError(body, response.status)
   }
 
   return await response.json() as Promise<ThreadDetailResponse>
@@ -114,7 +116,8 @@ export async function createReply(
   })
 
   if (!response.ok) {
-    throw await response.json().catch(() => ({ detail: response.statusText }))
+    const body = await response.json().catch(() => ({ detail: response.statusText }))
+    throw toApiError(body, response.status)
   }
 
   return await response.json() as Promise<PostResponse>

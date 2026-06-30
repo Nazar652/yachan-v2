@@ -23,7 +23,7 @@ describe('fetchCaptcha', () => {
     const error = { detail: 'server error' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(fetchCaptcha()).rejects.toBe(error)
+    await expect(fetchCaptcha()).rejects.toMatchObject(error)
   })
 })
 

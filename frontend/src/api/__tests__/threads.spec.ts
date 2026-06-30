@@ -35,7 +35,7 @@ describe('listThreads', () => {
     const error = { detail: 'not found' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(listThreads('b')).rejects.toBe(error)
+    await expect(listThreads('b')).rejects.toMatchObject(error)
   })
 })
 
@@ -56,7 +56,7 @@ describe('listLatestThreads', () => {
     const error = { detail: 'boom' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(listLatestThreads()).rejects.toBe(error)
+    await expect(listLatestThreads()).rejects.toMatchObject(error)
   })
 })
 
@@ -77,7 +77,7 @@ describe('getThread', () => {
     const error = { detail: 'not found' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(getThread('b', 42)).rejects.toBe(error)
+    await expect(getThread('b', 42)).rejects.toMatchObject(error)
   })
 })
 
@@ -110,7 +110,7 @@ describe('createThread', () => {
     const error = { detail: 'bad captcha' }
     fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve(error), statusText: 'Bad Request' })
 
-    await expect(createThread('b', {}, [], 'tok', 'wrong')).rejects.toEqual(error)
+    await expect(createThread('b', {}, [], 'tok', 'wrong')).rejects.toMatchObject(error)
   })
 })
 
@@ -142,7 +142,7 @@ describe('createReply', () => {
     const error = { detail: 'thread is locked' }
     fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve(error), statusText: 'Forbidden' })
 
-    await expect(createReply('b', 42, {}, [], 'tok', 'wrong')).rejects.toEqual(error)
+    await expect(createReply('b', 42, {}, [], 'tok', 'wrong')).rejects.toMatchObject(error)
   })
 })
 

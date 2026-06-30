@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 import ThreadView from '@/views/ThreadView.vue'
 import { useThread } from '@/composables/useThread'
+import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const { routeStub } = vi.hoisted(() => ({
@@ -171,6 +172,16 @@ describe('ThreadView', () => {
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')
     expect(setStickyMock).toHaveBeenCalledWith(true)
+  })
+
+  it('shows the api detail when toggling the lock fails', async () => {
+    useAuthStore().login('jwt', 'admin')
+    setLockedMock.mockRejectedValue(new ApiError('session expired', 401))
+    stubThreadDetail({ is_locked: false })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Lock')
+    await flushPromises()
+    expect(wrapper.find('.text-danger').text()).toBe('session expired')
   })
 
   it('derives backlinks for a post from the references in other posts', () => {

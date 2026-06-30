@@ -28,7 +28,7 @@ describe('editPost', () => {
     const error = { detail: 'boom' }
     patchMock.mockResolvedValue({ data: undefined, error } as never)
 
-    await expect(editPost('b', 7, 'x')).rejects.toBe(error)
+    await expect(editPost('b', 7, 'x')).rejects.toMatchObject(error)
   })
 })
 
@@ -55,6 +55,6 @@ describe('getPostHistory', () => {
     const error = { detail: 'boom' }
     getMock.mockResolvedValue({ data: undefined, error } as never)
 
-    await expect(getPostHistory('b', 7)).rejects.toBe(error)
+    await expect(getPostHistory('b', 7)).rejects.toMatchObject(error)
   })
 })

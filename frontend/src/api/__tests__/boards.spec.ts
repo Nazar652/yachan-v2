@@ -24,6 +24,6 @@ describe('listBoards', () => {
     const error = { detail: 'boom' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(listBoards()).rejects.toBe(error)
+    await expect(listBoards()).rejects.toMatchObject(error)
   })
 })

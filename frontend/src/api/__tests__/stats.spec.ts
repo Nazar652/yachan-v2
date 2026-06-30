@@ -24,6 +24,6 @@ describe('fetchSiteStats', () => {
     const error = { detail: 'boom' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(fetchSiteStats()).rejects.toBe(error)
+    await expect(fetchSiteStats()).rejects.toMatchObject(error)
   })
 })

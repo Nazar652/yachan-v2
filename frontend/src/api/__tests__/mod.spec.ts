@@ -41,7 +41,7 @@ describe('modLogin', () => {
     const error = { detail: 'bad credentials' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(modLogin('admin', 'wrong')).rejects.toBe(error)
+    await expect(modLogin('admin', 'wrong')).rejects.toMatchObject(error)
   })
 })
 
@@ -61,7 +61,7 @@ describe('createBoard', () => {
     const error = { detail: 'admin privileges required' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(createBoard({ slug: 'b', title: 'x', bump_limit: 300 })).rejects.toBe(error)
+    await expect(createBoard({ slug: 'b', title: 'x', bump_limit: 300 })).rejects.toMatchObject(error)
   })
 })
 
@@ -83,7 +83,7 @@ describe('updateBoard', () => {
     const error = { detail: 'not found' }
     patchMock.mockResolvedValue({ data: undefined, error } as never)
 
-    await expect(updateBoard('b', { title: 'x' })).rejects.toBe(error)
+    await expect(updateBoard('b', { title: 'x' })).rejects.toMatchObject(error)
   })
 })
 
@@ -105,7 +105,7 @@ describe('reorderBoards', () => {
     const error = { detail: 'admin privileges required' }
     putMock.mockResolvedValue({ data: undefined, error } as never)
 
-    await expect(reorderBoards(['g', 'b'])).rejects.toBe(error)
+    await expect(reorderBoards(['g', 'b'])).rejects.toMatchObject(error)
   })
 })
 
@@ -124,7 +124,7 @@ describe('listReports', () => {
     const error = { detail: 'unauthorized' }
     getMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(listReports()).rejects.toBe(error)
+    await expect(listReports()).rejects.toMatchObject(error)
   })
 })
 
@@ -144,7 +144,7 @@ describe('resolveReport', () => {
     const error = { detail: 'not found' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(resolveReport(7)).rejects.toBe(error)
+    await expect(resolveReport(7)).rejects.toMatchObject(error)
   })
 })
 
@@ -164,7 +164,7 @@ describe('deletePost', () => {
     const error = { detail: 'forbidden' }
     deleteMock.mockResolvedValue({ data: undefined, error } as never)
 
-    await expect(deletePost('b', 101)).rejects.toBe(error)
+    await expect(deletePost('b', 101)).rejects.toMatchObject(error)
   })
 })
 
@@ -184,7 +184,7 @@ describe('setThreadLocked', () => {
     const error = { detail: 'forbidden' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(setThreadLocked('b', 42, false)).rejects.toBe(error)
+    await expect(setThreadLocked('b', 42, false)).rejects.toMatchObject(error)
   })
 })
 
@@ -204,7 +204,7 @@ describe('setThreadSticky', () => {
     const error = { detail: 'forbidden' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(setThreadSticky('b', 42, true)).rejects.toBe(error)
+    await expect(setThreadSticky('b', 42, true)).rejects.toMatchObject(error)
   })
 })
 
@@ -226,6 +226,6 @@ describe('banPoster', () => {
     const error = { detail: 'forbidden' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(banPoster('b', 101, { reason: 'spam' })).rejects.toBe(error)
+    await expect(banPoster('b', 101, { reason: 'spam' })).rejects.toMatchObject(error)
   })
 })
