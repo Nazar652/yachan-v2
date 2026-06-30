@@ -6,6 +6,7 @@ import { useEditPost } from '@/composables/useEditPost'
 import { useOwnPosts } from '@/composables/useOwnPosts'
 import { usePostHistory } from '@/composables/usePostHistory'
 import { useAuthStore } from '@/stores/auth'
+import { errorDetail } from '@/api/errors'
 import type { AttachmentResponse, PostResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -56,8 +57,7 @@ async function saveEdit() {
     await editPost(props.post.post_number, editDraft.value.trim() || null)
     isEditing.value = false
   } catch (error: unknown) {
-    const detail = (error as Record<string, unknown>)?.detail
-    editError.value = typeof detail === 'string' ? detail : 'Failed to edit post.'
+    editError.value = errorDetail(error, 'Failed to edit post.')
   } finally {
     isSaving.value = false
   }
@@ -69,14 +69,21 @@ const { data: original } = usePostHistory(toRef(props, 'slug'), props.post.post_
 
 const isBanning = ref(false)
 const banReason = ref('')
+const modError = ref<string | null>(null)
 
 async function onDelete() {
-  await moderation.removePost(props.post.post_number)
+  modError.value = null
+  try {
+    await moderation.removePost(props.post.post_number)
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to delete post.')
+  }
 }
 
 function startBan() {
   isBanning.value = true
   banReason.value = ''
+  modError.value = null
 }
 
 function cancelBan() {
@@ -85,8 +92,13 @@ function cancelBan() {
 }
 
 async function confirmBan() {
-  await moderation.ban(props.post.post_number, { reason: banReason.value || null })
-  cancelBan()
+  modError.value = null
+  try {
+    await moderation.ban(props.post.post_number, { reason: banReason.value || null })
+    cancelBan()
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to ban poster.')
+  }
 }
 
 function formatDate(iso: string): string {
@@ -256,6 +268,7 @@ function imageSrc(attachment: AttachmentResponse): string {
         <BaseButton variant="danger" size="sm" @click="confirmBan">Confirm ban</BaseButton>
         <BaseButton variant="ghost" size="sm" @click="cancelBan">Cancel</BaseButton>
       </div>
+      <p v-if="modError" class="text-sm text-danger">{{ modError }}</p>
     </div>
   </article>
 </template>

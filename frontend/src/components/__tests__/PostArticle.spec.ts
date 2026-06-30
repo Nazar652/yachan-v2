@@ -4,6 +4,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 import PostArticle from '@/components/PostArticle.vue'
+import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
 const { editPostMock, removePostMock, banMock, usePostHistoryMock, isOwnMock } = vi.hoisted(() => ({
@@ -236,5 +237,28 @@ describe('PostArticle', () => {
     await flushPromises()
 
     expect(banMock).toHaveBeenCalledWith(101, { reason: 'spam' })
+  })
+
+  it('shows the api detail when deleting fails', async () => {
+    useAuthStore().login('jwt', 'admin')
+    removePostMock.mockRejectedValue(new ApiError('post already deleted', 404))
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Delete').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.text-danger').text()).toBe('post already deleted')
+  })
+
+  it('shows a fallback message when banning fails without a detail', async () => {
+    useAuthStore().login('jwt', 'admin')
+    banMock.mockRejectedValue(new ApiError(null, 500))
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Ban').trigger('click')
+    await clickButton(wrapper, 'Confirm ban').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.text-danger').text()).toBe('Failed to ban poster.')
   })
 })

@@ -5,6 +5,7 @@ import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
 import { useModeration } from '@/composables/useModeration'
 import { useAuthStore } from '@/stores/auth'
+import { errorDetail } from '@/api/errors'
 import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
@@ -86,12 +87,26 @@ watch(
   { immediate: true },
 )
 
+const modError = ref<string | null>(null)
+
 async function onToggleLock() {
-  if (thread.value) await moderation.setLocked(!thread.value.is_locked)
+  if (!thread.value) return
+  modError.value = null
+  try {
+    await moderation.setLocked(!thread.value.is_locked)
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to update thread.')
+  }
 }
 
 async function onToggleSticky() {
-  if (thread.value) await moderation.setSticky(!thread.value.is_sticky)
+  if (!thread.value) return
+  modError.value = null
+  try {
+    await moderation.setSticky(!thread.value.is_sticky)
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to update thread.')
+  }
 }
 </script>
 
@@ -138,6 +153,8 @@ async function onToggleSticky() {
           {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
         </BaseButton>
       </div>
+
+      <p v-if="modError" class="mb-4 text-sm text-danger">{{ modError }}</p>
 
       <div class="flex flex-col gap-2.5">
         <PostArticle
