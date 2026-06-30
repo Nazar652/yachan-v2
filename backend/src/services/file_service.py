@@ -3,7 +3,7 @@ import io
 
 import anyio.to_thread
 from kink import inject
-from PIL import Image
+from PIL import Image, ImageOps
 
 from src.core.exceptions import FileTooLargeError, UnsupportedMediaTypeError
 from src.core.storage import Storage
@@ -64,10 +64,13 @@ class FileService:
 
         data = await self.storage.read(attachment.file_path)
         with Image.open(io.BytesIO(data)) as image:
-            width, height = image.size
-            image.thumbnail(THUMBNAIL_SIZE)
+            # bake the exif orientation into the pixels so the thumbnail (which
+            # drops exif) is not displayed sideways, and dimensions match display
+            oriented = ImageOps.exif_transpose(image)
+            width, height = oriented.size
+            oriented.thumbnail(THUMBNAIL_SIZE)
             buffer = io.BytesIO()
-            image.convert("RGB").save(buffer, format="JPEG")
+            oriented.convert("RGB").save(buffer, format="JPEG")
 
         thumbnail_key = f"thumb/{attachment.md5}.jpg"
         await self.storage.save(thumbnail_key, buffer.getvalue())

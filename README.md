@@ -76,7 +76,7 @@ docker compose exec backend python -m src.cli create-admin <username>
 backend/     FastAPI app, Celery tasks, Alembic migrations, admin CLI   → backend/README.md
 frontend/    Vue 3 SPA + its nginx edge config                          → frontend/README.md
 docker-compose.yml   postgres, redis, migrate, backend, celery×2, nginx
-Makefile             make lint · make openapi
+Makefile             make lint-all · make openapi
 ```
 
 ## Local development

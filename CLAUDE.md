@@ -22,9 +22,12 @@ see the contextual guides (Claude Code auto-loads them when you work in that dir
   decorative separators.
 - **Every method / composable / component gets a unit test**, added in the same
   change as the code. Pure unit tests — mock the dependencies.
-- **End every change with lint fully green:** `make lint` (ruff + pyright + pytest
-  + frontend lint). Run frontend `type-check` and `test:unit` separately too — the
-  `make lint` frontend step only runs `npm run lint`.
+- **End every change with lint fully green — always via `make`, never raw
+  `ruff`/`pyright` (they bypass the project config, e.g. test `assert` excludes).**
+  Pick the target by what you touched:
+  - `make lint-backend` — ruff (`src/`) + pyright + pytest. Backend-only changes.
+  - `make lint-frontend` — `npm run lint` + `test:unit` + `type-check`. Frontend-only changes.
+  - `make lint-all` — both of the above. Use when a change spans backend and frontend.
 
 ## Top-level layout
 
@@ -37,7 +40,7 @@ docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, ce
 docker-compose.prod.yml   prod override: Neon + R2, drops postgres/minio/createbucket, nginx :80
 .env / .env.example   compose ${VAR} interpolation (gitignored / template)
 .env.prod.example     template for the prod server .env (Neon + R2 secrets)
-Makefile              `make lint`, `make openapi`
+Makefile              `make lint-backend` / `lint-frontend` / `lint-all`, `make openapi`
 ```
 
 ## Dependencies

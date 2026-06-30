@@ -15,6 +15,15 @@ def _png_bytes(size=(20, 10)) -> bytes:
     return buffer.getvalue()
 
 
+def _jpeg_with_orientation(size, orientation) -> bytes:
+    image = Image.new("RGB", size, "red")
+    exif = image.getexif()
+    exif[0x0112] = orientation
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG", exif=exif)
+    return buffer.getvalue()
+
+
 def test_media_type_for_maps_known_types():
     assert FileService.media_type_for("image/png") is MediaType.IMAGE
     assert FileService.media_type_for("image/gif") is MediaType.GIF
@@ -89,6 +98,24 @@ async def test_process_attachment_image_sets_dimensions_and_thumbnail():
     kwargs = attachment_repo.set_media_info.await_args.kwargs
     assert kwargs["width"] == 20
     assert kwargs["height"] == 10
+
+
+async def test_process_attachment_applies_exif_orientation():
+    attachment = SimpleNamespace(media_type=MediaType.IMAGE, file_path="k.jpg", md5="abc")
+    attachment_repo = MagicMock()
+    attachment_repo.get_by_id = AsyncMock(return_value=attachment)
+    attachment_repo.set_media_info = AsyncMock()
+    storage = MagicMock()
+    # stored sideways (20x10) with orientation 6 (rotate 90) -> displays as 10x20
+    storage.read = AsyncMock(return_value=_jpeg_with_orientation((20, 10), 6))
+    storage.save = AsyncMock()
+    service = FileService(attachment_repo=attachment_repo, storage=storage)
+
+    await service.process_attachment(1)
+
+    kwargs = attachment_repo.set_media_info.await_args.kwargs
+    assert kwargs["width"] == 10
+    assert kwargs["height"] == 20
 
 
 async def test_process_attachment_skips_video():
