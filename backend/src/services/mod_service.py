@@ -1,3 +1,4 @@
+import anyio.to_thread
 import jwt
 from kink import inject
 
@@ -51,13 +52,18 @@ class ModService:
     ) -> ModAccount:
         if await self.mod_account_repo.get_by_username(username) is not None:
             raise ModAccountExistsError(username)
+        # pbkdf2 is intentionally cpu-heavy; run it off the event loop
+        password_hash = await anyio.to_thread.run_sync(hash_password, password)
         return await self.mod_account_repo.create(
-            ModAccount(username=username, password_hash=hash_password(password), role=role)
+            ModAccount(username=username, password_hash=password_hash, role=role)
         )
 
     async def authenticate(self, username: str, password: str) -> tuple[str, ModRole]:
         account = await self.mod_account_repo.get_by_username(username)
-        if account is None or not verify_password(password, account.password_hash):
+        if account is None:
+            raise InvalidCredentialsError()
+        # pbkdf2 verification is cpu-heavy; run it off the event loop
+        if not await anyio.to_thread.run_sync(verify_password, password, account.password_hash):
             raise InvalidCredentialsError()
         if not account.is_active:
             raise ModInactiveError()

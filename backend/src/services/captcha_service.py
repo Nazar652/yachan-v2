@@ -1,5 +1,6 @@
 import base64
 
+import anyio.to_thread
 from kink import inject
 from redis.asyncio import Redis
 
@@ -19,7 +20,8 @@ class CaptchaService:
         token = captcha.new_token()
         answer = captcha.generate_answer()
         await self.redis.set(self._key(token), answer, ex=CAPTCHA_TTL_SECONDS)
-        image = captcha.render_image(answer)
+        # pillow rendering is cpu-bound; keep it off the event loop
+        image = await anyio.to_thread.run_sync(captcha.render_image, answer)
         return token, base64.b64encode(image).decode()
 
     async def validate(self, token: str, answer: str) -> None:
