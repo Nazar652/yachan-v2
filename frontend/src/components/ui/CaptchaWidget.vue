@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { CaptchaChallengeResponse } from '@/api/types'
+import { useTheme } from '@/composables/useTheme'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 
-defineProps<{
+const props = defineProps<{
   captcha: CaptchaChallengeResponse | undefined
   isPending: boolean
   isError: boolean
@@ -14,6 +16,14 @@ const answer = defineModel<string>({ default: '' })
 const emit = defineEmits<{
   refresh: []
 }>()
+
+const { theme } = useTheme()
+
+// the server renders both theme variants for the same answer, so switching
+// theme swaps the displayed image instantly without refetching the captcha
+const imageBase64 = computed(() =>
+  theme.value === 'dark' ? props.captcha?.image_base64_dark : props.captcha?.image_base64_light,
+)
 </script>
 
 <template>
@@ -26,7 +36,7 @@ const emit = defineEmits<{
         <span v-else-if="isError" class="text-xs text-danger">Failed</span>
         <img
           v-else-if="captcha"
-          :src="`data:image/png;base64,${captcha.image_base64}`"
+          :src="`data:image/png;base64,${imageBase64}`"
           alt="captcha"
           class="max-h-12 max-w-full"
         />

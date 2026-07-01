@@ -12,7 +12,7 @@ describe('fetchCaptcha', () => {
   beforeEach(() => getMock.mockReset())
 
   it('returns captcha data on success', async () => {
-    const captcha = { token: 'tok123', image_base64: 'abc==' }
+    const captcha = { token: 'tok123', image_base64_light: 'abc==', image_base64_dark: 'def==' }
     getMock.mockResolvedValue({ data: captcha, error: undefined })
 
     await expect(fetchCaptcha()).resolves.toBe(captcha)

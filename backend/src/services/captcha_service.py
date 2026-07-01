@@ -15,14 +15,14 @@ class CaptchaService:
     def __init__(self, redis: Redis) -> None:
         self.redis = redis
 
-    async def issue(self) -> tuple[str, str]:
-        """Returns (token, base64 png). The answer is kept in redis under the token."""
+    async def issue(self) -> tuple[str, str, str]:
+        """Returns (token, light png base64, dark png base64). The answer is kept in redis under the token."""
         token = captcha.new_token()
         answer = captcha.generate_answer()
         await self.redis.set(self._key(token), answer, ex=CAPTCHA_TTL_SECONDS)
         # pillow rendering is cpu-bound; keep it off the event loop
-        image = await anyio.to_thread.run_sync(captcha.render_image, answer)
-        return token, base64.b64encode(image).decode()
+        light_image, dark_image = await anyio.to_thread.run_sync(captcha.render_image_pair, answer)
+        return token, base64.b64encode(light_image).decode(), base64.b64encode(dark_image).decode()
 
     async def validate(self, token: str, answer: str) -> None:
         stored = await self.redis.get(self._key(token))

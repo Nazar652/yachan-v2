@@ -537,8 +537,10 @@ export interface components {
         CaptchaChallengeResponse: {
             /** Token */
             token: string;
-            /** Image Base64 */
-            image_base64: string;
+            /** Image Base64 Light */
+            image_base64_light: string;
+            /** Image Base64 Dark */
+            image_base64_dark: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
