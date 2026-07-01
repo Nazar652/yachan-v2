@@ -7,8 +7,10 @@ import { modLogin } from '@/api/mod'
 import { useAuthStore } from '@/stores/auth'
 
 const pushMock = vi.fn()
+let routeMock: { query: Record<string, unknown> } = { query: {} }
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: pushMock }),
+  useRoute: () => routeMock,
 }))
 
 vi.mock('@/api/mod', () => ({
@@ -31,6 +33,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   pushMock.mockReset()
   modLoginMock.mockReset()
+  routeMock = { query: {} }
 })
 
 describe('ModLoginView', () => {
@@ -73,5 +76,11 @@ describe('ModLoginView', () => {
 
     expect(wrapper.text()).toContain('bad credentials')
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('shows a session-expired notice when redirected here after a stale token', () => {
+    routeMock = { query: { sessionExpired: '1' } }
+    const wrapper = mount(ModLoginView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Your session has expired. Please sign in again.')
   })
 })

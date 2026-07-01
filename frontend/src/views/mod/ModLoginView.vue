@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { modLogin } from '@/api/mod'
 import { useAuthStore } from '@/stores/auth'
@@ -9,12 +9,15 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import MonogramSeal from '@/components/brand/MonogramSeal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const username = ref('')
 const password = ref('')
 const isSubmitting = ref(false)
-const error = ref<string | null>(null)
+const error = ref<string | null>(
+  route.query.sessionExpired ? 'Your session has expired. Please sign in again.' : null,
+)
 
 async function onSubmit() {
   error.value = null
