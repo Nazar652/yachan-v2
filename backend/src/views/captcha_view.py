@@ -10,5 +10,9 @@ class CaptchaView:
         self.captcha_service = captcha_service
 
     async def issue(self) -> CaptchaChallengeResponse:
-        token, image_base64 = await self.captcha_service.issue()
-        return CaptchaChallengeResponse(token=token, image_base64=image_base64)
+        token, image_base64_light, image_base64_dark = await self.captcha_service.issue()
+        return CaptchaChallengeResponse(
+            token=token,
+            image_base64_light=image_base64_light,
+            image_base64_dark=image_base64_dark,
+        )

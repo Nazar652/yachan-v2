@@ -1784,15 +1784,20 @@
             "type": "string",
             "title": "Token"
           },
-          "image_base64": {
+          "image_base64_light": {
             "type": "string",
-            "title": "Image Base64"
+            "title": "Image Base64 Light"
+          },
+          "image_base64_dark": {
+            "type": "string",
+            "title": "Image Base64 Dark"
           }
         },
         "type": "object",
         "required": [
           "token",
-          "image_base64"
+          "image_base64_light",
+          "image_base64_dark"
         ],
         "title": "CaptchaChallengeResponse"
       },

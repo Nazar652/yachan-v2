@@ -25,12 +25,12 @@
 
 ## Tech stack
 
-| Area      | Technologies |
-|-----------|--------------|
-| Backend   | FastAPI · SQLModel · asyncpg / PostgreSQL · Redis · Celery · kink (DI) · Alembic |
-| Frontend  | Vue 3 (`<script setup>`) · Vite · Vue Router · Pinia · TanStack Vue Query · Tailwind CSS v4 · openapi-fetch |
-| Infra     | Docker Compose · nginx (edge: SPA + reverse proxy) |
-| Tests     | pytest (backend) · Vitest + Vue Test Utils (frontend) |
+| Area     | Technologies                                                                                                |
+|----------|-------------------------------------------------------------------------------------------------------------|
+| Backend  | FastAPI · SQLModel · asyncpg / PostgreSQL · Redis · Celery · kink (DI) · Alembic                            |
+| Frontend | Vue 3 (`<script setup>`) · Vite · Vue Router · Pinia · TanStack Vue Query · Tailwind CSS v4 · openapi-fetch |
+| Infra    | Docker Compose · nginx (edge: SPA + reverse proxy)                                                          |
+| Tests    | pytest (backend) · Vitest + Vue Test Utils (frontend)                                                       |
 
 ## Architecture
 

@@ -35,7 +35,7 @@ const useCaptchaMock = vi.mocked(useCaptcha)
 
 function stubCaptcha(overrides: Record<string, unknown> = {}) {
   useCaptchaMock.mockReturnValue({
-    data: ref({ token: 'tok', image_base64: 'abc==' }),
+    data: ref({ token: 'tok', image_base64_light: 'abc==', image_base64_dark: 'def==' }),
     isPending: ref(false),
     isError: ref(false),
     refetch: vi.fn(),
