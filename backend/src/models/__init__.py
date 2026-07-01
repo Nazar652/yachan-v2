@@ -1,4 +1,4 @@
-from src.models.attachment import Attachment, MediaType
+from src.models.attachment import Attachment, MediaType, ModerationStatus
 from src.models.audit_log import AuditLog
 from src.models.ban import Ban
 from src.models.board import Board
@@ -17,6 +17,7 @@ __all__ = [
     "MediaType",
     "ModAccount",
     "ModRole",
+    "ModerationStatus",
     "Post",
     "PostBacklink",
     "PostEdit",

@@ -146,3 +146,13 @@ async def test_set_media_info(session):
     )
 
     session.execute.assert_awaited_once()
+
+
+async def test_set_moderation(session):
+    from src.models.attachment import ModerationStatus
+
+    repo = AttachmentRepository(session=session)
+
+    await repo.set_moderation(1, status=ModerationStatus.BLOCKED, nsfw_score=0.99)
+
+    session.execute.assert_awaited_once()

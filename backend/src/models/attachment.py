@@ -12,6 +12,13 @@ class MediaType(StrEnum):
     GIF = "gif"
 
 
+class ModerationStatus(StrEnum):
+    PENDING = "pending"
+    SAFE = "safe"
+    FLAGGED = "flagged"
+    BLOCKED = "blocked"
+
+
 class Attachment(TimestampMixin, table=True):
     __tablename__: ClassVar[str] = "attachment"
 
@@ -28,3 +35,7 @@ class Attachment(TimestampMixin, table=True):
     width: int | None = Field(default=None)
     height: int | None = Field(default=None)
     duration_seconds: float | None = Field(default=None)
+    moderation_status: ModerationStatus = Field(
+        default=ModerationStatus.PENDING, index=True
+    )
+    nsfw_score: float | None = Field(default=None)
