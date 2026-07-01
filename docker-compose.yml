@@ -121,7 +121,27 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: yachan-celery-worker
-    command: celery -A src.celery_app.celery worker --loglevel=info
+    command: celery -A src.celery_app.celery worker -Q celery,moderation_results --loglevel=info
+    environment:
+      <<: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      createbucket:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # temporary step-2 transport stub: stands in for the yachan-moderation microservice,
+  # consuming the `moderation` queue and echoing a verdict on `moderation_results`.
+  # removed in step 3 when the real service lands.
+  moderation-stub:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yachan-moderation-stub
+    command: celery -A src.celery_app.celery worker -Q moderation --loglevel=info
     environment:
       <<: *app-env
     depends_on:

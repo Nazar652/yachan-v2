@@ -9,7 +9,12 @@ celery = Celery(
     "yachan",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["src.tasks.attachments", "src.tasks.bans"],
+    include=[
+        "src.tasks.attachments",
+        "src.tasks.bans",
+        "src.tasks.moderation",
+        "src.tasks.moderation_stub",
+    ],
 )
 celery.conf.update(
     task_serializer="json",

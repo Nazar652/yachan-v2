@@ -7,3 +7,5 @@ def test_beat_scheduled_tasks_are_registered():
 
     assert "expire_bans" in celery.tasks
     assert "process_attachment" in celery.tasks
+    assert "apply_moderation_verdict" in celery.tasks
+    assert "moderate_image" in celery.tasks

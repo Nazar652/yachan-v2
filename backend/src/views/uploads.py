@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from fastapi import UploadFile
 
+from src.celery_app import celery
 from src.core.exceptions import TooManyAttachmentsError
 from src.models.attachment import Attachment, MediaType
 from src.services.file_service import FileService
@@ -48,5 +49,12 @@ async def store_uploads(
             post_id, upload.filename, upload.content, upload.content_type
         )
         process_attachment.delay(attachment.id)  # type: ignore[attr-defined]  celery task
+        # fire-and-forget moderation: addressed by string name, consumed by the
+        # separate moderation worker off the `moderation` queue (see moderation-contract.md)
+        celery.send_task(
+            "moderate_image",
+            args=[attachment.id, file_service.storage.public_url(attachment.file_path), "nsfw"],
+            queue="moderation",
+        )
         stored.append(attachment)
     return stored

@@ -21,6 +21,7 @@ from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.markup_service import MarkupService
 from src.services.mod_service import ModService
+from src.services.moderation_service import ModerationService
 from src.services.post_service import PostService
 from src.services.report_service import ReportService
 from src.services.stats_service import StatsService
@@ -79,6 +80,9 @@ def setup_di() -> None:
     di.factories[ReportService] = lambda container: resolve_scoped(ReportService, ReportService)
     di.factories[CaptchaService] = lambda container: resolve_scoped(CaptchaService, CaptchaService)
     di.factories[ModService] = lambda container: resolve_scoped(ModService, ModService)
+    di.factories[ModerationService] = lambda container: resolve_scoped(
+        ModerationService, ModerationService
+    )
     di.factories[StatsService] = lambda container: resolve_scoped(StatsService, StatsService)
 
     # views

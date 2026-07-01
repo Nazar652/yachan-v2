@@ -188,6 +188,7 @@ async def test_get_thread_marks_own_post_editable():
 
 async def test_create_thread_with_image_delegates(monkeypatch):
     monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=MagicMock()))
+    monkeypatch.setattr(uploads_module.celery, "send_task", MagicMock())
     view, mocks = build()
 
     result = await view.create_thread(

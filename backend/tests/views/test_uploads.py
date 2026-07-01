@@ -45,8 +45,11 @@ def test_contains_image_false_for_video_only():
 async def test_store_uploads_stores_and_enqueues(monkeypatch):
     delay = MagicMock()
     monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=delay))
+    send_task = MagicMock()
+    monkeypatch.setattr(uploads_module.celery, "send_task", send_task)
     file_service = MagicMock()
-    file_service.store_attachment = AsyncMock(return_value=attachment_ns(id=7))
+    file_service.store_attachment = AsyncMock(return_value=attachment_ns(id=7, file_path="abc.png"))
+    file_service.storage.public_url = MagicMock(return_value="http://media/abc.png")
 
     uploads = [Upload("c.png", b"x", "image/png", MediaType.IMAGE)]
     stored = await store_uploads(file_service, post_id=10, uploads=uploads)
@@ -54,3 +57,8 @@ async def test_store_uploads_stores_and_enqueues(monkeypatch):
     assert len(stored) == 1
     file_service.store_attachment.assert_awaited_once_with(10, "c.png", b"x", "image/png")
     delay.assert_called_once_with(7)
+    file_service.storage.public_url.assert_called_once_with("abc.png")
+    send_task.assert_called_once()
+    assert send_task.call_args.args[0] == "moderate_image"
+    assert send_task.call_args.kwargs["queue"] == "moderation"
+    assert send_task.call_args.kwargs["args"] == [7, "http://media/abc.png", "nsfw"]
