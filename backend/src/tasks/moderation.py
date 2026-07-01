@@ -1,10 +1,15 @@
-from src.bootstrap.container import get_dependency
+from kink import inject
+
 from src.celery_app import celery
 from src.services.moderation_service import ModerationService
 from src.tasks.base import ScopedTask
 
 
-@celery.task(base=ScopedTask, name="apply_moderation_verdict")
-async def apply_moderation_verdict(attachment_id: int, verdict: dict[str, object]) -> None:
-    # resolve the service from the container, same as routers resolve views
-    await get_dependency(ModerationService).apply(attachment_id, verdict)
+# typing=False: the injected service is part of the signature, so celery's producer-side
+# arg check must be off for send_task/delay to pass just the message args
+@celery.task(base=ScopedTask, name="apply_moderation_verdict", typing=False)
+@inject
+async def apply_moderation_verdict(
+    attachment_id: int, verdict: dict[str, object], moderation_service: ModerationService
+) -> None:
+    await moderation_service.apply(attachment_id, verdict)

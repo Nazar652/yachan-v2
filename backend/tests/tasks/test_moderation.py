@@ -1,13 +1,15 @@
 from unittest.mock import AsyncMock, MagicMock
 
-import src.tasks.moderation as moderation_task
+from kink import di
+
+from src.services.moderation_service import ModerationService
 from src.tasks.moderation import apply_moderation_verdict
 
 
 def test_apply_moderation_verdict_delegates_to_service(monkeypatch):
     instance = MagicMock()
     instance.apply = AsyncMock()
-    monkeypatch.setattr(moderation_task, "get_dependency", lambda cls: instance)
+    monkeypatch.setitem(di.factories, ModerationService, lambda container: instance)
 
     verdict = {"status": "blocked", "nsfw_score": 0.9}
     apply_moderation_verdict(7, verdict)
