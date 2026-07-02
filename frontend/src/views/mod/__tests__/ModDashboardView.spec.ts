@@ -81,7 +81,7 @@ function clickButton(wrapper: VueWrapper, label: string) {
 }
 
 function board(overrides: Record<string, unknown> = {}) {
-  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, position: 0, created_at: '', ...overrides }
+  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, is_nsfw: false, position: 0, created_at: '', ...overrides }
 }
 
 beforeEach(() => {
@@ -223,6 +223,7 @@ describe('ModDashboardView', () => {
       title: 'Random',
       description: null,
       bump_limit: 300,
+      is_nsfw: false,
     })
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['boards'] })
   })
@@ -243,6 +244,7 @@ describe('ModDashboardView', () => {
       description: 'desc',
       bump_limit: 300,
       is_active: true,
+      is_nsfw: false,
     })
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['boards'] })
   })

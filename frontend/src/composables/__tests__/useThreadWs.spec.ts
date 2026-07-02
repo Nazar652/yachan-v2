@@ -112,6 +112,16 @@ describe('useThreadWs', () => {
     })
   })
 
+  it('invalidates the thread query on attachment_moderated', () => {
+    const queryClient = new QueryClient()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    mountThreadWs(queryClient)
+
+    emit({ type: 'attachment_moderated', data: { attachment_id: 3, post_id: 1, moderation_status: 'blocked' } })
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: threadQueryKey('b', 42) })
+  })
+
   it('ignores malformed frames', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadQueryKey('b', 42), { id: 42, posts: [] })

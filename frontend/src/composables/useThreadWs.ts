@@ -39,6 +39,10 @@ export function useThreadWs(
       queryClient.setQueryData<ThreadDetailResponse>(key, (old) =>
         old ? { ...old, is_locked: thread.is_locked, is_sticky: thread.is_sticky } : old,
       )
+    } else if (envelope.type === WS_EVENT.ATTACHMENT_MODERATED) {
+      // attachment visibility depends on the board's 18+ flag, so let the server
+      // re-resolve it (hidden attachments come back with a null url)
+      void queryClient.invalidateQueries({ queryKey: key })
     }
   }
 

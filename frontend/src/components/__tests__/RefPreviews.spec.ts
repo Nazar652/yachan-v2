@@ -67,7 +67,7 @@ describe('RefPreviews', () => {
     wrapper = mount(RefPreviews, {
       props: {
         posts: [makePost({
-          attachments: [{ id: 5, media_type: 'image', original_name: 'p.jpg', url: '/media/p.jpg', thumbnail_url: '/media/t.jpg', mime_type: 'image/jpeg', width: 1, height: 1, size_bytes: 1, duration_seconds: null }],
+          attachments: [{ id: 5, media_type: 'image', original_name: 'p.jpg', url: '/media/p.jpg', thumbnail_url: '/media/t.jpg', mime_type: 'image/jpeg', width: 1, height: 1, size_bytes: 1, duration_seconds: null, moderation_status: 'safe' }],
         })],
         slug: 'b',
       },

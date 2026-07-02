@@ -39,7 +39,7 @@ async function onResolve(id: number) {
 }
 
 // --- create board (admin only) ---
-const newBoard = reactive({ slug: '', title: '', description: '', bump_limit: '300' })
+const newBoard = reactive({ slug: '', title: '', description: '', bump_limit: '300', is_nsfw: false })
 const isCreating = ref(false)
 const createError = ref<string | null>(null)
 
@@ -52,12 +52,14 @@ async function onCreate() {
       title: newBoard.title,
       description: newBoard.description || null,
       bump_limit: Number(newBoard.bump_limit) || 300,
+      is_nsfw: newBoard.is_nsfw,
     })
     await queryClient.invalidateQueries({ queryKey: boardsQueryKey })
     newBoard.slug = ''
     newBoard.title = ''
     newBoard.description = ''
     newBoard.bump_limit = '300'
+    newBoard.is_nsfw = false
   } catch (error: unknown) {
     createError.value = errorDetail(error) ?? 'Failed to create board.'
   } finally {
@@ -67,7 +69,7 @@ async function onCreate() {
 
 // --- edit board (admin only) ---
 const editingSlug = ref<string | null>(null)
-const editForm = reactive({ title: '', description: '', bump_limit: '300', is_active: true })
+const editForm = reactive({ title: '', description: '', bump_limit: '300', is_active: true, is_nsfw: false })
 const isSaving = ref(false)
 const editError = ref<string | null>(null)
 
@@ -77,6 +79,7 @@ function startEdit(board: BoardResponse) {
   editForm.description = board.description ?? ''
   editForm.bump_limit = String(board.bump_limit)
   editForm.is_active = board.is_active
+  editForm.is_nsfw = board.is_nsfw
   editError.value = null
 }
 
@@ -93,6 +96,7 @@ async function onSave(slug: string) {
       description: editForm.description || null,
       bump_limit: Number(editForm.bump_limit) || 300,
       is_active: editForm.is_active,
+      is_nsfw: editForm.is_nsfw,
     })
     await queryClient.invalidateQueries({ queryKey: boardsQueryKey })
     editingSlug.value = null
@@ -230,6 +234,9 @@ function formatDate(iso: string): string {
           <label for="board-bump" class="text-xs font-medium">Bump limit</label>
           <BaseInput id="board-bump" v-model="newBoard.bump_limit" type="number" />
         </div>
+        <label class="flex items-center gap-1 self-center text-xs">
+          <input v-model="newBoard.is_nsfw" type="checkbox" /> 18+
+        </label>
         <BaseButton type="submit" variant="primary" size="sm" :disabled="isCreating">
           {{ isCreating ? 'Creating…' : '+ Create' }}
         </BaseButton>
@@ -269,6 +276,9 @@ function formatDate(iso: string): string {
               <label class="flex items-center gap-1 self-center text-xs">
                 <input v-model="editForm.is_active" type="checkbox" /> active
               </label>
+              <label class="flex items-center gap-1 self-center text-xs">
+                <input v-model="editForm.is_nsfw" type="checkbox" /> 18+
+              </label>
             </div>
             <div class="flex gap-2">
               <BaseButton variant="primary" size="sm" :disabled="isSaving" @click="onSave(board.slug)">
@@ -285,6 +295,7 @@ function formatDate(iso: string): string {
               <div class="font-display font-bold">{{ board.title }}</div>
               <div v-if="board.description" class="truncate text-xs text-text-muted">{{ board.description }}</div>
             </div>
+            <span v-if="board.is_nsfw" class="rounded bg-danger/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-danger">18+</span>
             <span v-if="!board.is_active" class="italic text-text-muted">disabled</span>
             <BaseButton variant="ghost" size="sm" @click="startEdit(board)">Edit</BaseButton>
           </div>

@@ -22,10 +22,18 @@ export const WS_EVENT = {
   NEW_THREAD: 'new_thread',
   THREAD_UPDATED: 'thread_updated',
   THREAD_DELETED: 'thread_deleted',
+  ATTACHMENT_MODERATED: 'attachment_moderated',
 } as const
+
+// carried by attachment_moderated when a verdict lands on an attachment
+export interface AttachmentModeratedData {
+  attachment_id: number
+  post_id: number
+  moderation_status: string
+}
 
 // envelope pushed on every channel: { type, data }
 export interface WsEnvelope {
   type: string
-  data: PostResponse | ThreadResponse
+  data: PostResponse | ThreadResponse | AttachmentModeratedData
 }

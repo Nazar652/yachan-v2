@@ -157,6 +157,21 @@ describe('PostArticle', () => {
     expect(wrapper.find('video').attributes('src')).toBe('/media/c.webm')
   })
 
+  it('renders a placeholder instead of a blocked attachment', () => {
+    const wrapper = mountPost({
+      attachments: [{ id: 20, media_type: 'image', original_name: 'x.jpg', url: null, thumbnail_url: null, mime_type: 'image/jpeg', width: null, height: null, size_bytes: 10, duration_seconds: null, moderation_status: 'blocked' }],
+    })
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toContain('removed by moderation')
+  })
+
+  it('labels a flagged hidden attachment as 18+', () => {
+    const wrapper = mountPost({
+      attachments: [{ id: 21, media_type: 'image', original_name: 'x.jpg', url: null, thumbnail_url: null, mime_type: 'image/jpeg', width: null, height: null, size_bytes: 10, duration_seconds: null, moderation_status: 'flagged' }],
+    })
+    expect(wrapper.text()).toContain('18+')
+  })
+
   it('hides the Edit button when the post is not editable', () => {
     const wrapper = mountPost({ can_edit: false })
     expect(wrapper.findAll('button').some((button) => button.text() === 'Edit')).toBe(false)
