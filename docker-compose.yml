@@ -2,6 +2,8 @@ x-app-env: &app-env
   PYTHONUNBUFFERED: "1"
   DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-yachan}:${POSTGRES_PASSWORD:-yachan}@postgres:5432/${POSTGRES_DB:-yachan}
   REDIS_URL: redis://redis:6379/0
+  # absolute, in-network media url the moderation service fetches from (anon-readable bucket)
+  MEDIA_INTERNAL_URL: http://minio:9000/${S3_BUCKET:-yachan-media}
   JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
   IP_HASH_SALT: ${IP_HASH_SALT:-dev-ip-salt-change-me}
   # object storage: the stack stores uploads in minio (s3-compatible)
@@ -133,20 +135,17 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # temporary step-2 transport stub: stands in for the yachan-moderation microservice,
-  # consuming the `moderation` queue and echoing a verdict on `moderation_results`.
-  # removed in step 3 when the real service lands.
-  moderation-stub:
+  # the moderation microservice: separate image and deps, no db/jwt. consumes the
+  # `moderation` queue, fetches media by url, classifies, replies on `moderation_results`.
+  # shares only redis with yachan; own manifest set in k3s.
+  moderation-worker:
     build:
-      context: ./backend
+      context: ./moderation
       dockerfile: Dockerfile
-    container_name: yachan-moderation-stub
-    command: celery -A src.celery_app.celery worker -Q moderation --loglevel=info
+    container_name: yachan-moderation-worker
     environment:
-      <<: *app-env
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
       createbucket:

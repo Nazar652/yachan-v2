@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from fastapi import UploadFile
 
 from src.celery_app import celery
+from src.core.config import get_settings
 from src.core.exceptions import TooManyAttachmentsError
 from src.models.attachment import Attachment, MediaType
 from src.services.file_service import FileService
@@ -44,16 +45,24 @@ async def store_uploads(
     file_service: FileService, post_id: int, uploads: list[Upload]
 ) -> list[Attachment]:
     stored: list[Attachment] = []
+    media_base = get_settings().media_internal_url.rstrip("/")
     for upload in uploads:
         attachment = await file_service.store_attachment(
             post_id, upload.filename, upload.content, upload.content_type
         )
         process_attachment.delay(attachment.id)  # type: ignore[attr-defined]  celery task
+        # absolute, service-reachable url; falls back to the browser public url when
+        # media_internal_url is unset (prod, where public_url is already absolute)
+        image_url = (
+            f"{media_base}/{attachment.file_path}"
+            if media_base
+            else file_service.storage.public_url(attachment.file_path)
+        )
         # fire-and-forget moderation: addressed by string name, consumed by the
         # separate moderation worker off the `moderation` queue (see moderation-contract.md)
         celery.send_task(
             "moderate_image",
-            args=[attachment.id, file_service.storage.public_url(attachment.file_path), "nsfw"],
+            args=[attachment.id, image_url, "nsfw"],
             queue="moderation",
         )
         stored.append(attachment)

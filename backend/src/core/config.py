@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # public base url the serializer prepends to a key; nginx maps it to the
     # files volume (local) or proxies it to the object store (s3)
     storage_base_url: str = "/media"
+    # absolute base url the moderation service fetches media from (dev: the in-network
+    # minio endpoint; prod: the public bucket/cdn url). empty falls back to public_url
+    media_internal_url: str = ""
 
     s3_endpoint_url: str = ""
     s3_bucket: str = "yachan-media"
