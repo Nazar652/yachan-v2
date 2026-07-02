@@ -10,6 +10,9 @@ python = "^3.12"
 celery = { extras = ["redis"], version = "^5.4" }
 httpx = "^0.28"
 pydantic-settings = "^2.5"
+onnxruntime = "^1.27.0"
+pillow = "^12.3.0"
+numpy = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"

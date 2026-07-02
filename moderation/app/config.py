@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
     fetch_timeout_seconds: float = 15.0
+    onnx_model_path: str = "models/image-safety-classifier-xs.onnx"
 
 
 settings = Settings()

@@ -6,11 +6,9 @@ from app.tasks import moderate_image
 
 def test_moderate_image_sends_verdict(monkeypatch):
     monkeypatch.setattr(tasks_module, "fetch_bytes", lambda url: b"img")
-    monkeypatch.setattr(
-        tasks_module.classifier,
-        "classify",
-        lambda data, mode: {"status": "safe", "nsfw_score": 0.0, "labels": None},
-    )
+    classifier = MagicMock()
+    classifier.classify.return_value = {"status": "flagged", "nsfw_score": 0.8, "labels": None}
+    monkeypatch.setattr(tasks_module, "get_classifier", lambda: classifier)
     send_task = MagicMock()
     monkeypatch.setattr(tasks_module.celery, "send_task", send_task)
 
@@ -20,7 +18,7 @@ def test_moderate_image_sends_verdict(monkeypatch):
     assert send_task.call_args.args[0] == "apply_moderation_verdict"
     assert send_task.call_args.kwargs["queue"] == "moderation_results"
     assert send_task.call_args.kwargs["args"][0] == 7
-    assert send_task.call_args.kwargs["args"][1]["status"] == "safe"
+    assert send_task.call_args.kwargs["args"][1]["status"] == "flagged"
 
 
 def test_moderate_image_flags_on_fetch_error(monkeypatch):

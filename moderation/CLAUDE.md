@@ -33,10 +33,16 @@ moderation/
 
 ## Classifier
 
-`classify(data, mode) -> Verdict` behind a `Protocol`. `status_from_labels()` is the
-pure tier mapping (`porn`/`hentai` → blocked, `sexy` → flagged, else safe). The real
-multi-class NSFW model replaces `StubClassifier` in step 3b — it plugs into the same
-Protocol and the module-level `classifier` in `tasks.py`, loaded once per process.
+`classify(data, mode) -> Verdict` behind a `Protocol`. `OnnxClassifier` runs
+`OwenElliott/image-safety-classifier-xs` (SwiftFormer, ~13 MB onnx, MIT) via
+onnxruntime — three classes `nsfl`/`nsfw`/`sfw`, mapped by `verdict_from_scores` to
+`blocked`/`flagged`/`safe`. The onnx graph bakes in normalization + softmax, so
+`preprocess` only resizes to 224x224 NCHW float 0-255. The session loads once per
+process via `get_classifier()` (lru_cache). CSAM is **not** a model class — it is
+handled by hash-matching in a later step.
+
+The model is fetched into `models/` at Docker build (`.dockerignore`d otherwise) and
+downloaded locally for the real-inference test, which skips when the file is absent.
 
 ## Commands
 

@@ -1,29 +1,56 @@
+import io
 from typing import Protocol
+
+import numpy as np
+import onnxruntime as ort
+from PIL import Image
 
 # the verdict json shape sent back to yachan (see docs/moderation-contract.md)
 Verdict = dict[str, object]
 
-_BLOCKED_LABELS = frozenset({"porn", "hentai"})
-_FLAGGED_LABELS = frozenset({"sexy"})
+# probabilities output order, verified against the onnx graph: index -> label
+_LABELS = ("nsfl", "nsfw", "sfw")
+# nsfl (gore) -> restricted, nsfw (sexual) -> sexual content, sfw -> safe. csam is not
+# a model class — it is handled by hash-matching in a later step
+_STATUS_BY_LABEL = {"sfw": "safe", "nsfw": "flagged", "nsfl": "blocked"}
+_INPUT_SIZE = (224, 224)
 
 
-def status_from_labels(scores: dict[str, float]) -> str:
-    # top-scoring class decides the tier: porn/hentai block, sexy flags, rest safe
+def preprocess(data: bytes) -> np.ndarray:
+    # the onnx graph bakes in channel normalization, so we only resize and hand it
+    # rgb pixels in the 0-255 range as a float NCHW tensor
+    with Image.open(io.BytesIO(data)) as image:
+        rgb = image.convert("RGB").resize(_INPUT_SIZE, Image.Resampling.BILINEAR)
+    pixels = np.asarray(rgb, dtype=np.float32)
+    return pixels.transpose(2, 0, 1)[np.newaxis, :]
+
+
+def verdict_from_scores(scores: dict[str, float]) -> Verdict:
+    # highest-probability class picks the tier; nsfw_score is the not-safe mass
     top = max(scores, key=lambda label: scores[label])
-    if top in _BLOCKED_LABELS:
-        return "blocked"
-    if top in _FLAGGED_LABELS:
-        return "flagged"
-    return "safe"
+    return {
+        "status": _STATUS_BY_LABEL[top],
+        "nsfw_score": round(1.0 - scores.get("sfw", 0.0), 4),
+        "labels": scores,
+    }
 
 
 class Classifier(Protocol):
     def classify(self, data: bytes, mode: str) -> Verdict: ...
 
 
-class StubClassifier:
-    """Placeholder until the real multi-class NSFW model lands (step 3b); marks
-    everything safe so the transport can run end-to-end without torch."""
+class OnnxClassifier:
+    """image-safety-classifier-xs: sfw / nsfw (sexual) / nsfl (gore) in one small
+    onnx model. Takes a ready session so it is trivially unit-testable."""
+
+    def __init__(self, session: ort.InferenceSession) -> None:
+        self.session = session
+
+    @classmethod
+    def from_path(cls, model_path: str) -> "OnnxClassifier":
+        return cls(ort.InferenceSession(model_path, providers=["CPUExecutionProvider"]))
 
     def classify(self, data: bytes, mode: str) -> Verdict:
-        return {"status": "safe", "nsfw_score": 0.0, "labels": None}
+        probabilities = self.session.run(None, {"image": preprocess(data)})[0][0]
+        scores = {label: float(probabilities[index]) for index, label in enumerate(_LABELS)}
+        return verdict_from_scores(scores)
