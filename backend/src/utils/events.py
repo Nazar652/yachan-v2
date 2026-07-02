@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 NEW_POST = "new_post"
 POST_EDITED = "post_edited"
 NEW_THREAD = "new_thread"
+ATTACHMENT_MODERATED = "attachment_moderated"
 THREAD_UPDATED = "thread_updated"
 THREAD_DELETED = "thread_deleted"
 

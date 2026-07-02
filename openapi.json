@@ -1309,7 +1309,14 @@
             "title": "Original Name"
           },
           "url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Url"
           },
           "thumbnail_url": {
@@ -1370,6 +1377,9 @@
               }
             ],
             "title": "Size Bytes"
+          },
+          "moderation_status": {
+            "$ref": "#/components/schemas/ModerationStatus"
           }
         },
         "type": "object",
@@ -1377,8 +1387,8 @@
           "id",
           "media_type",
           "original_name",
-          "url",
-          "mime_type"
+          "mime_type",
+          "moderation_status"
         ],
         "title": "AttachmentResponse"
       },
@@ -1519,6 +1529,11 @@
             "exclusiveMinimum": 0.0,
             "title": "Bump Limit",
             "default": 300
+          },
+          "is_nsfw": {
+            "type": "boolean",
+            "title": "Is Nsfw",
+            "default": false
           }
         },
         "type": "object",
@@ -1578,6 +1593,10 @@
             "type": "boolean",
             "title": "Is Active"
           },
+          "is_nsfw": {
+            "type": "boolean",
+            "title": "Is Nsfw"
+          },
           "position": {
             "type": "integer",
             "title": "Position"
@@ -1596,6 +1615,7 @@
           "description",
           "bump_limit",
           "is_active",
+          "is_nsfw",
           "position",
           "created_at"
         ],
@@ -1678,6 +1698,17 @@
               }
             ],
             "title": "Is Active"
+          },
+          "is_nsfw": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Nsfw"
           }
         },
         "type": "object",
@@ -1959,6 +1990,16 @@
           "moderator"
         ],
         "title": "ModRole"
+      },
+      "ModerationStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "safe",
+          "flagged",
+          "blocked"
+        ],
+        "title": "ModerationStatus"
       },
       "OpPostPreview": {
         "properties": {

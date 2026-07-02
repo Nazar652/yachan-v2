@@ -391,7 +391,7 @@ export interface components {
             /** Original Name */
             original_name: string;
             /** Url */
-            url: string;
+            url?: string | null;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
             /** Mime Type */
@@ -404,6 +404,7 @@ export interface components {
             duration_seconds?: number | null;
             /** Size Bytes */
             size_bytes?: number | null;
+            moderation_status: components["schemas"]["ModerationStatus"];
         };
         /** BanCreate */
         BanCreate: {
@@ -447,6 +448,11 @@ export interface components {
              * @default 300
              */
             bump_limit: number;
+            /**
+             * Is Nsfw
+             * @default false
+             */
+            is_nsfw: boolean;
         };
         /** BoardReorder */
         BoardReorder: {
@@ -467,6 +473,8 @@ export interface components {
             bump_limit: number;
             /** Is Active */
             is_active: boolean;
+            /** Is Nsfw */
+            is_nsfw: boolean;
             /** Position */
             position: number;
             /**
@@ -496,6 +504,8 @@ export interface components {
             bump_limit?: number | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Is Nsfw */
+            is_nsfw?: boolean | null;
         };
         /** Body_create_reply_api__board_slug__threads__thread_id__posts_post */
         Body_create_reply_api__board_slug__threads__thread_id__posts_post: {
@@ -599,6 +609,11 @@ export interface components {
          * @enum {string}
          */
         ModRole: "admin" | "moderator";
+        /**
+         * ModerationStatus
+         * @enum {string}
+         */
+        ModerationStatus: "pending" | "safe" | "flagged" | "blocked";
         /** OpPostPreview */
         OpPostPreview: {
             /** Body */

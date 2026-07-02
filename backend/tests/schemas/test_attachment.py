@@ -1,4 +1,4 @@
-from src.models.attachment import MediaType
+from src.models.attachment import MediaType, ModerationStatus
 from src.schemas.attachment import AttachmentResponse
 
 
@@ -9,6 +9,7 @@ def test_attachment_response_minimal_defaults():
         original_name="cat.png",
         url="/media/cat.png",
         mime_type="image/png",
+        moderation_status=ModerationStatus.SAFE,
     )
     assert response.thumbnail_url is None
     assert response.width is None
@@ -26,6 +27,7 @@ def test_attachment_response_full():
         height=480,
         duration_seconds=12.5,
         size_bytes=1000,
+        moderation_status=ModerationStatus.SAFE,
     )
     assert response.media_type is MediaType.VIDEO
     assert response.duration_seconds == 12.5

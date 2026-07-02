@@ -6,7 +6,7 @@ import pytest
 from src.core.exceptions import RateLimitedError
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView
-from tests.views._factories import attachment_ns, post_ns, request_ns, settings_ns
+from tests.views._factories import attachment_ns, board_ns, post_ns, request_ns, settings_ns
 
 
 def build(*, allowed=True):
@@ -14,6 +14,8 @@ def build(*, allowed=True):
     post_service.create_reply = AsyncMock(return_value=post_ns())
     post_service.edit_post = AsyncMock(return_value=post_ns(is_edited=True))
     post_service.get_post_history = AsyncMock(return_value=None)
+    board_service = MagicMock()
+    board_service.get_board = AsyncMock(return_value=board_ns())
     file_service = MagicMock()
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
@@ -28,6 +30,7 @@ def build(*, allowed=True):
     online_tracker.touch = AsyncMock()
     view = PostsView(
         post_service=post_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
@@ -38,6 +41,7 @@ def build(*, allowed=True):
     )
     return view, SimpleNamespace(
         post_service=post_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,

@@ -10,6 +10,7 @@ from src.utils.clock import utcnow
 from src.views.threads_view import ThreadsView
 from tests.views._factories import (
     attachment_ns,
+    board_ns,
     post_ns,
     request_ns,
     settings_ns,
@@ -36,6 +37,9 @@ def build(*, allowed=True, replies=None, op_images=None):
         return_value=(thread_ns(), [post_ns(id=10)], {10: [attachment_ns()]})
     )
     thread_service.create_thread = AsyncMock(return_value=(thread_ns(), post_ns(id=10, is_op=True)))
+    board_service = MagicMock()
+    board_service.get_board = AsyncMock(return_value=board_ns())
+    board_service.list_boards = AsyncMock(return_value=[board_ns()])
     file_service = MagicMock()
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
@@ -50,6 +54,7 @@ def build(*, allowed=True, replies=None, op_images=None):
     online_tracker.touch = AsyncMock()
     view = ThreadsView(
         thread_service=thread_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
@@ -60,6 +65,7 @@ def build(*, allowed=True, replies=None, op_images=None):
     )
     return view, SimpleNamespace(
         thread_service=thread_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,

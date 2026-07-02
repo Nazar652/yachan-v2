@@ -6,6 +6,7 @@ from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
 from src.core.storage import Storage
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
+from src.services.board_service import BoardService
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import PostService
@@ -25,6 +26,7 @@ class PostsView:
     def __init__(
         self,
         post_service: PostService,
+        board_service: BoardService,
         file_service: FileService,
         captcha_service: CaptchaService,
         rate_limiter: RateLimiter,
@@ -34,6 +36,7 @@ class PostsView:
         online_tracker: OnlineTracker,
     ) -> None:
         self.post_service = post_service
+        self.board_service = board_service
         self.file_service = file_service
         self.captcha_service = captcha_service
         self.rate_limiter = rate_limiter
@@ -64,7 +67,8 @@ class PostsView:
         post = await self.post_service.create_reply(board_slug, thread_id, data, ip_hash)
         attachments = await store_uploads(self.file_service, post.id, uploads)
 
-        response = post_response(post, attachments, self.storage)
+        board = await self.board_service.get_board(board_slug)
+        response = post_response(post, attachments, self.storage, board.is_nsfw)
         await self.events.publish(
             thread_channel(thread_id), NEW_POST, response.model_dump(mode="json")
         )

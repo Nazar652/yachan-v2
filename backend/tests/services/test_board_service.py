@@ -25,6 +25,19 @@ async def test_create_board_creates_row_and_sequence():
     board_repo.create_post_number_sequence.assert_awaited_once_with("b")
 
 
+async def test_create_board_passes_is_nsfw():
+    board_repo = MagicMock()
+    board_repo.get_by_slug = AsyncMock(return_value=None)
+    board_repo.create = AsyncMock(side_effect=lambda board: board)
+    board_repo.create_post_number_sequence = AsyncMock()
+    service = BoardService(board_repo=board_repo)
+
+    await service.create_board(BoardCreate(slug="b", title="Random", is_nsfw=True))
+
+    created = board_repo.create.await_args.args[0]
+    assert created.is_nsfw is True
+
+
 async def test_create_board_rejects_duplicate_slug():
     board_repo = MagicMock()
     board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(slug="b"))

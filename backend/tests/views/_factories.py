@@ -12,6 +12,7 @@ def board_ns(**overrides):
         description=None,
         bump_limit=300,
         is_active=True,
+        is_nsfw=False,
         position=0,
         created_at=_NOW,
     )
@@ -84,7 +85,7 @@ def ban_ns(**overrides):
 
 
 def attachment_ns(**overrides):
-    from src.models.attachment import MediaType
+    from src.models.attachment import MediaType, ModerationStatus
 
     data = dict(
         id=7,
@@ -97,6 +98,7 @@ def attachment_ns(**overrides):
         height=None,
         duration_seconds=None,
         size_bytes=100,
+        moderation_status=ModerationStatus.SAFE,
     )
     data.update(overrides)
     return SimpleNamespace(**data)

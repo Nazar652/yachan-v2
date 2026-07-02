@@ -14,6 +14,7 @@ from src.schemas.thread import (
     ThreadDetailResponse,
     ThreadResponse,
 )
+from src.services.board_service import BoardService
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import post_is_editable
@@ -23,7 +24,7 @@ from src.utils.events import NEW_THREAD, EventPublisher, board_channel
 from src.utils.online import OnlineTracker
 from src.utils.rate_limit import RateLimiter
 from src.views.dependencies import client_ip_hash
-from src.views.serializers import post_response
+from src.views.serializers import is_media_hidden, post_response
 from src.views.uploads import contains_image, read_uploads, store_uploads
 
 THREAD_RATE_LIMIT = 3
@@ -35,6 +36,7 @@ class ThreadsView:
     def __init__(
         self,
         thread_service: ThreadService,
+        board_service: BoardService,
         file_service: FileService,
         captcha_service: CaptchaService,
         rate_limiter: RateLimiter,
@@ -44,6 +46,7 @@ class ThreadsView:
         online_tracker: OnlineTracker,
     ) -> None:
         self.thread_service = thread_service
+        self.board_service = board_service
         self.file_service = file_service
         self.captcha_service = captcha_service
         self.rate_limiter = rate_limiter
@@ -57,11 +60,18 @@ class ThreadsView:
     ) -> list[ThreadResponse]:
         await self.online_tracker.touch(client_ip_hash(request, self.settings), board_slug)
         thread_data = await self.thread_service.list_threads(board_slug, limit, offset)
+        board = await self.board_service.get_board(board_slug)
         responses: list[ThreadResponse] = []
         for thread, op_post, op_images, replies in thread_data:
             response = ThreadResponse.model_validate(thread)
             if op_post:
-                first_image = op_images[0] if op_images else None
+                # drop images hidden by moderation so the catalog preview stays clean
+                visible_images = [
+                    image
+                    for image in op_images
+                    if not is_media_hidden(image.moderation_status, board.is_nsfw)
+                ]
+                first_image = visible_images[0] if visible_images else None
                 thumbnail_url = (
                     self.storage.public_url(first_image.thumbnail_path or first_image.file_path)
                     if first_image
@@ -82,7 +92,7 @@ class ThreadsView:
                             width=image.width,
                             height=image.height,
                         )
-                        for image in op_images
+                        for image in visible_images
                     ],
                 )
             response.last_replies = [
@@ -101,11 +111,17 @@ class ThreadsView:
 
     async def list_latest_threads(self, limit: int = 5) -> list[LatestThreadResponse]:
         latest = await self.thread_service.list_latest_threads(limit)
+        nsfw_by_slug = {
+            board.slug: board.is_nsfw for board in await self.board_service.list_boards()
+        }
         responses: list[LatestThreadResponse] = []
         for thread, board_slug, first_image, last_reply in latest:
             thumbnail_url = (
                 self.storage.public_url(first_image.thumbnail_path or first_image.file_path)
-                if first_image
+                if first_image is not None
+                and not is_media_hidden(
+                    first_image.moderation_status, nsfw_by_slug.get(board_slug, False)
+                )
                 else None
             )
             responses.append(
@@ -141,11 +157,14 @@ class ThreadsView:
         thread, posts, attachments_by_post = await self.thread_service.get_thread_detail(
             board_slug, thread_id
         )
+        board = await self.board_service.get_board(board_slug)
 
         detail = ThreadDetailResponse.model_validate(thread)
         responses = []
         for post in posts:
-            response = post_response(post, attachments_by_post.get(post.id, []), self.storage)
+            response = post_response(
+                post, attachments_by_post.get(post.id, []), self.storage, board.is_nsfw
+            )
             response.can_edit = post_is_editable(post, viewer_ip_hash, now)
             responses.append(response)
         detail.posts = responses
@@ -175,8 +194,9 @@ class ThreadsView:
         )
         attachments = await store_uploads(self.file_service, op_post.id, uploads)
 
+        board = await self.board_service.get_board(board_slug)
         detail = ThreadDetailResponse.model_validate(thread)
-        detail.posts = [post_response(op_post, attachments, self.storage)]
+        detail.posts = [post_response(op_post, attachments, self.storage, board.is_nsfw)]
         await self.events.publish(
             board_channel(board_slug), NEW_THREAD, detail.model_dump(mode="json")
         )
