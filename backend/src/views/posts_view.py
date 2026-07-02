@@ -10,6 +10,7 @@ from src.services.board_service import BoardService
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import PostService
+from src.tasks.search import embed_post
 from src.utils.events import NEW_POST, POST_EDITED, EventPublisher, thread_channel
 from src.utils.online import OnlineTracker
 from src.utils.rate_limit import RateLimiter
@@ -65,6 +66,8 @@ class PostsView:
 
         uploads = await read_uploads(files)
         post = await self.post_service.create_reply(board_slug, thread_id, data, ip_hash)
+        if post.body:
+            embed_post.delay(post.id)  # type: ignore[attr-defined]  celery task
         attachments = await store_uploads(self.file_service, post.id, uploads)
 
         board = await self.board_service.get_board(board_slug)
@@ -80,6 +83,8 @@ class PostsView:
     ) -> PostResponse:
         ip_hash = client_ip_hash(request, self.settings)
         post = await self.post_service.edit_post(board_slug, post_number, data, ip_hash)
+        if post.body:
+            embed_post.delay(post.id)  # type: ignore[attr-defined]  re-index edited text
         response = PostResponse.model_validate(post)
         await self.events.publish(
             thread_channel(response.thread_id), POST_EDITED, response.model_dump(mode="json")

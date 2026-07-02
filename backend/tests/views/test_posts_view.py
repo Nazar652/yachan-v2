@@ -3,10 +3,18 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import src.views.posts_view as posts_view_module
 from src.core.exceptions import RateLimitedError
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView
 from tests.views._factories import attachment_ns, board_ns, post_ns, request_ns, settings_ns
+
+
+@pytest.fixture(autouse=True)
+def embed_delay(monkeypatch):
+    delay = MagicMock()
+    monkeypatch.setattr(posts_view_module, "embed_post", SimpleNamespace(delay=delay))
+    return delay
 
 
 def build(*, allowed=True):
@@ -62,6 +70,18 @@ async def test_create_reply_text_only_delegates():
     mocks.post_service.create_reply.assert_awaited_once()
     mocks.file_service.store_attachment.assert_not_called()
     mocks.events.publish.assert_awaited_once()
+
+
+async def test_create_reply_enqueues_embedding(embed_delay):
+    view, _ = build()
+    await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans")
+    embed_delay.assert_called_once_with(10)
+
+
+async def test_edit_post_enqueues_reembedding(embed_delay):
+    view, _ = build()
+    await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
+    embed_delay.assert_called_once_with(10)
 
 
 async def test_create_reply_touches_board_presence():

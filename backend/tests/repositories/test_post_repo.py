@@ -81,6 +81,15 @@ async def test_next_post_number_returns_sequence_value(session, make_result):
     session.execute.assert_awaited_once()
 
 
+async def test_list_with_body(session, make_result):
+    posts = [object(), object()]
+    session.execute.return_value = make_result(all_=posts)
+    repo = PostRepository(session=session)
+
+    assert await repo.list_with_body() == posts
+    session.execute.assert_awaited_once()
+
+
 async def test_create_adds_flushes_refreshes(session):
     post = object()
     repo = PostRepository(session=session)

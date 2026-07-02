@@ -11,6 +11,11 @@ const router = createRouter({
       component: () => import('@/views/BoardListView.vue'),
     },
     {
+      path: '/search',
+      name: 'search',
+      component: () => import('@/views/SearchView.vue'),
+    },
+    {
       path: '/mod/login',
       name: 'mod-login',
       component: () => import('@/views/mod/ModLoginView.vue'),

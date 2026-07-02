@@ -6,10 +6,12 @@ from src.models.mod_account import ModAccount, ModRole
 from src.models.post import Post
 from src.models.post_backlink import PostBacklink
 from src.models.post_edit import PostEdit
+from src.models.post_embedding import EMBEDDING_DIMENSIONS, PostEmbedding
 from src.models.report import Report
 from src.models.thread import Thread
 
 __all__ = [
+    "EMBEDDING_DIMENSIONS",
     "Attachment",
     "AuditLog",
     "Ban",
@@ -21,6 +23,7 @@ __all__ = [
     "Post",
     "PostBacklink",
     "PostEdit",
+    "PostEmbedding",
     "Report",
     "Thread",
 ]

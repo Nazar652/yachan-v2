@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import Settings, get_settings
 from src.core.database import new_session
+from src.core.embeddings import EmbeddingModel, get_embedding_model
+from src.core.gemini import GeminiClient
 from src.core.redis import get_redis
 from src.core.storage import Storage, build_storage
 from src.repositories.attachment_repo import AttachmentRepository
@@ -12,6 +14,7 @@ from src.repositories.board_repo import BoardRepository
 from src.repositories.mod_account_repo import ModAccountRepository
 from src.repositories.post_backlink_repo import PostBacklinkRepository
 from src.repositories.post_edit_repo import PostEditRepository
+from src.repositories.post_embedding_repo import PostEmbeddingRepository
 from src.repositories.post_repo import PostRepository
 from src.repositories.report_repo import ReportRepository
 from src.repositories.thread_repo import ThreadRepository
@@ -24,6 +27,7 @@ from src.services.mod_service import ModService
 from src.services.moderation_service import ModerationService
 from src.services.post_service import PostService
 from src.services.report_service import ReportService
+from src.services.search_service import SearchService
 from src.services.stats_service import StatsService
 from src.services.thread_service import ThreadService
 from src.utils.events import EventPublisher
@@ -35,6 +39,7 @@ from src.views.captcha_view import CaptchaView
 from src.views.mod_view import ModView
 from src.views.posts_view import PostsView
 from src.views.reports_view import ReportsView
+from src.views.search_view import SearchView
 from src.views.stats_view import StatsView
 from src.views.threads_view import ThreadsView
 from src.views.ws_view import WsView
@@ -56,6 +61,12 @@ def setup_di() -> None:
     di[EventPublisher] = EventPublisher(redis_instance)
     di[OnlineTracker] = OnlineTracker(redis_instance)
 
+    # the embedding model is a process-wide singleton loaded lazily on first use
+    # (get_embedding_model is lru_cached), so startup does not pay the model load
+    di.factories[EmbeddingModel] = lambda container: get_embedding_model()
+
+    di[GeminiClient] = GeminiClient.from_settings(settings)
+
     di.factories[AsyncSession] = lambda container: resolve_scoped(AsyncSession, factory=new_session)
 
     di.factories[BoardRepository] = lambda container: resolve_scoped(BoardRepository, BoardRepository)
@@ -64,6 +75,9 @@ def setup_di() -> None:
     di.factories[PostEditRepository] = lambda container: resolve_scoped(PostEditRepository, PostEditRepository)
     di.factories[PostBacklinkRepository] = lambda container: resolve_scoped(
         PostBacklinkRepository, PostBacklinkRepository
+    )
+    di.factories[PostEmbeddingRepository] = lambda container: resolve_scoped(
+        PostEmbeddingRepository, PostEmbeddingRepository
     )
     di.factories[AttachmentRepository] = lambda container: resolve_scoped(AttachmentRepository, AttachmentRepository)
     di.factories[BanRepository] = lambda container: resolve_scoped(BanRepository, BanRepository)
@@ -84,6 +98,7 @@ def setup_di() -> None:
         ModerationService, ModerationService
     )
     di.factories[StatsService] = lambda container: resolve_scoped(StatsService, StatsService)
+    di.factories[SearchService] = lambda container: resolve_scoped(SearchService, SearchService)
 
     # views
     di.factories[BoardsView] = lambda container: resolve_scoped(BoardsView, BoardsView)
@@ -93,6 +108,7 @@ def setup_di() -> None:
     di.factories[PostsView] = lambda container: resolve_scoped(PostsView, PostsView)
     di.factories[ReportsView] = lambda container: resolve_scoped(ReportsView, ReportsView)
     di.factories[StatsView] = lambda container: resolve_scoped(StatsView, StatsView)
+    di.factories[SearchView] = lambda container: resolve_scoped(SearchView, SearchView)
     di.factories[WsView] = lambda container: resolve_scoped(WsView, WsView)
 
 

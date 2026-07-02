@@ -102,6 +102,17 @@ class PostRepository(BaseRepository):
         )
         return list(result.scalars().all())
 
+    async def list_with_body(self) -> list[Post]:
+        # every live post that carries text, for the semantic-search backfill
+        result = await self.session.execute(
+            select(Post).where(
+                col(Post.deleted).is_(False),
+                col(Post.body).is_not(None),
+                col(Post.body) != "",
+            )
+        )
+        return list(result.scalars().all())
+
     async def next_post_number(self, board_slug: str) -> int:
         """Atomically advance the per-board sequence and return the next value."""
         seq = post_number_sequence_name(board_slug)

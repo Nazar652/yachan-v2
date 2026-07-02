@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import src.views.threads_view as threads_view_module
 import src.views.uploads as uploads_module
 from src.core.exceptions import RateLimitedError
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
@@ -72,6 +73,13 @@ def build(*, allowed=True, replies=None, op_images=None):
         events=events,
         online_tracker=online_tracker,
     )
+
+
+@pytest.fixture(autouse=True)
+def embed_delay(monkeypatch):
+    delay = MagicMock()
+    monkeypatch.setattr(threads_view_module, "embed_post", SimpleNamespace(delay=delay))
+    return delay
 
 
 async def test_list_threads_maps_responses():
@@ -211,6 +219,14 @@ async def test_create_thread_with_image_delegates(monkeypatch):
     assert mocks.thread_service.create_thread.await_args.kwargs["has_image"] is True
     mocks.file_service.store_attachment.assert_awaited_once()
     mocks.events.publish.assert_awaited_once()
+
+
+async def test_create_thread_enqueues_embedding(embed_delay, monkeypatch):
+    monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=MagicMock()))
+    monkeypatch.setattr(uploads_module.celery, "send_task", MagicMock())
+    view, _ = build()
+    await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), "tok", "ans")
+    embed_delay.assert_called_once_with(10)
 
 
 async def test_create_thread_rate_limited():

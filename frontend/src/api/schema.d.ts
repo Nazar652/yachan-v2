@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search */
+        get: operations["search_api_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/threads/latest": {
         parameters: {
             query?: never;
@@ -728,6 +745,30 @@ export interface components {
              */
             created_at: string;
         };
+        /** SearchResultResponse */
+        SearchResultResponse: {
+            /** Board Slug */
+            board_slug: string;
+            /** Thread Id */
+            thread_id: number;
+            /** Post Number */
+            post_number: number;
+            /** Is Op */
+            is_op: boolean;
+            /** Name */
+            name: string;
+            /** Body */
+            body: string | null;
+            /** Body Html */
+            body_html: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Score */
+            score: number;
+        };
         /** SiteStatsResponse */
         SiteStatsResponse: {
             /** Board Count */
@@ -870,6 +911,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                board?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResultResponse"][];
                 };
             };
             /** @description Validation Error */

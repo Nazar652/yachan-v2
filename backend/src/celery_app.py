@@ -13,6 +13,7 @@ celery = Celery(
         "src.tasks.attachments",
         "src.tasks.bans",
         "src.tasks.moderation",
+        "src.tasks.search",
     ],
 )
 celery.conf.update(

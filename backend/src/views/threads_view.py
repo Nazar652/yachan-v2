@@ -19,6 +19,7 @@ from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
 from src.services.post_service import post_is_editable
 from src.services.thread_service import ThreadService
+from src.tasks.search import embed_post
 from src.utils.clock import utcnow
 from src.utils.events import NEW_THREAD, EventPublisher, board_channel
 from src.utils.online import OnlineTracker
@@ -192,6 +193,8 @@ class ThreadsView:
         thread, op_post = await self.thread_service.create_thread(
             board_slug, data, ip_hash, has_image=contains_image(uploads)
         )
+        if op_post.body:
+            embed_post.delay(op_post.id)  # type: ignore[attr-defined]  celery task
         attachments = await store_uploads(self.file_service, op_post.id, uploads)
 
         board = await self.board_service.get_board(board_slug)
