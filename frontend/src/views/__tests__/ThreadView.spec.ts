@@ -130,6 +130,19 @@ describe('ThreadView', () => {
     expect(wrapper.findAll('.post-article-stub')).toHaveLength(2)
   })
 
+  it('shows the TL;DR panel when the thread has a summary', () => {
+    stubThreadDetail({ summary: 'the thread is about cats' })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('TL;DR')
+    expect(wrapper.text()).toContain('the thread is about cats')
+  })
+
+  it('omits the TL;DR panel when there is no summary', () => {
+    stubThreadDetail({ summary: null })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('TL;DR')
+  })
+
   it('shows sticky and locked flags', () => {
     stubThreadDetail({ is_locked: true, is_sticky: true, posts: [] })
     const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })

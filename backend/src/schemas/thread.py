@@ -54,6 +54,8 @@ class ThreadResponse(BaseModel):
 
 
 class ThreadDetailResponse(ThreadResponse):
+    summary: str | None = None
+    summary_updated_at: datetime | None = None
     posts: list[PostResponse] = Field(default_factory=list)
 
 

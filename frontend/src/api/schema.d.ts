@@ -809,6 +809,10 @@ export interface components {
             op_post?: components["schemas"]["OpPostPreview"] | null;
             /** Last Replies */
             last_replies?: components["schemas"]["ReplyPreview"][];
+            /** Summary */
+            summary?: string | null;
+            /** Summary Updated At */
+            summary_updated_at?: string | null;
             /** Posts */
             posts?: components["schemas"]["PostResponse"][];
         };

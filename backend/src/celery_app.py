@@ -14,6 +14,7 @@ celery = Celery(
         "src.tasks.bans",
         "src.tasks.moderation",
         "src.tasks.search",
+        "src.tasks.summary",
     ],
 )
 celery.conf.update(
@@ -23,6 +24,7 @@ celery.conf.update(
     timezone="UTC",
     beat_schedule={
         "expire-bans": {"task": "expire_bans", "schedule": 300.0},
+        "summarize-stale-threads": {"task": "summarize_stale_threads", "schedule": 300.0},
     },
 )
 

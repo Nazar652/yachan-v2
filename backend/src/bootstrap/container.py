@@ -29,6 +29,7 @@ from src.services.post_service import PostService
 from src.services.report_service import ReportService
 from src.services.search_service import SearchService
 from src.services.stats_service import StatsService
+from src.services.summary_service import SummaryService
 from src.services.thread_service import ThreadService
 from src.utils.events import EventPublisher
 from src.utils.markup import MarkupRenderer
@@ -99,6 +100,7 @@ def setup_di() -> None:
     )
     di.factories[StatsService] = lambda container: resolve_scoped(StatsService, StatsService)
     di.factories[SearchService] = lambda container: resolve_scoped(SearchService, SearchService)
+    di.factories[SummaryService] = lambda container: resolve_scoped(SummaryService, SummaryService)
 
     # views
     di.factories[BoardsView] = lambda container: resolve_scoped(BoardsView, BoardsView)

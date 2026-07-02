@@ -122,6 +122,20 @@ describe('useThreadWs', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: threadQueryKey('b', 42) })
   })
 
+  it('patches the summary into the thread cache on thread_summarized', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadQueryKey('b', 42), { id: 42, summary: null, posts: [] })
+    mountThreadWs(queryClient)
+
+    emit({ type: 'thread_summarized', data: { thread_id: 42, summary: 'a fresh tl;dr' } })
+
+    expect(queryClient.getQueryData(threadQueryKey('b', 42))).toEqual({
+      id: 42,
+      summary: 'a fresh tl;dr',
+      posts: [],
+    })
+  })
+
   it('ignores malformed frames', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(threadQueryKey('b', 42), { id: 42, posts: [] })

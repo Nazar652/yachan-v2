@@ -179,6 +179,19 @@ async function onDeleteThread() {
 
       <p v-if="modError" class="mb-4 text-sm text-danger">{{ modError }}</p>
 
+      <details
+        v-if="thread.summary"
+        open
+        class="mb-4 rounded-card border border-border bg-surface p-3.5 shadow-card"
+      >
+        <summary class="cursor-pointer select-none font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
+          TL;DR
+        </summary>
+        <p class="mt-2 whitespace-pre-wrap text-[13.5px] leading-relaxed text-text">
+          {{ thread.summary }}
+        </p>
+      </details>
+
       <div class="flex flex-col gap-2.5">
         <PostArticle
           v-for="post in thread.posts ?? []"
