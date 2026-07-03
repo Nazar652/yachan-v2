@@ -122,6 +122,20 @@ async function onDeleteThread() {
     modError.value = errorDetail(error, 'Failed to delete thread.')
   }
 }
+
+const isGeneratingSummary = ref(false)
+
+async function onGenerateSummary() {
+  modError.value = null
+  isGeneratingSummary.value = true
+  try {
+    await moderation.generateSummary()
+  } catch (error: unknown) {
+    modError.value = errorDetail(error, 'Failed to generate summary.')
+  } finally {
+    isGeneratingSummary.value = false
+  }
+}
 </script>
 
 <template>
@@ -165,6 +179,15 @@ async function onDeleteThread() {
         </BaseButton>
         <BaseButton variant="ghost" size="sm" @click="onToggleSticky">
           {{ thread.is_sticky ? 'Unsticky' : 'Sticky' }}
+        </BaseButton>
+        <BaseButton
+          v-if="auth.isAdmin"
+          variant="ghost"
+          size="sm"
+          :disabled="isGeneratingSummary"
+          @click="onGenerateSummary"
+        >
+          {{ isGeneratingSummary ? 'Generating…' : 'Generate AI summary' }}
         </BaseButton>
         <BaseButton
           v-if="auth.isAdmin"

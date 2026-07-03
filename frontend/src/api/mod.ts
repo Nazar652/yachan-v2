@@ -88,6 +88,13 @@ export async function setThreadSticky(
   if (error) throw toApiError(error, response)
 }
 
+export async function regenerateSummary(boardSlug: string, threadId: number): Promise<void> {
+  const { error, response } = await apiClient.POST('/api/mod/{board_slug}/threads/{thread_id}/summary', {
+    params: { path: { board_slug: boardSlug, thread_id: threadId } },
+  })
+  if (error) throw toApiError(error, response)
+}
+
 export async function banPoster(
   boardSlug: string,
   postNumber: number,

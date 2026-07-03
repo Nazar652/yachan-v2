@@ -3,7 +3,14 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { threadQueryKey } from '@/composables/useThread'
 import { threadsPageQueryKey, threadsQueryKey } from '@/composables/useThreads'
-import { banPoster, deletePost, deleteThread, setThreadLocked, setThreadSticky } from '@/api/mod'
+import {
+  banPoster,
+  deletePost,
+  deleteThread,
+  regenerateSummary,
+  setThreadLocked,
+  setThreadSticky,
+} from '@/api/mod'
 import type { BanCreate, BanResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 // mod-only actions scoped to one thread. each call hits the api, then patches
@@ -74,5 +81,11 @@ export function useModeration(
     return banPoster(toValue(slug), postNumber, data)
   }
 
-  return { setLocked, setSticky, removePost, removeThread, ban }
+  // the new summary arrives over the thread's ws channel (useThreadWs), same as
+  // the automatic beat-triggered run, so this just kicks the job off
+  async function generateSummary() {
+    await regenerateSummary(toValue(slug), toValue(threadId))
+  }
+
+  return { setLocked, setSticky, removePost, removeThread, ban, generateSummary }
 }

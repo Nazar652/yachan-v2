@@ -30,6 +30,7 @@ vi.mock('@/composables/useThreadWs', () => ({
 const setLockedMock = vi.fn()
 const setStickyMock = vi.fn()
 const removeThreadMock = vi.fn()
+const generateSummaryMock = vi.fn()
 vi.mock('@/composables/useModeration', () => ({
   useModeration: () => ({
     setLocked: setLockedMock,
@@ -37,6 +38,7 @@ vi.mock('@/composables/useModeration', () => ({
     removePost: vi.fn(),
     removeThread: removeThreadMock,
     ban: vi.fn(),
+    generateSummary: generateSummaryMock,
   }),
 }))
 
@@ -77,6 +79,7 @@ beforeEach(() => {
   setLockedMock.mockReset()
   setStickyMock.mockReset()
   removeThreadMock.mockReset()
+  generateSummaryMock.mockReset()
   pushMock.mockReset()
   quoteSpy.mockReset()
   routeStub.hash = ''
@@ -233,6 +236,37 @@ describe('ThreadView', () => {
     expect(removeThreadMock).not.toHaveBeenCalled()
     expect(pushMock).not.toHaveBeenCalled()
     confirmSpy.mockRestore()
+  })
+
+  it('hides the generate-summary button for a moderator', () => {
+    useAuthStore().login('jwt', 'moderator')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Generate AI summary')
+  })
+
+  it('generates a summary on click for an admin', async () => {
+    generateSummaryMock.mockResolvedValue(undefined)
+    useAuthStore().login('jwt', 'admin')
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Generate AI summary')
+    await flushPromises()
+
+    expect(generateSummaryMock).toHaveBeenCalled()
+  })
+
+  it('shows the api detail when generating a summary fails', async () => {
+    useAuthStore().login('jwt', 'admin')
+    generateSummaryMock.mockRejectedValue(new ApiError('thread needs at least 10 posts to summarize', 400))
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Generate AI summary')
+    await flushPromises()
+
+    expect(wrapper.find('p.text-danger').text()).toBe('thread needs at least 10 posts to summarize')
   })
 
   it('shows the api detail when toggling the lock fails', async () => {
