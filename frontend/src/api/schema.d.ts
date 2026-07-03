@@ -345,6 +345,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mod/{board_slug}/threads/{thread_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regenerate Summary */
+        post: operations["regenerate_summary_api_mod__board_slug__threads__thread_id__summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mod/{board_slug}/posts/{post_number}/ban": {
         parameters: {
             query?: never;
@@ -1524,6 +1541,38 @@ export interface operations {
             query?: {
                 sticky?: boolean;
             };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                board_slug: string;
+                thread_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_summary_api_mod__board_slug__threads__thread_id__summary_post: {
+        parameters: {
+            query?: never;
             header?: {
                 authorization?: string | null;
             };

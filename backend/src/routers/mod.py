@@ -85,6 +85,16 @@ async def sticky_thread(
     await view.set_thread_sticky(token, board_slug, thread_id, sticky)
 
 
+@router.post("/{board_slug}/threads/{thread_id}/summary", status_code=204)
+async def regenerate_summary(
+    board_slug: str,
+    thread_id: int,
+    token: str = Depends(bearer_token),
+    view: ModView = Depends(lambda: get_dependency(ModView)),
+) -> None:
+    await view.regenerate_summary(token, board_slug, thread_id)
+
+
 @router.post("/{board_slug}/posts/{post_number}/ban", response_model=BanResponse, status_code=201)
 async def ban_poster(
     board_slug: str,

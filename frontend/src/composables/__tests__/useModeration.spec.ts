@@ -6,7 +6,14 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { useModeration } from '@/composables/useModeration'
 import { threadQueryKey } from '@/composables/useThread'
 import { threadsPageQueryKey, threadsQueryKey } from '@/composables/useThreads'
-import { banPoster, deletePost, deleteThread, setThreadLocked, setThreadSticky } from '@/api/mod'
+import {
+  banPoster,
+  deletePost,
+  deleteThread,
+  regenerateSummary,
+  setThreadLocked,
+  setThreadSticky,
+} from '@/api/mod'
 
 vi.mock('@/api/mod', () => ({
   setThreadLocked: vi.fn(),
@@ -14,6 +21,7 @@ vi.mock('@/api/mod', () => ({
   deletePost: vi.fn(),
   deleteThread: vi.fn(),
   banPoster: vi.fn(),
+  regenerateSummary: vi.fn(),
 }))
 
 const setThreadLockedMock = vi.mocked(setThreadLocked)
@@ -21,6 +29,7 @@ const setThreadStickyMock = vi.mocked(setThreadSticky)
 const deletePostMock = vi.mocked(deletePost)
 const deleteThreadMock = vi.mocked(deleteThread)
 const banPosterMock = vi.mocked(banPoster)
+const regenerateSummaryMock = vi.mocked(regenerateSummary)
 
 beforeEach(() => {
   setThreadLockedMock.mockReset().mockResolvedValue(undefined)
@@ -28,6 +37,7 @@ beforeEach(() => {
   deletePostMock.mockReset().mockResolvedValue(undefined)
   deleteThreadMock.mockReset().mockResolvedValue(undefined)
   banPosterMock.mockReset()
+  regenerateSummaryMock.mockReset().mockResolvedValue(undefined)
 })
 
 function mountModeration(queryClient: QueryClient) {
@@ -121,6 +131,14 @@ describe('useModeration', () => {
     expect(deleteThreadMock).toHaveBeenCalledWith('b', 42)
     expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 7, title: 'safe' }])
     expect(invalidate).toHaveBeenCalledWith({ queryKey: threadsQueryKey('b') })
+  })
+
+  it('generateSummary delegates to the api', async () => {
+    const api = mountModeration(new QueryClient())
+
+    await api.generateSummary()
+
+    expect(regenerateSummaryMock).toHaveBeenCalledWith('b', 42)
   })
 
   it('ban delegates to banPoster and returns the result', async () => {

@@ -9,6 +9,7 @@ import {
   deleteThread,
   setThreadLocked,
   setThreadSticky,
+  regenerateSummary,
   banPoster,
   createBoard,
   updateBoard,
@@ -226,6 +227,26 @@ describe('setThreadSticky', () => {
     postMock.mockResolvedValue({ data: undefined, error })
 
     await expect(setThreadSticky('b', 42, true)).rejects.toMatchObject(error)
+  })
+})
+
+describe('regenerateSummary', () => {
+  beforeEach(() => postMock.mockReset())
+
+  it('triggers a manual summary regeneration', async () => {
+    postMock.mockResolvedValue({ data: undefined, error: undefined })
+
+    await expect(regenerateSummary('b', 42)).resolves.toBeUndefined()
+    expect(postMock).toHaveBeenCalledWith('/api/mod/{board_slug}/threads/{thread_id}/summary', {
+      params: { path: { board_slug: 'b', thread_id: 42 } },
+    })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'thread needs at least 10 posts to summarize' }
+    postMock.mockResolvedValue({ data: undefined, error })
+
+    await expect(regenerateSummary('b', 42)).rejects.toMatchObject(error)
   })
 })
 

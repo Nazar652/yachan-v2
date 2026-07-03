@@ -1,6 +1,7 @@
 from kink import inject
 
-from src.core.exceptions import ForbiddenError
+from src.core.config import Settings
+from src.core.exceptions import ForbiddenError, SummaryNotConfiguredError, ThreadTooShortForSummaryError
 from src.models.mod_account import ModAccount, ModRole
 from src.models.thread import Thread
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
@@ -10,6 +11,7 @@ from src.schemas.thread import ThreadResponse
 from src.services.board_service import BoardService
 from src.services.mod_service import ModService
 from src.services.report_service import ReportService
+from src.services.summary_service import MIN_POSTS_FOR_SUMMARY, SummaryService
 from src.services.thread_service import ThreadService
 from src.utils.events import (
     THREAD_DELETED,
@@ -28,13 +30,17 @@ class ModView:
         board_service: BoardService,
         report_service: ReportService,
         thread_service: ThreadService,
+        summary_service: SummaryService,
         events: EventPublisher,
+        settings: Settings,
     ) -> None:
         self.mod_service = mod_service
         self.board_service = board_service
         self.report_service = report_service
         self.thread_service = thread_service
+        self.summary_service = summary_service
         self.events = events
+        self.settings = settings
 
     async def login(self, data: ModLogin) -> TokenResponse:
         token, role = await self.mod_service.authenticate(data.username, data.password)
@@ -104,6 +110,18 @@ class ModView:
     async def resolve_report(self, token: str, report_id: int) -> None:
         mod = await self.mod_service.resolve_mod(token)
         await self.report_service.resolve(report_id, mod.id)
+
+    async def regenerate_summary(self, token: str, board_slug: str, thread_id: int) -> None:
+        mod = await self.mod_service.resolve_mod(token)
+        self._require_admin(mod)
+        if not self.settings.gemini_api_key:
+            raise SummaryNotConfiguredError("AI summary is not configured")
+        _, posts, _ = await self.thread_service.get_thread_detail(board_slug, thread_id)
+        if len(posts) < MIN_POSTS_FOR_SUMMARY:
+            raise ThreadTooShortForSummaryError(
+                f"thread needs at least {MIN_POSTS_FOR_SUMMARY} posts to summarize"
+            )
+        await self.summary_service.summarize_thread(thread_id)
 
     async def _publish_thread_update(self, board_slug: str, thread: Thread) -> None:
         # notify open clients so a lock hides the reply form and a sticky reorders

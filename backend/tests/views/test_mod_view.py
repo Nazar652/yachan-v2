@@ -2,15 +2,15 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.exceptions import ForbiddenError
+from src.core.exceptions import ForbiddenError, SummaryNotConfiguredError, ThreadTooShortForSummaryError
 from src.models.mod_account import ModRole
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.views.mod_view import ModView
-from tests.views._factories import ban_ns, board_ns, thread_ns
+from tests.views._factories import ban_ns, board_ns, post_ns, thread_ns
 
 
-def build(*, role=ModRole.ADMIN):
+def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
     mod = SimpleNamespace(id=99, role=role)
     mod_service = MagicMock()
     mod_service.authenticate = AsyncMock(return_value=("jwt-token", role))
@@ -28,20 +28,33 @@ def build(*, role=ModRole.ADMIN):
     report_service.resolve = AsyncMock()
     thread_service = MagicMock()
     thread_service.delete_thread = AsyncMock(return_value=thread_ns(id=5))
+    thread_service.get_thread_detail = AsyncMock(
+        return_value=(
+            thread_ns(id=5),
+            posts if posts is not None else [post_ns(id=i, post_number=i) for i in range(1, 15)],
+            {},
+        )
+    )
+    summary_service = MagicMock()
+    summary_service.summarize_thread = AsyncMock()
     events = MagicMock()
     events.publish = AsyncMock()
+    settings = SimpleNamespace(gemini_api_key=gemini_api_key)
     view = ModView(
         mod_service=mod_service,
         board_service=board_service,
         report_service=report_service,
         thread_service=thread_service,
+        summary_service=summary_service,
         events=events,
+        settings=settings,
     )
     return view, SimpleNamespace(
         mod_service=mod_service,
         board_service=board_service,
         report_service=report_service,
         thread_service=thread_service,
+        summary_service=summary_service,
         events=events,
     )
 
@@ -159,3 +172,30 @@ async def test_set_thread_sticky_publishes_to_both_channels():
     for call in mocks.events.publish.await_args_list:
         assert call.args[1] == "thread_updated"
         assert call.args[2]["is_sticky"] is True
+
+
+async def test_regenerate_summary_delegates_to_service():
+    view, mocks = build(role=ModRole.ADMIN)
+    await view.regenerate_summary("tok", "b", 5)
+    mocks.summary_service.summarize_thread.assert_awaited_once_with(5)
+
+
+async def test_regenerate_summary_rejects_non_admin():
+    view, mocks = build(role=ModRole.MODERATOR)
+    with pytest.raises(ForbiddenError):
+        await view.regenerate_summary("tok", "b", 5)
+    mocks.summary_service.summarize_thread.assert_not_called()
+
+
+async def test_regenerate_summary_rejects_when_not_configured():
+    view, mocks = build(gemini_api_key="")
+    with pytest.raises(SummaryNotConfiguredError):
+        await view.regenerate_summary("tok", "b", 5)
+    mocks.summary_service.summarize_thread.assert_not_called()
+
+
+async def test_regenerate_summary_rejects_thread_below_threshold():
+    view, mocks = build(posts=[post_ns(id=1, post_number=1)])
+    with pytest.raises(ThreadTooShortForSummaryError):
+        await view.regenerate_summary("tok", "b", 5)
+    mocks.summary_service.summarize_thread.assert_not_called()
