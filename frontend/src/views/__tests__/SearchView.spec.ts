@@ -53,7 +53,7 @@ describe('SearchView', () => {
     expect(wrapper.text()).toContain('a cat sat')
     expect(wrapper.text()).toContain('/b/')
     expect(wrapper.text()).toContain('No.42')
-    expect(wrapper.find('a').attributes('href')).toBe('/b/thread/7')
+    expect(wrapper.find('a').attributes('href')).toBe('/b/thread/7#post-42')
   })
 
   it('shows an empty state when nothing matches', () => {

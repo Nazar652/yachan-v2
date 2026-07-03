@@ -11,8 +11,9 @@ RUN pip install --no-cache-dir poetry
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-root --no-interaction --no-ansi
 
-# bake the small onnx model into the image (kept out of the build context by .dockerignore)
 RUN python -c "import urllib.request, pathlib; pathlib.Path('models').mkdir(exist_ok=True); urllib.request.urlretrieve('https://huggingface.co/OwenElliott/image-safety-classifier-xs/resolve/main/onnx/image-safety-classifier-xs.onnx', 'models/image-safety-classifier-xs.onnx')"
+# multilingual distilbert toxicity classifier + its tokenizer (for text moderation)
+RUN python -c "import urllib.request; base='https://huggingface.co/gravitee-io/distilbert-multilingual-toxicity-classifier/resolve/main'; urllib.request.urlretrieve(f'{base}/model.quant.onnx', 'models/toxicity.onnx'); urllib.request.urlretrieve(f'{base}/tokenizer.json', 'models/toxicity-tokenizer.json')"
 
 COPY . .
 

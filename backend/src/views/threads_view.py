@@ -2,6 +2,7 @@ from fastapi import UploadFile
 from kink import inject
 from starlette.requests import Request
 
+from src.celery_app import celery
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
 from src.core.storage import Storage
@@ -195,6 +196,8 @@ class ThreadsView:
         )
         if op_post.body:
             embed_post.delay(op_post.id)  # type: ignore[attr-defined]  celery task
+            # fire-and-forget text moderation on the separate moderation worker
+            celery.send_task("moderate_text", args=[op_post.id, op_post.body], queue="moderation")
         attachments = await store_uploads(self.file_service, op_post.id, uploads)
 
         board = await self.board_service.get_board(board_slug)

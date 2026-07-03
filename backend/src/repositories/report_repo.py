@@ -51,3 +51,11 @@ class ReportRepository(BaseRepository):
             .where(col(Report.post_id) == post_id, col(Report.is_resolved).is_(False))
         )
         return result.scalar_one()
+
+    async def count_auto_for_post(self, post_id: int) -> int:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Report)
+            .where(col(Report.post_id) == post_id, col(Report.is_auto).is_(True))
+        )
+        return result.scalar_one()

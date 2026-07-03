@@ -83,7 +83,7 @@ async def test_search_embeds_query_and_searches_all_boards():
     assert result == hits
     board_repo.get_by_slug.assert_not_awaited()
     model.embed.assert_called_once_with("cats")
-    post_embedding_repo.search.assert_awaited_once_with([0.1, 0.2], board_id=None, limit=7)
+    post_embedding_repo.search.assert_awaited_once_with([0.1, 0.2], "cats", board_id=None, limit=7)
 
 
 async def test_search_scopes_to_board_when_slug_given():
@@ -94,7 +94,7 @@ async def test_search_scopes_to_board_when_slug_given():
     await service.search("cats", board_slug="g")
 
     board_repo.get_by_slug.assert_awaited_once_with("g")
-    post_embedding_repo.search.assert_awaited_once_with([0.5], board_id=3, limit=20)
+    post_embedding_repo.search.assert_awaited_once_with([0.5], "cats", board_id=3, limit=20)
 
 
 async def test_search_unknown_board_raises_not_found():

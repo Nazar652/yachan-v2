@@ -19,25 +19,25 @@ class ModerationService:
         self.events = events
 
     async def apply(self, attachment_id: int, verdict: dict[str, object]) -> None:
-        # verdict is the JSON payload from the moderation service (see
-        # docs/moderation-contract.md); an UPDATE by id, so re-applying is safe
         raw_score = verdict.get("nsfw_score")
         nsfw_score = float(raw_score) if isinstance(raw_score, (int, float)) else None
+
         status = ModerationStatus(str(verdict["status"]))
+
         await self.attachment_repo.set_moderation(
             attachment_id, status=status, nsfw_score=nsfw_score
         )
         await self._notify(attachment_id, status)
 
     async def _notify(self, attachment_id: int, status: ModerationStatus) -> None:
-        # push the new status to the thread's ws subscribers so they re-evaluate
-        # attachment visibility live; the client already knows the board's 18+ flag
         attachment = await self.attachment_repo.get_by_id(attachment_id)
         if attachment is None:
             return
+
         post = await self.post_repo.get_by_id(attachment.post_id)
         if post is None:
             return
+
         await self.events.publish(
             thread_channel(post.thread_id),
             ATTACHMENT_MODERATED,

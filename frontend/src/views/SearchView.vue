@@ -62,7 +62,7 @@ const hasQuery = computed(() => queryText.value.trim().length >= 2)
     <ul v-else class="flex flex-col gap-2.5">
       <li v-for="result in results" :key="`${result.board_slug}-${result.post_number}`">
         <RouterLink
-          :to="`/${result.board_slug}/thread/${result.thread_id}`"
+          :to="`/${result.board_slug}/thread/${result.thread_id}#post-${result.post_number}`"
           class="flex flex-col gap-1.5 rounded-card border border-border bg-surface px-4 py-3 shadow-card transition-all hover:translate-x-0.5 hover:border-gold"
         >
           <div class="flex items-center gap-2 font-mono text-[11px] text-text-muted">

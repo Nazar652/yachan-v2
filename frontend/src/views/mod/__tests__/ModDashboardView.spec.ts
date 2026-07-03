@@ -141,6 +141,15 @@ describe('ModDashboardView', () => {
     expect(wrapper.text()).toContain('spam')
   })
 
+  it('shows an auto badge for auto-flagged reports', () => {
+    stubReports({
+      data: ref([{ id: 5, post_id: 7, board_id: 1, reason: 'Auto-flagged: toxicity', is_auto: true, is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+    })
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('auto')
+    expect(wrapper.text()).toContain('Auto-flagged: toxicity')
+  })
+
   it('shows a resolved label instead of a button for resolved reports', () => {
     stubReports({
       data: ref([{ id: 1, post_id: 42, board_id: 1, reason: 'spam', is_resolved: true, created_at: '2024-01-01T00:00:00' }]),

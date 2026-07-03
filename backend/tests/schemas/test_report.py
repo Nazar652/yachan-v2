@@ -21,9 +21,11 @@ def test_report_response_from_attributes():
         post_id=2,
         board_id=3,
         reason="spam",
+        is_auto=False,
         is_resolved=False,
         created_at=datetime(2026, 1, 1),
         ip_hash="secret",
     )
     response = ReportResponse.model_validate(obj)
     assert "ip_hash" not in response.model_dump()
+    assert response.is_auto is False

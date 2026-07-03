@@ -19,7 +19,7 @@ async def test_search_returns_post_slug_distance_tuples(session):
     session.execute.return_value = result
     repo = PostEmbeddingRepository(session=session)
 
-    matches = await repo.search([0.1, 0.2, 0.3], limit=10)
+    matches = await repo.search([0.1, 0.2, 0.3], "cats", limit=10)
 
     assert matches == [(post, "b", 0.12)]
     session.execute.assert_awaited_once()
@@ -31,7 +31,7 @@ async def test_search_filters_by_board(session):
     session.execute.return_value = result
     repo = PostEmbeddingRepository(session=session)
 
-    matches = await repo.search([0.1, 0.2, 0.3], board_id=2)
+    matches = await repo.search([0.1, 0.2, 0.3], "cats", board_id=2)
 
     assert matches == []
     session.execute.assert_awaited_once()

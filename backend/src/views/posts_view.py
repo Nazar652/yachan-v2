@@ -2,6 +2,7 @@ from fastapi import UploadFile
 from kink import inject
 from starlette.requests import Request
 
+from src.celery_app import celery
 from src.core.config import Settings
 from src.core.exceptions import RateLimitedError
 from src.core.storage import Storage
@@ -68,6 +69,8 @@ class PostsView:
         post = await self.post_service.create_reply(board_slug, thread_id, data, ip_hash)
         if post.body:
             embed_post.delay(post.id)  # type: ignore[attr-defined]  celery task
+            # fire-and-forget text moderation on the separate moderation worker
+            celery.send_task("moderate_text", args=[post.id, post.body], queue="moderation")
         attachments = await store_uploads(self.file_service, post.id, uploads)
 
         board = await self.board_service.get_board(board_slug)
@@ -85,6 +88,8 @@ class PostsView:
         post = await self.post_service.edit_post(board_slug, post_number, data, ip_hash)
         if post.body:
             embed_post.delay(post.id)  # type: ignore[attr-defined]  re-index edited text
+            # re-moderate: an edit could slip toxic/spam text in after a clean post
+            celery.send_task("moderate_text", args=[post.id, post.body], queue="moderation")
         response = PostResponse.model_validate(post)
         await self.events.publish(
             thread_channel(response.thread_id), POST_EDITED, response.model_dump(mode="json")

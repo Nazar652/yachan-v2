@@ -17,6 +17,13 @@ def embed_delay(monkeypatch):
     return delay
 
 
+@pytest.fixture(autouse=True)
+def moderate_send_task(monkeypatch):
+    send_task = MagicMock()
+    monkeypatch.setattr(posts_view_module.celery, "send_task", send_task)
+    return send_task
+
+
 def build(*, allowed=True):
     post_service = MagicMock()
     post_service.create_reply = AsyncMock(return_value=post_ns())
@@ -82,6 +89,22 @@ async def test_edit_post_enqueues_reembedding(embed_delay):
     view, _ = build()
     await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
     embed_delay.assert_called_once_with(10)
+
+
+async def test_create_reply_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans")
+    moderate_send_task.assert_called_once()
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
+    assert moderate_send_task.call_args.kwargs["queue"] == "moderation"
+
+
+async def test_edit_post_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
 
 
 async def test_create_reply_touches_board_presence():

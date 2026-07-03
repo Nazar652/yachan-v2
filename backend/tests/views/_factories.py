@@ -62,6 +62,7 @@ def report_ns(**overrides):
         post_id=10,
         board_id=1,
         reason="spam",
+        is_auto=False,
         is_resolved=False,
         created_at=_NOW,
         ip_hash="secret",

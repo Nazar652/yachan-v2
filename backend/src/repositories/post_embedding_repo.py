@@ -25,10 +25,22 @@ class PostEmbeddingRepository(BaseRepository):
         await self.session.execute(statement)
 
     async def search(
-        self, embedding: list[float], *, board_id: int | None = None, limit: int = 20
+        self,
+        embedding: list[float],
+        query_text: str,
+        *,
+        board_id: int | None = None,
+        limit: int = 20,
     ) -> list[tuple[Post, str, float]]:
         # pgvector's cosine_distance comparator is hidden behind SQLModel's Mapped type
         distance = col(PostEmbedding.embedding).cosine_distance(embedding).label("distance")  # type: ignore[attr-defined]
+        # lexical tier: the 'simple' config tokenises on whitespace/punctuation without
+        # stemming, so it matches exact words in any language (incl. cyrillic)
+        lexical = (
+            func.to_tsvector("simple", col(Post.body))
+            .op("@@")(func.plainto_tsquery("simple", query_text))
+            .label("lexical")
+        )
         query = (
             select(Post, col(Board.slug), distance)
             .join(PostEmbedding, col(Post.id) == col(PostEmbedding.post_id))
@@ -37,7 +49,8 @@ class PostEmbeddingRepository(BaseRepository):
         )
         if board_id is not None:
             query = query.where(col(Post.board_id) == board_id)
-        query = query.order_by(distance).limit(limit)
+        # literal keyword matches first, then by semantic closeness within each tier
+        query = query.order_by(lexical.desc(), distance).limit(limit)
 
         result = await self.session.execute(query)
         return [(post, slug, dist) for post, slug, dist in result.all()]

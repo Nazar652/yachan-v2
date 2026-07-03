@@ -192,6 +192,13 @@ function formatDate(iso: string): string {
       >
         <span class="font-mono text-text-muted">#{{ report.id }}</span>
         <span class="font-mono">post {{ report.post_id }}</span>
+        <span
+          v-if="report.is_auto"
+          class="rounded-full bg-gold/25 px-2 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide text-accent"
+          title="auto-flagged by text moderation"
+        >
+          🤖 auto
+        </span>
         <span class="flex-1 truncate">{{ report.reason ?? '(no reason)' }}</span>
         <span class="text-text-muted">{{ formatDate(report.created_at) }}</span>
         <span v-if="report.is_resolved" class="italic text-text-muted">resolved</span>

@@ -2436,6 +2436,10 @@
             ],
             "title": "Reason"
           },
+          "is_auto": {
+            "type": "boolean",
+            "title": "Is Auto"
+          },
           "is_resolved": {
             "type": "boolean",
             "title": "Is Resolved"
@@ -2452,6 +2456,7 @@
           "post_id",
           "board_id",
           "reason",
+          "is_auto",
           "is_resolved",
           "created_at"
         ],

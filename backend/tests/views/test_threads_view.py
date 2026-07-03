@@ -82,6 +82,13 @@ def embed_delay(monkeypatch):
     return delay
 
 
+@pytest.fixture(autouse=True)
+def moderate_send_task(monkeypatch):
+    send_task = MagicMock()
+    monkeypatch.setattr(threads_view_module.celery, "send_task", send_task)
+    return send_task
+
+
 async def test_list_threads_maps_responses():
     view, _ = build()
     result = await view.list_threads("b", request_ns())
@@ -227,6 +234,14 @@ async def test_create_thread_enqueues_embedding(embed_delay, monkeypatch):
     view, _ = build()
     await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), "tok", "ans")
     embed_delay.assert_called_once_with(10)
+
+
+async def test_create_thread_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), "tok", "ans")
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
+    assert moderate_send_task.call_args.kwargs["queue"] == "moderation"
 
 
 async def test_create_thread_rate_limited():

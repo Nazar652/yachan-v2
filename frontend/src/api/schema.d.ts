@@ -737,6 +737,8 @@ export interface components {
             board_id: number | null;
             /** Reason */
             reason: string | null;
+            /** Is Auto */
+            is_auto: boolean;
             /** Is Resolved */
             is_resolved: boolean;
             /**

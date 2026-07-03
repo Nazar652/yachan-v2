@@ -2,6 +2,7 @@ from kink import inject
 
 from src.celery_app import celery
 from src.services.moderation_service import ModerationService
+from src.services.report_service import ReportService
 from src.tasks.base import ScopedTask
 
 
@@ -13,3 +14,12 @@ async def apply_moderation_verdict(
     attachment_id: int, verdict: dict[str, object], moderation_service: ModerationService
 ) -> None:
     await moderation_service.apply(attachment_id, verdict)
+
+
+@celery.task(base=ScopedTask, name="apply_text_verdict", typing=False)
+@inject
+async def apply_text_verdict(
+    post_id: int, verdict: dict[str, object], report_service: ReportService
+) -> None:
+    # toxic/spam text is auto-reported (not hidden) for a human mod to decide
+    await report_service.apply_text_verdict(post_id, verdict)
