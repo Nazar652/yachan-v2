@@ -25,6 +25,7 @@ class BoardService:
                 title=data.title,
                 description=data.description,
                 bump_limit=data.bump_limit,
+                is_nsfw=data.is_nsfw,
             )
         )
         # each board owns a sequence that numbers its posts from 1

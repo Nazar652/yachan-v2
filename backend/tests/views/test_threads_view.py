@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import src.views.threads_view as threads_view_module
 import src.views.uploads as uploads_module
 from src.core.exceptions import RateLimitedError
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
@@ -10,6 +11,7 @@ from src.utils.clock import utcnow
 from src.views.threads_view import ThreadsView
 from tests.views._factories import (
     attachment_ns,
+    board_ns,
     post_ns,
     request_ns,
     settings_ns,
@@ -36,6 +38,9 @@ def build(*, allowed=True, replies=None, op_images=None):
         return_value=(thread_ns(), [post_ns(id=10)], {10: [attachment_ns()]})
     )
     thread_service.create_thread = AsyncMock(return_value=(thread_ns(), post_ns(id=10, is_op=True)))
+    board_service = MagicMock()
+    board_service.get_board = AsyncMock(return_value=board_ns())
+    board_service.list_boards = AsyncMock(return_value=[board_ns()])
     file_service = MagicMock()
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
@@ -50,6 +55,7 @@ def build(*, allowed=True, replies=None, op_images=None):
     online_tracker.touch = AsyncMock()
     view = ThreadsView(
         thread_service=thread_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
@@ -60,12 +66,27 @@ def build(*, allowed=True, replies=None, op_images=None):
     )
     return view, SimpleNamespace(
         thread_service=thread_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
         events=events,
         online_tracker=online_tracker,
     )
+
+
+@pytest.fixture(autouse=True)
+def embed_delay(monkeypatch):
+    delay = MagicMock()
+    monkeypatch.setattr(threads_view_module, "embed_post", SimpleNamespace(delay=delay))
+    return delay
+
+
+@pytest.fixture(autouse=True)
+def moderate_send_task(monkeypatch):
+    send_task = MagicMock()
+    monkeypatch.setattr(threads_view_module.celery, "send_task", send_task)
+    return send_task
 
 
 async def test_list_threads_maps_responses():
@@ -188,6 +209,7 @@ async def test_get_thread_marks_own_post_editable():
 
 async def test_create_thread_with_image_delegates(monkeypatch):
     monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=MagicMock()))
+    monkeypatch.setattr(uploads_module.celery, "send_task", MagicMock())
     view, mocks = build()
 
     result = await view.create_thread(
@@ -204,6 +226,22 @@ async def test_create_thread_with_image_delegates(monkeypatch):
     assert mocks.thread_service.create_thread.await_args.kwargs["has_image"] is True
     mocks.file_service.store_attachment.assert_awaited_once()
     mocks.events.publish.assert_awaited_once()
+
+
+async def test_create_thread_enqueues_embedding(embed_delay, monkeypatch):
+    monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=MagicMock()))
+    monkeypatch.setattr(uploads_module.celery, "send_task", MagicMock())
+    view, _ = build()
+    await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), "tok", "ans")
+    embed_delay.assert_called_once_with(10)
+
+
+async def test_create_thread_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), "tok", "ans")
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
+    assert moderate_send_task.call_args.kwargs["queue"] == "moderation"
 
 
 async def test_create_thread_rate_limited():

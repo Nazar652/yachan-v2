@@ -3,10 +3,25 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import src.views.posts_view as posts_view_module
 from src.core.exceptions import RateLimitedError
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView
-from tests.views._factories import attachment_ns, post_ns, request_ns, settings_ns
+from tests.views._factories import attachment_ns, board_ns, post_ns, request_ns, settings_ns
+
+
+@pytest.fixture(autouse=True)
+def embed_delay(monkeypatch):
+    delay = MagicMock()
+    monkeypatch.setattr(posts_view_module, "embed_post", SimpleNamespace(delay=delay))
+    return delay
+
+
+@pytest.fixture(autouse=True)
+def moderate_send_task(monkeypatch):
+    send_task = MagicMock()
+    monkeypatch.setattr(posts_view_module.celery, "send_task", send_task)
+    return send_task
 
 
 def build(*, allowed=True):
@@ -14,6 +29,8 @@ def build(*, allowed=True):
     post_service.create_reply = AsyncMock(return_value=post_ns())
     post_service.edit_post = AsyncMock(return_value=post_ns(is_edited=True))
     post_service.get_post_history = AsyncMock(return_value=None)
+    board_service = MagicMock()
+    board_service.get_board = AsyncMock(return_value=board_ns())
     file_service = MagicMock()
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
@@ -28,6 +45,7 @@ def build(*, allowed=True):
     online_tracker.touch = AsyncMock()
     view = PostsView(
         post_service=post_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
@@ -38,6 +56,7 @@ def build(*, allowed=True):
     )
     return view, SimpleNamespace(
         post_service=post_service,
+        board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
         rate_limiter=rate_limiter,
@@ -58,6 +77,34 @@ async def test_create_reply_text_only_delegates():
     mocks.post_service.create_reply.assert_awaited_once()
     mocks.file_service.store_attachment.assert_not_called()
     mocks.events.publish.assert_awaited_once()
+
+
+async def test_create_reply_enqueues_embedding(embed_delay):
+    view, _ = build()
+    await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans")
+    embed_delay.assert_called_once_with(10)
+
+
+async def test_edit_post_enqueues_reembedding(embed_delay):
+    view, _ = build()
+    await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
+    embed_delay.assert_called_once_with(10)
+
+
+async def test_create_reply_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), "tok", "ans")
+    moderate_send_task.assert_called_once()
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
+    assert moderate_send_task.call_args.kwargs["queue"] == "moderation"
+
+
+async def test_edit_post_enqueues_text_moderation(moderate_send_task):
+    view, _ = build()
+    await view.edit_post("b", 1, PostEditCreate(new_body="x"), request_ns())
+    assert moderate_send_task.call_args.args[0] == "moderate_text"
+    assert moderate_send_task.call_args.kwargs["args"] == [10, "hi"]
 
 
 async def test_create_reply_touches_board_presence():

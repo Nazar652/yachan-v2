@@ -53,7 +53,7 @@ describe('createBoard', () => {
     const board = { id: 1, slug: 'b', title: 'Random', description: null, bump_limit: 300, is_active: true, created_at: '' }
     postMock.mockResolvedValue({ data: board, error: undefined })
 
-    const payload = { slug: 'b', title: 'Random', bump_limit: 300 }
+    const payload = { slug: 'b', title: 'Random', bump_limit: 300, is_nsfw: false }
     await expect(createBoard(payload)).resolves.toBe(board)
     expect(postMock).toHaveBeenCalledWith('/api/mod/boards', { body: payload })
   })
@@ -62,7 +62,7 @@ describe('createBoard', () => {
     const error = { detail: 'admin privileges required' }
     postMock.mockResolvedValue({ data: undefined, error })
 
-    await expect(createBoard({ slug: 'b', title: 'x', bump_limit: 300 })).rejects.toMatchObject(error)
+    await expect(createBoard({ slug: 'b', title: 'x', bump_limit: 300, is_nsfw: false })).rejects.toMatchObject(error)
   })
 })
 

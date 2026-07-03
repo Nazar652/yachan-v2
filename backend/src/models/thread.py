@@ -18,3 +18,8 @@ class Thread(TimestampMixin, table=True):
     is_sticky: bool = Field(default=False)
     reply_count: int = Field(default=0)
     bump_at: datetime = Field(default_factory=utcnow, index=True, sa_type=TZDateTime)
+    # llm tl;dr of the thread; summary_post_count is the reply_count at the last
+    # summary, so the beat job knows how much the thread grew since
+    summary: str | None = Field(default=None)
+    summary_updated_at: datetime | None = Field(default=None, sa_type=TZDateTime)
+    summary_post_count: int = Field(default=0)

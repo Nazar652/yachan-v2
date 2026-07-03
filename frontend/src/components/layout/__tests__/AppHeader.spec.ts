@@ -16,13 +16,15 @@ vi.mock('@/composables/useBoards', () => ({
 }))
 
 // mutable route stub so each test can place the header on a different page
-const routeMock = { name: 'boards', params: {} as Record<string, string> }
+const routeMock = { name: 'boards', params: {} as Record<string, string>, query: {} as Record<string, string> }
+const pushMock = vi.fn()
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-router')>()
   return {
     ...actual,
     useRoute: () => routeMock,
+    useRouter: () => ({ push: pushMock }),
     RouterLink: { template: '<a><slot /></a>' },
   }
 })
@@ -33,6 +35,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   routeMock.name = 'boards'
   routeMock.params = {}
+  routeMock.query = {}
+  pushMock.mockReset()
 })
 
 describe('AppHeader', () => {
@@ -65,6 +69,19 @@ describe('AppHeader', () => {
     const tabs = wrapper.find('nav').findAll('a')
     expect(tabs.map((tab) => tab.text())).toEqual(['/b/', '/g/'])
     expect(tabs[1]!.classes()).toContain('bg-gold')
+  })
+
+  it('navigates to the search page on submit', async () => {
+    const wrapper = mount(AppHeader)
+    await wrapper.find('input[type="search"]').setValue('cats')
+    await wrapper.find('form').trigger('submit')
+    expect(pushMock).toHaveBeenCalledWith({ name: 'search', query: { q: 'cats' } })
+  })
+
+  it('does not navigate on an empty search', async () => {
+    const wrapper = mount(AppHeader)
+    await wrapper.find('form').trigger('submit')
+    expect(pushMock).not.toHaveBeenCalled()
   })
 
   it('toggles the theme from the header button', async () => {

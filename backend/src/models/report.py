@@ -13,5 +13,6 @@ class Report(TimestampMixin, table=True):
     board_id: int | None = Field(default=None, foreign_key="board.id")
     reason: str | None = Field(default=None, max_length=500)
     ip_hash: str = Field(max_length=64)  # reporter ip, never exposed
+    is_auto: bool = Field(default=False)  # raised by text moderation, not a human
     is_resolved: bool = Field(default=False)
     resolved_by: int | None = Field(default=None, foreign_key="mod_account.id")

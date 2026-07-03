@@ -22,12 +22,16 @@ const { previews, clear } = useRefPreviews((postNumber) => postByNumber.value.ge
 
 function imageThumbs(post: PostResponse): AttachmentResponse[] {
   return (post.attachments ?? []).filter(
-    (attachment) => attachment.media_type === 'image' || attachment.media_type === 'gif',
+    (attachment) =>
+      attachment.url !== null &&
+      (attachment.media_type === 'image' || attachment.media_type === 'gif'),
   )
 }
 
-function thumbSrc(attachment: AttachmentResponse): string {
-  return attachment.media_type === 'gif' ? attachment.url : (attachment.thumbnail_url ?? attachment.url)
+function thumbSrc(attachment: AttachmentResponse): string | undefined {
+  const source =
+    attachment.media_type === 'gif' ? attachment.url : (attachment.thumbnail_url ?? attachment.url)
+  return source ?? undefined
 }
 
 function formatDate(iso: string): string {

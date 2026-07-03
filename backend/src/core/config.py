@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     # public base url the serializer prepends to a key; nginx maps it to the
     # files volume (local) or proxies it to the object store (s3)
     storage_base_url: str = "/media"
+    # absolute base url the moderation service fetches media from (dev: the in-network
+    # minio endpoint; prod: the public bucket/cdn url). empty falls back to public_url
+    media_internal_url: str = ""
+
+    # onnx sentence-embedding model (multilingual MiniLM) used for semantic search;
+    # baked into the image at build, paths are relative to the backend working dir
+    embedding_model_path: str = "models/embedding.onnx"
+    embedding_tokenizer_path: str = "models/tokenizer.json"
+
+    # thread auto-summary via the gemini api; empty key disables the feature entirely
+    gemini_api_key: str = ""
+    summary_model: str = "gemini-3.1-flash-lite"
 
     s3_endpoint_url: str = ""
     s3_bucket: str = "yachan-media"

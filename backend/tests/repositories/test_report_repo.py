@@ -50,6 +50,13 @@ async def test_count_unresolved_for_post(session, make_result):
     assert await repo.count_unresolved_for_post(7) == 4
 
 
+async def test_count_auto_for_post(session, make_result):
+    session.execute.return_value = make_result(one=1)
+    repo = ReportRepository(session=session)
+
+    assert await repo.count_auto_for_post(7) == 1
+
+
 async def test_delete_by_post_ids(session):
     repo = ReportRepository(session=session)
 

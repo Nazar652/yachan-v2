@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search */
+        get: operations["search_api_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/threads/latest": {
         parameters: {
             query?: never;
@@ -391,7 +408,7 @@ export interface components {
             /** Original Name */
             original_name: string;
             /** Url */
-            url: string;
+            url?: string | null;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
             /** Mime Type */
@@ -404,6 +421,7 @@ export interface components {
             duration_seconds?: number | null;
             /** Size Bytes */
             size_bytes?: number | null;
+            moderation_status: components["schemas"]["ModerationStatus"];
         };
         /** BanCreate */
         BanCreate: {
@@ -447,6 +465,11 @@ export interface components {
              * @default 300
              */
             bump_limit: number;
+            /**
+             * Is Nsfw
+             * @default false
+             */
+            is_nsfw: boolean;
         };
         /** BoardReorder */
         BoardReorder: {
@@ -467,6 +490,8 @@ export interface components {
             bump_limit: number;
             /** Is Active */
             is_active: boolean;
+            /** Is Nsfw */
+            is_nsfw: boolean;
             /** Position */
             position: number;
             /**
@@ -496,6 +521,8 @@ export interface components {
             bump_limit?: number | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Is Nsfw */
+            is_nsfw?: boolean | null;
         };
         /** Body_create_reply_api__board_slug__threads__thread_id__posts_post */
         Body_create_reply_api__board_slug__threads__thread_id__posts_post: {
@@ -599,6 +626,11 @@ export interface components {
          * @enum {string}
          */
         ModRole: "admin" | "moderator";
+        /**
+         * ModerationStatus
+         * @enum {string}
+         */
+        ModerationStatus: "pending" | "safe" | "flagged" | "blocked";
         /** OpPostPreview */
         OpPostPreview: {
             /** Body */
@@ -705,6 +737,8 @@ export interface components {
             board_id: number | null;
             /** Reason */
             reason: string | null;
+            /** Is Auto */
+            is_auto: boolean;
             /** Is Resolved */
             is_resolved: boolean;
             /**
@@ -712,6 +746,30 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** SearchResultResponse */
+        SearchResultResponse: {
+            /** Board Slug */
+            board_slug: string;
+            /** Thread Id */
+            thread_id: number;
+            /** Post Number */
+            post_number: number;
+            /** Is Op */
+            is_op: boolean;
+            /** Name */
+            name: string;
+            /** Body */
+            body: string | null;
+            /** Body Html */
+            body_html: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Score */
+            score: number;
         };
         /** SiteStatsResponse */
         SiteStatsResponse: {
@@ -753,6 +811,10 @@ export interface components {
             op_post?: components["schemas"]["OpPostPreview"] | null;
             /** Last Replies */
             last_replies?: components["schemas"]["ReplyPreview"][];
+            /** Summary */
+            summary?: string | null;
+            /** Summary Updated At */
+            summary_updated_at?: string | null;
             /** Posts */
             posts?: components["schemas"]["PostResponse"][];
         };
@@ -855,6 +917,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                board?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResultResponse"][];
                 };
             };
             /** @description Validation Error */

@@ -1,5 +1,5 @@
 from kink import inject
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -66,6 +66,38 @@ class ThreadRepository(BaseRepository):
         await self.session.execute(
             update(Thread).where(col(Thread.id) == thread_id).values(is_sticky=sticky)
         )
+
+    async def set_summary(self, thread_id: int, summary: str, post_count: int) -> None:
+        await self.session.execute(
+            update(Thread)
+            .where(col(Thread.id) == thread_id)
+            .values(
+                summary=summary,
+                summary_post_count=post_count,
+                summary_updated_at=func.now(),
+            )
+        )
+
+    async def list_threads_needing_summary(
+        self, *, min_posts: int, growth: int, limit: int
+    ) -> list[Thread]:
+        # a thread earns its first summary once it passes min_posts, and a fresh one
+        # each time it grows by `growth` replies since the last summary
+        result = await self.session.execute(
+            select(Thread)
+            .where(
+                or_(
+                    and_(
+                        col(Thread.summary).is_(None),
+                        col(Thread.reply_count) >= min_posts,
+                    ),
+                    col(Thread.reply_count) - col(Thread.summary_post_count) >= growth,
+                )
+            )
+            .order_by(col(Thread.bump_at).desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
 
     async def delete(self, thread_id: int) -> None:
         await self.session.execute(delete(Thread).where(col(Thread.id) == thread_id))

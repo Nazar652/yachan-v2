@@ -72,6 +72,82 @@
         }
       }
     },
+    "/api/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search",
+        "operationId": "search_api_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Board"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResultResponse"
+                  },
+                  "title": "Response Search Api Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/latest": {
       "get": {
         "tags": [
@@ -1309,7 +1385,14 @@
             "title": "Original Name"
           },
           "url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Url"
           },
           "thumbnail_url": {
@@ -1370,6 +1453,9 @@
               }
             ],
             "title": "Size Bytes"
+          },
+          "moderation_status": {
+            "$ref": "#/components/schemas/ModerationStatus"
           }
         },
         "type": "object",
@@ -1377,8 +1463,8 @@
           "id",
           "media_type",
           "original_name",
-          "url",
-          "mime_type"
+          "mime_type",
+          "moderation_status"
         ],
         "title": "AttachmentResponse"
       },
@@ -1519,6 +1605,11 @@
             "exclusiveMinimum": 0.0,
             "title": "Bump Limit",
             "default": 300
+          },
+          "is_nsfw": {
+            "type": "boolean",
+            "title": "Is Nsfw",
+            "default": false
           }
         },
         "type": "object",
@@ -1578,6 +1669,10 @@
             "type": "boolean",
             "title": "Is Active"
           },
+          "is_nsfw": {
+            "type": "boolean",
+            "title": "Is Nsfw"
+          },
           "position": {
             "type": "integer",
             "title": "Position"
@@ -1596,6 +1691,7 @@
           "description",
           "bump_limit",
           "is_active",
+          "is_nsfw",
           "position",
           "created_at"
         ],
@@ -1678,6 +1774,17 @@
               }
             ],
             "title": "Is Active"
+          },
+          "is_nsfw": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Nsfw"
           }
         },
         "type": "object",
@@ -1959,6 +2066,16 @@
           "moderator"
         ],
         "title": "ModRole"
+      },
+      "ModerationStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "safe",
+          "flagged",
+          "blocked"
+        ],
+        "title": "ModerationStatus"
       },
       "OpPostPreview": {
         "properties": {
@@ -2319,6 +2436,10 @@
             ],
             "title": "Reason"
           },
+          "is_auto": {
+            "type": "boolean",
+            "title": "Is Auto"
+          },
           "is_resolved": {
             "type": "boolean",
             "title": "Is Resolved"
@@ -2335,10 +2456,79 @@
           "post_id",
           "board_id",
           "reason",
+          "is_auto",
           "is_resolved",
           "created_at"
         ],
         "title": "ReportResponse"
+      },
+      "SearchResultResponse": {
+        "properties": {
+          "board_slug": {
+            "type": "string",
+            "title": "Board Slug"
+          },
+          "thread_id": {
+            "type": "integer",
+            "title": "Thread Id"
+          },
+          "post_number": {
+            "type": "integer",
+            "title": "Post Number"
+          },
+          "is_op": {
+            "type": "boolean",
+            "title": "Is Op"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "body_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Html"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "board_slug",
+          "thread_id",
+          "post_number",
+          "is_op",
+          "name",
+          "body",
+          "body_html",
+          "created_at",
+          "score"
+        ],
+        "title": "SearchResultResponse"
       },
       "SiteStatsResponse": {
         "properties": {
@@ -2435,6 +2625,29 @@
             },
             "type": "array",
             "title": "Last Replies"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "summary_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Updated At"
           },
           "posts": {
             "items": {

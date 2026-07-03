@@ -30,6 +30,8 @@ describe('WS_EVENT', () => {
       NEW_THREAD: 'new_thread',
       THREAD_UPDATED: 'thread_updated',
       THREAD_DELETED: 'thread_deleted',
+      ATTACHMENT_MODERATED: 'attachment_moderated',
+      THREAD_SUMMARIZED: 'thread_summarized',
     })
   })
 })

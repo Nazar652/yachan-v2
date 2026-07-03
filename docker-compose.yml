@@ -2,9 +2,10 @@ x-app-env: &app-env
   PYTHONUNBUFFERED: "1"
   DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-yachan}:${POSTGRES_PASSWORD:-yachan}@postgres:5432/${POSTGRES_DB:-yachan}
   REDIS_URL: redis://redis:6379/0
+  MEDIA_INTERNAL_URL: http://minio:9000/${S3_BUCKET:-yachan-media}
   JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
   IP_HASH_SALT: ${IP_HASH_SALT:-dev-ip-salt-change-me}
-  # object storage: the stack stores uploads in minio (s3-compatible)
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   STORAGE_BACKEND: s3
   S3_ENDPOINT_URL: http://minio:9000
   S3_BUCKET: ${S3_BUCKET:-yachan-media}
@@ -13,7 +14,7 @@ x-app-env: &app-env
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: yachan-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-yachan}
@@ -121,12 +122,29 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: yachan-celery-worker
-    command: celery -A src.celery_app.celery worker --loglevel=info
+    command: celery -A src.celery_app.celery worker -Q celery,moderation_results --loglevel=info
     environment:
       <<: *app-env
     depends_on:
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      createbucket:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # the moderation microservice: separate image and deps, no db/jwt. consumes the
+  # `moderation` queue, fetches media by url, classifies, replies on `moderation_results`.
+  # shares only redis with yachan; own manifest set in k3s.
+  moderation-worker:
+    build:
+      context: ./moderation
+      dockerfile: Dockerfile
+    container_name: yachan-moderation-worker
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
       redis:
         condition: service_healthy
       createbucket:

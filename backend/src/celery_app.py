@@ -9,7 +9,13 @@ celery = Celery(
     "yachan",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["src.tasks.attachments", "src.tasks.bans"],
+    include=[
+        "src.tasks.attachments",
+        "src.tasks.bans",
+        "src.tasks.moderation",
+        "src.tasks.search",
+        "src.tasks.summary",
+    ],
 )
 celery.conf.update(
     task_serializer="json",
@@ -18,6 +24,7 @@ celery.conf.update(
     timezone="UTC",
     beat_schedule={
         "expire-bans": {"task": "expire_bans", "schedule": 300.0},
+        "summarize-stale-threads": {"task": "summarize_stale_threads", "schedule": 300.0},
     },
 )
 

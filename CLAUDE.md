@@ -1,8 +1,8 @@
 # yachan-v2
 
 Anonymous imageboard. **Async FastAPI backend** (strict layered architecture,
-request-scoped DI via kink) + **Vue 3 SPA frontend**, backed by Postgres, Redis
-and Celery, all runnable via Docker Compose.
+request-scoped DI via kink) + **Vue 3 SPA frontend** + a stateless **moderation
+microservice**, backed by Postgres, Redis and Celery, all runnable via Docker Compose.
 
 This root file covers project-wide conventions and Docker/infra. For area detail
 see the contextual guides (Claude Code auto-loads them when you work in that dir):
@@ -11,6 +11,8 @@ see the contextual guides (Claude Code auto-loads them when you work in that dir
   model, technical decisions, CLI, backend testing.
 - **`frontend/CLAUDE.md`** — Vue/Vite stack, API layer, composables, realtime,
   mod panel, frontend testing.
+- **`moderation/CLAUDE.md`** — the stateless AI moderation microservice (separate
+  image/deps, broker-only comms; contract in `docs/moderation-contract.md`).
 
 ## Conventions (apply everywhere)
 
@@ -27,20 +29,23 @@ see the contextual guides (Claude Code auto-loads them when you work in that dir
   Pick the target by what you touched:
   - `make lint-backend` — ruff (`src/`) + pyright + pytest. Backend-only changes.
   - `make lint-frontend` — `npm run lint` + `test:unit` + `type-check`. Frontend-only changes.
-  - `make lint-all` — both of the above. Use when a change spans backend and frontend.
+  - `make lint-moderation` — ruff + pyright + pytest for `moderation/`. Moderation-service changes.
+  - `make lint-all` — all three. Use when a change spans more than one area.
 
 ## Top-level layout
 
 ```
 backend/         FastAPI app, Celery, alembic migrations, admin cli  (see backend/CLAUDE.md)
 frontend/        Vue 3 SPA + its nginx edge config                   (see frontend/CLAUDE.md)
+moderation/      stateless AI moderation microservice (own image/deps)  (see moderation/CLAUDE.md)
+docs/moderation-contract.md   the yachan <-> moderation message contract (queues, task names, json)
 frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media (-> minio)  [local/base]
 frontend/nginx.prod.conf  prod edge config, no /media proxy (media served from R2)
-docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, celery-worker, celery-beat, nginx
+docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, celery-worker, celery-beat, moderation-worker, nginx
 docker-compose.prod.yml   prod override: Neon + R2, drops postgres/minio/createbucket, nginx :80
 .env / .env.example   compose ${VAR} interpolation (gitignored / template)
 .env.prod.example     template for the prod server .env (Neon + R2 secrets)
-Makefile              `make lint-backend` / `lint-frontend` / `lint-all`, `make openapi`
+Makefile              `make lint-backend` / `lint-frontend` / `lint-moderation` / `lint-all`, `make openapi`
 ```
 
 ## Dependencies
@@ -57,6 +62,10 @@ Add deps via the tool, never by hand-editing manifests.
   poetry -C backend add <pkg>
   ```
 - **Frontend:** `cd frontend && npm install <pkg> --legacy-peer-deps`.
+- **Moderation:** its own **in-project venv** (`moderation/.venv`, via
+  `moderation/poetry.toml`): `cd moderation && poetry add <pkg>`. Deliberately
+  isolated from the root `.venv` so the service's heavy ML deps never leak into the
+  backend.
 
 ## Docker / infra
 

@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "moderation"
+version = "0.1.0"
+description = "yachan stateless moderation microservice"
+authors = ["Nazarii"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+celery = { extras = ["redis"], version = "^5.4" }
+httpx = "^0.28"
+pydantic-settings = "^2.5"
+onnxruntime = "^1.27.0"
+pillow = "^12.3.0"
+numpy = "^2.5.0"
+tokenizers = "^0.23.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+ruff = "^0.8"
+pyright = "^1.1"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pyright]
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

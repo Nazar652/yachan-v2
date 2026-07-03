@@ -120,10 +120,23 @@ function isVideo(attachment: AttachmentResponse): boolean {
   return attachment.media_type === 'video'
 }
 
-function imageSrc(attachment: AttachmentResponse): string {
-  return attachment.media_type === 'gif'
-    ? attachment.url
-    : (attachment.thumbnail_url ?? attachment.url)
+function imageSrc(attachment: AttachmentResponse): string | undefined {
+  const source =
+    attachment.media_type === 'gif'
+      ? attachment.url
+      : (attachment.thumbnail_url ?? attachment.url)
+  return source ?? undefined
+}
+
+// a hidden attachment comes back from the api with a null url; show why
+function isHidden(attachment: AttachmentResponse): boolean {
+  return attachment.url === null
+}
+
+function hiddenLabel(attachment: AttachmentResponse): string {
+  return attachment.moderation_status === 'blocked'
+    ? 'Attachment removed by moderation'
+    : 'Hidden — 18+ content'
 }
 </script>
 
@@ -193,15 +206,21 @@ function imageSrc(attachment: AttachmentResponse): string {
       class="flex flex-wrap gap-3 mb-3"
     >
       <template v-for="att in post.attachments" :key="att.id">
+        <div
+          v-if="isHidden(att)"
+          class="flex h-24 min-w-40 max-w-full items-center justify-center rounded-field border border-dashed border-border bg-surface-2 px-4 text-center text-xs text-text-muted"
+        >
+          {{ hiddenLabel(att) }}
+        </div>
         <video
-          v-if="isVideo(att)"
-          :src="att.url"
+          v-else-if="isVideo(att)"
+          :src="att.url ?? undefined"
           :title="`${att.original_name} (${formatSize(att.size_bytes)})`"
           controls
           preload="metadata"
           class="max-h-64 max-w-full rounded-field border border-border"
         />
-        <a v-else :href="att.url" target="_blank" rel="noopener" class="block cursor-pointer">
+        <a v-else :href="att.url ?? undefined" target="_blank" rel="noopener" class="block cursor-pointer">
           <img
             v-if="isImage(att)"
             :src="imageSrc(att)"

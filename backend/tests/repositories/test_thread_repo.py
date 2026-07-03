@@ -70,6 +70,21 @@ async def test_set_sticky(session):
     session.execute.assert_awaited_once()
 
 
+async def test_set_summary(session):
+    repo = ThreadRepository(session=session)
+    await repo.set_summary(1, "a tl;dr", 42)
+    session.execute.assert_awaited_once()
+
+
+async def test_list_threads_needing_summary(session, make_result):
+    threads = [object(), object()]
+    session.execute.return_value = make_result(all_=threads)
+    repo = ThreadRepository(session=session)
+
+    assert await repo.list_threads_needing_summary(min_posts=10, growth=25, limit=20) == threads
+    session.execute.assert_awaited_once()
+
+
 async def test_delete(session):
     repo = ThreadRepository(session=session)
     await repo.delete(1)

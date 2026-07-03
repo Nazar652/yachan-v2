@@ -11,6 +11,14 @@ def test_board_create_defaults_bump_limit():
     assert board.bump_limit == 300
 
 
+def test_board_create_defaults_is_nsfw_false():
+    assert BoardCreate(slug="b", title="Random").is_nsfw is False
+
+
+def test_board_create_accepts_is_nsfw():
+    assert BoardCreate(slug="b", title="Random", is_nsfw=True).is_nsfw is True
+
+
 @pytest.mark.parametrize("bad_slug", ["", "B", "has space", "a" * 21, "a-b"])
 def test_board_create_rejects_bad_slug(bad_slug):
     with pytest.raises(ValidationError):
@@ -32,7 +40,7 @@ def test_board_update_allows_clearing_description_with_null():
     assert update.model_dump(exclude_unset=True) == {"description": None}
 
 
-@pytest.mark.parametrize("field", ["title", "bump_limit", "is_active"])
+@pytest.mark.parametrize("field", ["title", "bump_limit", "is_active", "is_nsfw"])
 def test_board_update_rejects_explicit_null_on_required_fields(field):
     with pytest.raises(ValidationError):
         BoardUpdate(**{field: None})
@@ -46,12 +54,14 @@ def test_board_response_from_attributes():
         description=None,
         bump_limit=300,
         is_active=True,
+        is_nsfw=True,
         position=2,
         created_at=datetime(2026, 1, 1),
     )
     response = BoardResponse.model_validate(obj)
     assert response.slug == "b"
     assert response.position == 2
+    assert response.is_nsfw is True
 
 
 def test_board_reorder_rejects_empty_slugs():

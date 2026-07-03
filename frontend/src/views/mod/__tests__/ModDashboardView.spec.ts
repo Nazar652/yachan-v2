@@ -81,7 +81,7 @@ function clickButton(wrapper: VueWrapper, label: string) {
 }
 
 function board(overrides: Record<string, unknown> = {}) {
-  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, position: 0, created_at: '', ...overrides }
+  return { id: 1, slug: 'a', title: 'Anime', description: 'desc', bump_limit: 300, is_active: true, is_nsfw: false, position: 0, created_at: '', ...overrides }
 }
 
 beforeEach(() => {
@@ -139,6 +139,15 @@ describe('ModDashboardView', () => {
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('post 42')
     expect(wrapper.text()).toContain('spam')
+  })
+
+  it('shows an auto badge for auto-flagged reports', () => {
+    stubReports({
+      data: ref([{ id: 5, post_id: 7, board_id: 1, reason: 'Auto-flagged: toxicity', is_auto: true, is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+    })
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('auto')
+    expect(wrapper.text()).toContain('Auto-flagged: toxicity')
   })
 
   it('shows a resolved label instead of a button for resolved reports', () => {
@@ -223,6 +232,7 @@ describe('ModDashboardView', () => {
       title: 'Random',
       description: null,
       bump_limit: 300,
+      is_nsfw: false,
     })
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['boards'] })
   })
@@ -243,6 +253,7 @@ describe('ModDashboardView', () => {
       description: 'desc',
       bump_limit: 300,
       is_active: true,
+      is_nsfw: false,
     })
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['boards'] })
   })

@@ -9,6 +9,7 @@ class BoardCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
     bump_limit: int = Field(default=300, gt=0)
+    is_nsfw: bool = False
 
 
 class BoardUpdate(BaseModel):
@@ -18,6 +19,7 @@ class BoardUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
     bump_limit: int | None = Field(default=None, gt=0)
     is_active: bool | None = None
+    is_nsfw: bool | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -26,7 +28,7 @@ class BoardUpdate(BaseModel):
         # required field is meaningless (omit the field to leave it unchanged),
         # and applying it would blow up on flush against a NOT NULL column.
         if isinstance(data, dict):
-            for field in ("title", "bump_limit", "is_active"):
+            for field in ("title", "bump_limit", "is_active", "is_nsfw"):
                 if field in data and data[field] is None:
                     raise ValueError(f"{field} may not be null")
         return data
@@ -47,5 +49,6 @@ class BoardResponse(BaseModel):
     description: str | None
     bump_limit: int
     is_active: bool
+    is_nsfw: bool
     position: int
     created_at: datetime

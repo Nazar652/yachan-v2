@@ -3,7 +3,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from src.models.attachment import Attachment, MediaType
+from src.models.attachment import Attachment, MediaType, ModerationStatus
 from src.models.post import Post
 
 from .base import BaseRepository
@@ -124,5 +124,21 @@ class AttachmentRepository(BaseRepository):
                 width=width,
                 height=height,
                 duration_seconds=duration_seconds,
+            )
+        )
+
+    async def set_moderation(
+        self,
+        attachment_id: int,
+        *,
+        status: ModerationStatus,
+        nsfw_score: float | None,
+    ) -> None:
+        await self.session.execute(
+            update(Attachment)
+            .where(col(Attachment.id) == attachment_id)
+            .values(
+                moderation_status=status,
+                nsfw_score=nsfw_score,
             )
         )

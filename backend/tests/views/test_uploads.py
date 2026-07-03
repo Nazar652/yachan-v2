@@ -42,11 +42,22 @@ def test_contains_image_false_for_video_only():
     assert contains_image(uploads) is False
 
 
-async def test_store_uploads_stores_and_enqueues(monkeypatch):
+def _patch_enqueue(monkeypatch, media_internal_url=""):
     delay = MagicMock()
     monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=delay))
+    send_task = MagicMock()
+    monkeypatch.setattr(uploads_module.celery, "send_task", send_task)
+    monkeypatch.setattr(
+        uploads_module, "get_settings", lambda: SimpleNamespace(media_internal_url=media_internal_url)
+    )
+    return delay, send_task
+
+
+async def test_store_uploads_stores_and_enqueues(monkeypatch):
+    delay, send_task = _patch_enqueue(monkeypatch)
     file_service = MagicMock()
-    file_service.store_attachment = AsyncMock(return_value=attachment_ns(id=7))
+    file_service.store_attachment = AsyncMock(return_value=attachment_ns(id=7, file_path="abc.png"))
+    file_service.storage.public_url = MagicMock(return_value="http://media/abc.png")
 
     uploads = [Upload("c.png", b"x", "image/png", MediaType.IMAGE)]
     stored = await store_uploads(file_service, post_id=10, uploads=uploads)
@@ -54,3 +65,26 @@ async def test_store_uploads_stores_and_enqueues(monkeypatch):
     assert len(stored) == 1
     file_service.store_attachment.assert_awaited_once_with(10, "c.png", b"x", "image/png")
     delay.assert_called_once_with(7)
+    # no media_internal_url -> the browser public url is used
+    file_service.storage.public_url.assert_called_once_with("abc.png")
+    send_task.assert_called_once()
+    assert send_task.call_args.args[0] == "moderate_image"
+    assert send_task.call_args.kwargs["queue"] == "moderation"
+    assert send_task.call_args.kwargs["args"] == [7, "http://media/abc.png", "nsfw"]
+
+
+async def test_store_uploads_builds_internal_media_url(monkeypatch):
+    _, send_task = _patch_enqueue(monkeypatch, media_internal_url="http://minio:9000/yachan-media")
+    file_service = MagicMock()
+    file_service.store_attachment = AsyncMock(return_value=attachment_ns(id=7, file_path="abc.png"))
+
+    uploads = [Upload("c.png", b"x", "image/png", MediaType.IMAGE)]
+    await store_uploads(file_service, post_id=10, uploads=uploads)
+
+    # media_internal_url set -> service-reachable absolute url, public_url not used
+    file_service.storage.public_url.assert_not_called()
+    assert send_task.call_args.kwargs["args"] == [
+        7,
+        "http://minio:9000/yachan-media/abc.png",
+        "nsfw",
+    ]

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useBoards } from '@/composables/useBoards'
 import { useTheme } from '@/composables/useTheme'
@@ -8,8 +8,16 @@ import BarleyEar from '@/components/brand/BarleyEar.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const { data: boards } = useBoards()
 const { theme, toggle } = useTheme()
+
+const searchTerm = ref(typeof route.query.q === 'string' ? route.query.q : '')
+
+function onSearch() {
+  const trimmed = searchTerm.value.trim()
+  if (trimmed) router.push({ name: 'search', query: { q: trimmed } })
+}
 
 // show board tabs only on board / thread pages, not on home or mod pages
 const isOnBoardPage = computed(
@@ -50,7 +58,17 @@ const isOnBoardPage = computed(
         </RouterLink>
       </nav>
 
-      <div class="ml-auto flex shrink-0 items-center gap-2">
+      <form class="ml-auto flex shrink-0 items-center" @submit.prevent="onSearch">
+        <input
+          v-model="searchTerm"
+          type="search"
+          placeholder="Search…"
+          aria-label="Search posts"
+          class="h-[34px] w-32 rounded-field border border-border bg-surface px-3 text-sm text-text outline-none transition-colors placeholder:text-text-muted focus:w-44 focus:border-gold focus:ring-[3px] focus:ring-gold/25 sm:w-40 sm:focus:w-56"
+        />
+      </form>
+
+      <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
           class="grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-field border border-border bg-surface text-text transition-colors hover:border-gold hover:bg-surface-3"
