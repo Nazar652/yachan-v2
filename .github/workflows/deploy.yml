@@ -30,12 +30,13 @@ jobs:
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
           SENTRY_DSN: ${{ secrets.BACKEND_SENTRY_DSN }}
           VITE_SENTRY_DSN: ${{ secrets.FRONTEND_SENTRY_DSN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: DATABASE_URL,JWT_SECRET,IP_HASH_SALT,S3_ENDPOINT_URL,S3_ACCESS_KEY,S3_SECRET_KEY,S3_BUCKET,STORAGE_BASE_URL,CORS_ORIGINS,SENTRY_DSN,VITE_SENTRY_DSN
+          envs: DATABASE_URL,JWT_SECRET,IP_HASH_SALT,S3_ENDPOINT_URL,S3_ACCESS_KEY,S3_SECRET_KEY,S3_BUCKET,STORAGE_BASE_URL,CORS_ORIGINS,SENTRY_DSN,VITE_SENTRY_DSN,GEMINI_API_KEY
           script: |
             set -e
             cd ~/yachan-v2
@@ -54,6 +55,7 @@ jobs:
             CORS_ORIGINS=${CORS_ORIGINS}
             SENTRY_DSN=${SENTRY_DSN}
             VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+            GEMINI_API_KEY=${GEMINI_API_KEY}
             EOF
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
               redis migrate backend celery-worker celery-beat nginx
