@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CatalogView from '@/views/CatalogView.vue'
 import { useThreads } from '@/composables/useThreads'
 import { useSiteStats } from '@/composables/useSiteStats'
+import { useBoards } from '@/composables/useBoards'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
@@ -27,7 +28,7 @@ vi.mock('@/composables/useBoardWs', () => ({
 }))
 
 vi.mock('@/composables/useBoards', () => ({
-  useBoards: () => ({ data: ref([{ id: 1, slug: 'b', title: 'Random', description: 'random board' }]) }),
+  useBoards: vi.fn(),
 }))
 
 vi.mock('@/composables/useSiteStats', () => ({
@@ -42,6 +43,7 @@ vi.mock('@/composables/useCatalogModeration', () => ({
 
 const useThreadsMock = vi.mocked(useThreads)
 const useSiteStatsMock = vi.mocked(useSiteStats)
+const useBoardsMock = vi.mocked(useBoards)
 
 function stubThreads(state: Record<string, unknown>) {
   useThreadsMock.mockReturnValue(state as ReturnType<typeof useThreads>)
@@ -49,6 +51,10 @@ function stubThreads(state: Record<string, unknown>) {
 
 function stubStats(data: Ref<unknown>) {
   useSiteStatsMock.mockReturnValue({ data } as ReturnType<typeof useSiteStats>)
+}
+
+function stubBoards(boards: Array<Record<string, unknown>>) {
+  useBoardsMock.mockReturnValue({ data: ref(boards) } as ReturnType<typeof useBoards>)
 }
 
 function makeThread(overrides: Record<string, unknown> = {}) {
@@ -78,6 +84,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setLockedMock.mockReset()
   setStickyMock.mockReset()
+  stubBoards([{ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: false }])
 })
 
 describe('CatalogView', () => {
@@ -122,6 +129,19 @@ describe('CatalogView', () => {
     expect(wrapper.text()).toContain('random board')
     expect(wrapper.text()).toContain('58')
     expect(wrapper.text()).toContain('● 18 online now')
+  })
+
+  it('shows an 18+ badge in the banner for nsfw boards', () => {
+    stubBoards([{ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: true }])
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('18+')
+  })
+
+  it('hides the 18+ badge for sfw boards', () => {
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('18+')
   })
 
   it('renders the pager when the board has more than one page', () => {

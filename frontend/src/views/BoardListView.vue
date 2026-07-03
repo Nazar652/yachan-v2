@@ -75,6 +75,11 @@ const statsBySlug = computed(
           <div class="flex items-baseline gap-2.5">
             <span class="font-mono font-bold text-gold-2">/{{ board.slug }}/</span>
             <span class="font-display text-lg font-bold text-text">{{ board.title }}</span>
+            <span
+              v-if="board.is_nsfw"
+              class="rounded bg-danger/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-danger"
+              >18+</span
+            >
           </div>
           <p v-if="board.description" class="mt-1.5 text-[13.5px] text-text-muted">
             {{ board.description }}

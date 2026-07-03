@@ -83,7 +83,14 @@ async function onToggleSticky(thread: ThreadResponse) {
       <div class="flex min-w-0 items-center gap-4">
         <span class="font-mono text-[26px] font-bold text-gold-2">/{{ slug }}/</span>
         <div class="min-w-0">
-          <div v-if="board" class="font-display text-lg font-bold">{{ board.title }}</div>
+          <div v-if="board" class="flex items-center gap-2">
+            <span class="font-display text-lg font-bold">{{ board.title }}</span>
+            <span
+              v-if="board.is_nsfw"
+              class="rounded bg-danger/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-danger"
+              >18+</span
+            >
+          </div>
           <div v-if="board?.description" class="text-[15px] text-text-muted">
             {{ board.description }}
           </div>
