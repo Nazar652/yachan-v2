@@ -23,14 +23,11 @@ const { data: thread, isPending, isError } = useThread(
   toRef(threadId),
 )
 
-// stream live new_post / post_edited events into the thread cache
 useThreadWs(slug, threadId)
 
 const auth = useAuthStore()
 const moderation = useModeration(slug, threadId)
 
-// reverse map post_number -> numbers of posts that reference it, derived from the
-// thread's posts so it stays in sync with live new_post / post_edited events
 const backlinksByPostNumber = computed(() => {
   const map = new Map<number, number[]>()
   for (const post of thread.value?.posts ?? []) {

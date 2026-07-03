@@ -18,6 +18,7 @@ const shownPages = computed(() => {
 
 function go(page: number) {
   const clamped = Math.min(props.total, Math.max(1, page))
+
   if (clamped !== props.page) emit('update:page', clamped)
 }
 </script>

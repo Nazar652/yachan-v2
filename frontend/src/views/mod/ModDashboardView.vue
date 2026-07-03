@@ -25,7 +25,6 @@ function errorDetail(error: unknown): string | null {
   return typeof detail === 'string' ? detail : null
 }
 
-// --- reports ---
 const resolvingId = ref<number | null>(null)
 
 async function onResolve(id: number) {
@@ -38,7 +37,6 @@ async function onResolve(id: number) {
   }
 }
 
-// --- create board (admin only) ---
 const newBoard = reactive({ slug: '', title: '', description: '', bump_limit: '300', is_nsfw: false })
 const isCreating = ref(false)
 const createError = ref<string | null>(null)
@@ -46,6 +44,7 @@ const createError = ref<string | null>(null)
 async function onCreate() {
   createError.value = null
   isCreating.value = true
+
   try {
     await createBoard({
       slug: newBoard.slug,
@@ -67,7 +66,6 @@ async function onCreate() {
   }
 }
 
-// --- edit board (admin only) ---
 const editingSlug = ref<string | null>(null)
 const editForm = reactive({ title: '', description: '', bump_limit: '300', is_active: true, is_nsfw: false })
 const isSaving = ref(false)
@@ -90,6 +88,7 @@ function cancelEdit() {
 async function onSave(slug: string) {
   editError.value = null
   isSaving.value = true
+
   try {
     await updateBoard(slug, {
       title: editForm.title,
@@ -107,10 +106,9 @@ async function onSave(slug: string) {
   }
 }
 
-// --- reorder boards (admin only, native drag and drop) ---
 const { reorder } = useBoardReorder()
-// a local, reorderable copy of the server list; reset whenever the query refetches
 const orderedBoards = ref<BoardResponse[]>([])
+// local, reorderable copy of the server list; reset whenever the query refetches
 watch(
   boards,
   (value) => {
@@ -140,10 +138,11 @@ async function onDrop(index: number) {
   const from = dragIndex.value
   onDragEnd()
   if (from === null || from === index) return
-  // optimistic local reorder; the server order comes back on the next refetch
+
   const next = moveItem(orderedBoards.value, from, index)
   orderedBoards.value = next
   reorderError.value = null
+  // optimistic local reorder; the server order comes back on the next refetch
   try {
     await reorder(next.map((item) => item.slug))
   } catch (error: unknown) {
@@ -214,7 +213,6 @@ function formatDate(iso: string): string {
       </li>
     </ul>
 
-    <!-- board management — admin only (create + edit are admin-restricted) -->
     <section v-if="auth.isAdmin" class="mt-10">
       <div class="mb-3 flex items-center gap-3">
         <h2 class="text-lg font-extrabold">Boards</h2>

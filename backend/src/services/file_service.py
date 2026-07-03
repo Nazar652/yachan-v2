@@ -36,11 +36,10 @@ class FileService:
         if len(content) > MAX_UPLOAD_BYTES:
             raise FileTooLargeError(filename)
 
-        # usedforsecurity=False: md5 is only a content fingerprint for dedup.
         # hashing up to 25 MiB is cpu-bound, so run it off the event loop
         md5 = await anyio.to_thread.run_sync(self._md5, content)
+
         existing = await self.attachment_repo.get_by_md5(md5)
-        # identical bytes are stored once and reused across posts
         key = existing.file_path if existing is not None else f"{md5}{extension}"
         if existing is None:
             await self.storage.save(key, content)
@@ -63,6 +62,7 @@ class FileService:
             return
 
         data = await self.storage.read(attachment.file_path)
+
         with Image.open(io.BytesIO(data)) as image:
             # bake the exif orientation into the pixels so the thumbnail (which
             # drops exif) is not displayed sideways, and dimensions match display

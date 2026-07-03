@@ -20,6 +20,7 @@ export function appendPostToThread(
   post: PostResponse,
 ): ThreadDetailResponse | undefined {
   if (!thread) return thread
+
   const posts = thread.posts ?? []
   const existing = posts.find((candidate) => candidate.id === post.id)
   if (existing) {
@@ -33,6 +34,7 @@ export function appendPostToThread(
     }
     return thread
   }
+
   return { ...thread, reply_count: thread.reply_count + 1, posts: [...posts, post] }
 }
 

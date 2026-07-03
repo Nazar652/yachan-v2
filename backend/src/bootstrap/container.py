@@ -53,7 +53,6 @@ def setup_di() -> None:
     settings = get_settings()
     di[Settings] = settings
 
-    # stateless singletons, shared across all requests
     di[MarkupRenderer] = MarkupRenderer()
     di[Storage] = build_storage(settings)
     redis_instance = get_redis()
@@ -85,7 +84,6 @@ def setup_di() -> None:
     di.factories[ReportRepository] = lambda container: resolve_scoped(ReportRepository, ReportRepository)
     di.factories[ModAccountRepository] = lambda container: resolve_scoped(ModAccountRepository, ModAccountRepository)
 
-    # services hold all business logic, scoped per request like repositories
     di.factories[MarkupService] = lambda container: resolve_scoped(MarkupService, MarkupService)
     di.factories[BanService] = lambda container: resolve_scoped(BanService, BanService)
     di.factories[BoardService] = lambda container: resolve_scoped(BoardService, BoardService)
@@ -102,7 +100,6 @@ def setup_di() -> None:
     di.factories[SearchService] = lambda container: resolve_scoped(SearchService, SearchService)
     di.factories[SummaryService] = lambda container: resolve_scoped(SummaryService, SummaryService)
 
-    # views
     di.factories[BoardsView] = lambda container: resolve_scoped(BoardsView, BoardsView)
     di.factories[CaptchaView] = lambda container: resolve_scoped(CaptchaView, CaptchaView)
     di.factories[ModView] = lambda container: resolve_scoped(ModView, ModView)

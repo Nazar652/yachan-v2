@@ -30,24 +30,23 @@ function statusFrom(source: unknown): number {
   return 0
 }
 
-// the user-facing message for a failed request: the api detail when present,
-// otherwise the given fallback.
 export function errorDetail(error: unknown, fallback: string): string {
   return error instanceof ApiError && error.detail ? error.detail : fallback
 }
 
-// fastapi error bodies are `{ detail: string }` or, on validation errors,
-// `{ detail: [{ msg, ... }] }`; fall back to null when neither shape matches.
 function extractDetail(error: unknown): string | null {
   if (typeof error === 'string') return error || null
   if (!error || typeof error !== 'object') return null
+
   const detail = (error as { detail?: unknown }).detail
   if (typeof detail === 'string') return detail || null
+
   if (Array.isArray(detail)) {
     const messages = detail
       .map((item) => (item && typeof item === 'object' ? (item as { msg?: unknown }).msg : null))
       .filter((msg): msg is string => typeof msg === 'string')
     return messages.length ? messages.join('; ') : null
   }
+
   return null
 }

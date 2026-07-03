@@ -96,6 +96,7 @@ class ThreadService:
 
         posts = await self.post_repo.get_thread_posts(thread_id)
         post_ids = [post.id for post in posts]
+
         attachments_by_post = await self.attachment_repo.list_by_post_ids(post_ids)
         return thread, posts, attachments_by_post
 
@@ -122,6 +123,7 @@ class ThreadService:
         await self.thread_repo.flush()
 
         await self._delete_orphaned_blobs(attachments)
+
         return thread
 
     async def _delete_orphaned_blobs(self, attachments: list[Attachment]) -> None:
@@ -130,6 +132,7 @@ class ThreadService:
         thumbnails_by_path: dict[str, str | None] = {}
         for attachment in attachments:
             thumbnails_by_path.setdefault(attachment.file_path, attachment.thumbnail_path)
+
         for file_path, thumbnail_path in thumbnails_by_path.items():
             if await self.attachment_repo.count_by_file_path(file_path) > 0:
                 continue

@@ -27,6 +27,7 @@ def _drop_websocket_keepalive_noise(event: Event, hint: Hint) -> Event | None:
 def init_sentry(settings: Settings) -> None:
     if not settings.sentry_dsn:
         return
+
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         environment=settings.sentry_environment,

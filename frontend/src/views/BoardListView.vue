@@ -29,7 +29,6 @@ const statsBySlug = computed(
 
 <template>
   <section class="pt-3 pb-2">
-    <!-- hero -->
     <div
       class="relative overflow-hidden rounded-hero border border-border p-9 shadow-pop bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-gold)_16%,var(--color-surface)),var(--color-surface))]"
     >
@@ -56,7 +55,6 @@ const statsBySlug = computed(
       </div>
     </div>
 
-    <!-- boards -->
     <div class="mt-9 mb-4 flex items-center gap-3">
       <h2 class="text-[22px] font-extrabold">Boards</h2>
       <span class="h-px flex-1 bg-border" />
@@ -96,7 +94,6 @@ const statsBySlug = computed(
       </li>
     </ul>
 
-    <!-- latest threads -->
     <template v-if="latest?.length">
       <div class="mt-9 mb-4 flex items-center gap-3">
         <h2 class="text-[22px] font-extrabold">Latest threads</h2>

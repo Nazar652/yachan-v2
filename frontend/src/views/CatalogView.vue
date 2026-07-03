@@ -76,7 +76,6 @@ async function onToggleSticky(thread: ThreadResponse) {
 
 <template>
   <section class="pt-2">
-    <!-- board banner -->
     <div
       class="flex flex-col gap-3 rounded-card border border-border border-l-4 border-l-gold bg-surface px-5 py-4 shadow-card sm:flex-row sm:items-center sm:gap-4"
     >
@@ -108,7 +107,6 @@ async function onToggleSticky(thread: ThreadResponse) {
       </div>
     </div>
 
-    <!-- toolbar -->
     <div class="my-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
       <div class="flex w-full overflow-hidden rounded-field border border-border sm:inline-flex sm:w-auto">
         <button

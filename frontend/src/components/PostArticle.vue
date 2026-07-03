@@ -167,7 +167,6 @@ function hiddenLabel(attachment: AttachmentResponse): string {
         <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
       </div>
 
-      <!-- edited marker; hovering reveals the pre-edit body in a popover below -->
       <div
         v-if="post.is_edited && !isEditing"
         class="edit-wrap relative shrink-0"
@@ -250,7 +249,6 @@ function hiddenLabel(attachment: AttachmentResponse): string {
     </div>
 
     <template v-else>
-      <!-- body: server-rendered html (backlinks/greentext) styled via global css -->
       <PostBody
         v-if="post.body_html"
         :html="post.body_html"
@@ -265,7 +263,6 @@ function hiddenLabel(attachment: AttachmentResponse): string {
       </div>
     </template>
 
-    <!-- replies referencing this post; numbers derived from the thread's posts -->
     <div v-if="backlinks.length" class="post-backlinks mt-2 flex flex-wrap gap-x-2 text-xs">
       <span v-for="backlinkNumber in backlinks" :key="backlinkNumber">
         <a

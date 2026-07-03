@@ -9,6 +9,7 @@ async def run_in_scope[T](work: Callable[[], Awaitable[T]]) -> T:
     """Run an async unit of work inside a di scope, committing on success and
     rolling back on error — the same lifecycle as the http middleware."""
     open_scope()
+
     try:
         result = await work()
         await _commit()

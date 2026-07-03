@@ -1,7 +1,6 @@
 import re
 
-# slug goes into raw ddl (create sequence / nextval), so it must be strictly
-# validated here to rule out sql injection
+# slug is interpolated into raw ddl, so it must be strictly validated here to prevent sql injection
 _SLUG_RE = re.compile(r"^[a-z0-9_]{1,20}$")
 
 

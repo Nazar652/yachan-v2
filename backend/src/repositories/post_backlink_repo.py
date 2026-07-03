@@ -14,14 +14,12 @@ class PostBacklinkRepository(BaseRepository):
         super().__init__(session)
 
     async def list_sources_for_target(self, target_post_id: int) -> list[PostBacklink]:
-        # who replied to this post
         result = await self.session.execute(
             select(PostBacklink).where(col(PostBacklink.target_post_id) == target_post_id)
         )
         return list(result.scalars().all())
 
     async def list_targets_for_source(self, source_post_id: int) -> list[PostBacklink]:
-        # which posts this one links to
         result = await self.session.execute(
             select(PostBacklink).where(col(PostBacklink.source_post_id) == source_post_id)
         )
@@ -32,10 +30,11 @@ class PostBacklinkRepository(BaseRepository):
         await self.session.flush()
 
     async def delete_by_post_ids(self, post_ids: list[int]) -> None:
-        # drop links on either side: posts in this thread may be referenced by
-        # posts elsewhere, and those backlink rows must go too
+        # clean up links on both sides: posts in this thread may be referenced by
+        # posts elsewhere, and those backlink rows must also be removed
         if not post_ids:
             return
+
         await self.session.execute(
             delete(PostBacklink).where(
                 or_(

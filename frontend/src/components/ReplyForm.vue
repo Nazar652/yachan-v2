@@ -39,9 +39,6 @@ function onFileChange(event: Event) {
   }
 }
 
-// quote a post: drop a >>N reference on its own line at the end of the body and
-// focus the textarea so the poster can keep typing. called from ThreadView when
-// a post number is clicked.
 async function quote(postNumber: number) {
   const base = body.value && !body.value.endsWith('\n') ? `${body.value}\n` : body.value
   body.value = `${base}>>${postNumber}\n`
@@ -91,9 +88,7 @@ async function onSubmit() {
       captcha.value.token,
       captchaAnswer.value.trim(),
     )
-    // remember this as one of "your" posts so it renders a (You) tag
     markOwn(post.post_number)
-    // append the new post to the cached thread so it shows without a refetch
     queryClient.setQueryData<ThreadDetailResponse>(
       threadQueryKey(props.slug, props.threadId),
       (old) => appendPostToThread(old, post),

@@ -61,8 +61,10 @@ class ThreadsView:
         self, board_slug: str, request: Request, limit: int = 50, offset: int = 0
     ) -> list[ThreadResponse]:
         await self.online_tracker.touch(client_ip_hash(request, self.settings), board_slug)
+
         thread_data = await self.thread_service.list_threads(board_slug, limit, offset)
         board = await self.board_service.get_board(board_slug)
+
         responses: list[ThreadResponse] = []
         for thread, op_post, op_images, replies in thread_data:
             response = ThreadResponse.model_validate(thread)
@@ -116,6 +118,7 @@ class ThreadsView:
         nsfw_by_slug = {
             board.slug: board.is_nsfw for board in await self.board_service.list_boards()
         }
+
         responses: list[LatestThreadResponse] = []
         for thread, board_slug, first_image, last_reply in latest:
             thumbnail_url = (
@@ -162,6 +165,7 @@ class ThreadsView:
         board = await self.board_service.get_board(board_slug)
 
         detail = ThreadDetailResponse.model_validate(thread)
+
         responses = []
         for post in posts:
             response = post_response(
@@ -191,6 +195,7 @@ class ThreadsView:
             raise RateLimitedError("too many threads, slow down")
 
         uploads = await read_uploads(files)
+
         thread, op_post = await self.thread_service.create_thread(
             board_slug, data, ip_hash, has_image=contains_image(uploads)
         )
@@ -198,6 +203,7 @@ class ThreadsView:
             embed_post.delay(op_post.id)  # type: ignore[attr-defined]  celery task
             # fire-and-forget text moderation on the separate moderation worker
             celery.send_task("moderate_text", args=[op_post.id, op_post.body], queue="moderation")
+
         attachments = await store_uploads(self.file_service, op_post.id, uploads)
 
         board = await self.board_service.get_board(board_slug)
@@ -207,4 +213,5 @@ class ThreadsView:
             board_channel(board_slug), NEW_THREAD, detail.model_dump(mode="json")
         )
         detail.posts[0].can_edit = True
+
         return detail

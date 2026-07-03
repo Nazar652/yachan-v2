@@ -7,7 +7,6 @@ from src.schemas.post import PostResponse
 
 class ThreadCreate(BaseModel):
     title: str | None = Field(default=None, max_length=150)
-    # fields of the opening post
     name: str | None = Field(default=None, max_length=100)
     body: str | None = Field(default=None, max_length=5000)
     sage: bool = False

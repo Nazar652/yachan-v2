@@ -82,6 +82,7 @@ class S3Storage(Storage):
         self.access_key = settings.s3_access_key or None
         self.secret_key = settings.s3_secret_key or None
         self.region = settings.s3_region
+
         # path-style ("host/bucket/key") so a non-dns endpoint like minio:9000 works
         self.config = AioConfig(s3={"addressing_style": "path"})
 

@@ -30,6 +30,7 @@ def verify_password(password: str, encoded: str) -> bool:
         derived_key = hashlib.pbkdf2_hmac(algo, password.encode(), salt, int(iterations))
     except (ValueError, TypeError):
         return False
+
     return hmac.compare_digest(derived_key, expected)
 
 

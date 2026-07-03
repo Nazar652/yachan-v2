@@ -34,6 +34,7 @@ class StatsView:
             )
             for board in stats.boards
         ]
+
         return SiteStatsResponse(
             board_count=len(boards),
             thread_count=sum(stats.thread_counts.values()),

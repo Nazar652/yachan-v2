@@ -44,7 +44,6 @@ const router = createRouter({
   ],
 })
 
-// redirect unauthenticated visitors away from routes flagged requiresAuth
 export function authGuard(to: RouteLocationNormalized) {
   if (to.meta.requiresAuth && !useAuthStore().isAuthenticated) {
     return { name: 'mod-login' as const }

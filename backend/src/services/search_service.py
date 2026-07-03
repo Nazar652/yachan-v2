@@ -49,12 +49,12 @@ class SearchService:
             board_id = board.id
 
         cleaned = clean_search_text(query)
-        # embedding is blocking cpu work; run it in a thread so the request's
-        # event loop stays free (onnxruntime releases the gil during inference)
+        # embedding is blocking cpu work; run it in a thread so the request's event loop stays free
+        # (onnxruntime releases the gil during inference)
         vector = await anyio.to_thread.run_sync(self.embedding_model.embed, cleaned)
 
-        # hybrid: `cleaned` also drives a lexical match so posts literally containing
-        # the query words rank above cross-lingual semantic neighbours
+        # hybrid: `cleaned` also drives a lexical match so posts literally containing the query words
+        # rank above cross-lingual semantic neighbours
         return await self.post_embedding_repo.search(
             vector, cleaned, board_id=board_id, limit=limit
         )

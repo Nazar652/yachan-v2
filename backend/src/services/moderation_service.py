@@ -21,7 +21,6 @@ class ModerationService:
     async def apply(self, attachment_id: int, verdict: dict[str, object]) -> None:
         raw_score = verdict.get("nsfw_score")
         nsfw_score = float(raw_score) if isinstance(raw_score, (int, float)) else None
-
         status = ModerationStatus(str(verdict["status"]))
 
         await self.attachment_repo.set_moderation(

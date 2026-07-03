@@ -50,9 +50,11 @@ class ReportService:
         # one auto-report per post: don't pile on if moderation already flagged it
         if await self.report_repo.count_auto_for_post(post_id) > 0:
             return None
+
         post = await self.post_repo.get_by_id(post_id)
         if post is None:
             return None
+
         return await self.report_repo.create(
             Report(
                 post_id=post_id,

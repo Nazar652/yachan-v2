@@ -47,8 +47,7 @@ export interface ThreadFields {
   sage?: boolean
 }
 
-// multipart/form-data — openapi-fetch does not cleanly support nested form
-// schemas, so we use fetch directly and build FormData manually.
+// openapi-fetch does not cleanly support nested form schemas, so we use fetch directly and build FormData manually.
 export async function createThread(
   boardSlug: string,
   fields: ThreadFields,
@@ -88,7 +87,6 @@ export interface ReplyFields {
   sage?: boolean
 }
 
-// multipart/form-data — same fetch + FormData pattern as createThread.
 // a reply needs no title and its image is optional.
 export async function createReply(
   boardSlug: string,

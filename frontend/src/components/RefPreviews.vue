@@ -38,10 +38,10 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
-// clicking a ref inside a preview navigates to the post in the thread; drop the
-// stack so the previews don't hang around after the jump
+// clearing the preview stack prevents them from hanging around after navigation
 function onNavigate(postNumber: number) {
   clear()
+
   emit('navigate', postNumber)
 }
 </script>

@@ -332,7 +332,6 @@ function unwrapCodeBlock(text: string, start: number, end: number): FormatApplic
   const content = text.slice(start, end)
   const lines = content.split('\n')
 
-  // selection covering the whole block including its fence lines
   if (lines.length >= 2) {
     const openMarker = FENCE_OPEN_RE.exec(lines[0] ?? '')?.[1]
     const closeMarker = FENCE_CLOSE_RE.exec(lines[lines.length - 1] ?? '')?.[1]
@@ -346,7 +345,6 @@ function unwrapCodeBlock(text: string, start: number, end: number): FormatApplic
     }
   }
 
-  // selection covering only the content, with fence lines directly around it
   if (start === 0 || end === text.length || text.charAt(end) !== '\n') return null
   const openLineStart = start - 1 === 0 ? 0 : text.lastIndexOf('\n', start - 2) + 1
   const openLine = text.slice(openLineStart, start - 1)

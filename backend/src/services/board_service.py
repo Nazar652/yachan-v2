@@ -36,8 +36,10 @@ class BoardService:
         board = await self.board_repo.get_by_slug(slug)
         if board is None:
             raise BoardNotFoundError(slug)
+
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(board, field, value)
+
         return await self.board_repo.update(board)
 
     async def reorder_boards(self, slugs: list[str]) -> list[Board]:
@@ -62,4 +64,5 @@ class BoardService:
         board = await self.board_repo.get_by_slug(slug)
         if board is None:
             raise BoardNotFoundError(slug)
+
         return board

@@ -3,7 +3,6 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-# websocket event types pushed to subscribed clients
 NEW_POST = "new_post"
 POST_EDITED = "post_edited"
 NEW_THREAD = "new_thread"

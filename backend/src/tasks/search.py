@@ -5,7 +5,7 @@ from src.services.search_service import SearchService
 from src.tasks.base import ScopedTask
 
 
-# typing=False: the injected service is part of the signature, so celery's producer-side
+# typing=False because the injected service is part of the signature and celery's producer-side
 # arg check must be off for delay to pass just the message args
 @celery.task(base=ScopedTask, name="embed_post", typing=False)
 @inject

@@ -74,6 +74,7 @@ class ModView:
         mod = await self.mod_service.resolve_mod(token)
         self._require_admin(mod)
         thread = await self.thread_service.delete_thread(board_slug, thread_id)
+
         # notify open clients so the catalog drops the card and viewers see it gone
         payload = {"id": thread.id}
         await self.events.publish(thread_channel(thread.id), THREAD_DELETED, payload)
@@ -114,13 +115,17 @@ class ModView:
     async def regenerate_summary(self, token: str, board_slug: str, thread_id: int) -> None:
         mod = await self.mod_service.resolve_mod(token)
         self._require_admin(mod)
+
         if not self.settings.gemini_api_key:
             raise SummaryNotConfiguredError("AI summary is not configured")
+
         _, posts, _ = await self.thread_service.get_thread_detail(board_slug, thread_id)
+
         if len(posts) < MIN_POSTS_FOR_SUMMARY:
             raise ThreadTooShortForSummaryError(
                 f"thread needs at least {MIN_POSTS_FOR_SUMMARY} posts to summarize"
             )
+
         await self.summary_service.summarize_thread(thread_id)
 
     async def _publish_thread_update(self, board_slug: str, thread: Thread) -> None:

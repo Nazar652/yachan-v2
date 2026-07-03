@@ -34,11 +34,7 @@ def create_app() -> FastAPI:
     init_sentry(settings)
 
     app = FastAPI(title=settings.app_name, version=settings.app_version)
-    # noinspection PyTypeChecker
     app.add_middleware(ScopeMiddleware)
-    # added last so it wraps ScopeMiddleware: cors preflight is answered before
-    # a db scope is opened
-    # noinspection PyTypeChecker
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -46,6 +42,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # cors preflight is answered before a db scope is opened because CORSMiddleware
+    # is added last and wraps ScopeMiddleware
 
     @app.exception_handler(NotFoundError)
     async def _not_found(request, exc: NotFoundError):

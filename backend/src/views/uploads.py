@@ -32,6 +32,7 @@ async def read_uploads(files: list[UploadFile]) -> list[Upload]:
         uploads.append(
             Upload(file.filename, content, content_type, FileService.media_type_for(content_type))
         )
+
     if len(uploads) > MAX_ATTACHMENTS:
         raise TooManyAttachmentsError(f"at most {MAX_ATTACHMENTS} attachments per post")
     return uploads
@@ -46,11 +47,12 @@ async def store_uploads(
 ) -> list[Attachment]:
     stored: list[Attachment] = []
     media_base = get_settings().media_internal_url.rstrip("/")
+
     for upload in uploads:
         attachment = await file_service.store_attachment(
             post_id, upload.filename, upload.content, upload.content_type
         )
-        process_attachment.delay(attachment.id)  # type: ignore[attr-defined]  celery task
+        process_attachment.delay(attachment.id)  # type: ignore[attr-defined]
         # absolute, service-reachable url; falls back to the browser public url when
         # media_internal_url is unset (prod, where public_url is already absolute)
         image_url = (

@@ -31,12 +31,8 @@ class Settings(BaseSettings):
 
     ip_hash_salt: str
 
-    # "local" writes to the filesystem, "s3" to an S3-compatible object store
-    # (MinIO in docker, AWS S3 in production)
     storage_backend: str = "local"
     storage_dir: str = "storage"
-    # public base url the serializer prepends to a key; nginx maps it to the
-    # files volume (local) or proxies it to the object store (s3)
     storage_base_url: str = "/media"
     # absolute base url the moderation service fetches media from (dev: the in-network
     # minio endpoint; prod: the public bucket/cdn url). empty falls back to public_url
@@ -57,7 +53,6 @@ class Settings(BaseSettings):
     s3_secret_key: str = ""
     s3_region: str = "us-east-1"
 
-    # browser origins allowed to call the api, comma-separated
     cors_origins: str = "http://localhost:5173"
 
     # error + performance monitoring; empty dsn disables the sdk entirely

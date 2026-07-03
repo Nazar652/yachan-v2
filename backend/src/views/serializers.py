@@ -21,6 +21,7 @@ def attachment_response(
         if attachment.thumbnail_path and not hidden
         else None
     )
+
     return AttachmentResponse(
         id=attachment.id,
         media_type=attachment.media_type,
@@ -40,7 +41,9 @@ def post_response(
     post: Post, attachments: list[Attachment], storage: Storage, board_is_nsfw: bool
 ) -> PostResponse:
     response = PostResponse.model_validate(post)
+
     response.attachments = [
         attachment_response(item, storage, board_is_nsfw) for item in attachments
     ]
+
     return response
