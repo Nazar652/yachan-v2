@@ -43,6 +43,7 @@ frontend/nginx.conf   serves the SPA, proxies /api (+ws) and /media (-> minio)  
 frontend/nginx.prod.conf  prod edge config, no /media proxy (media served from R2)
 docker-compose.yml    postgres, redis, minio, createbucket, migrate, backend, celery-worker, celery-beat, moderation-worker, nginx
 docker-compose.prod.yml   prod override: Neon + R2, drops postgres/minio/createbucket, nginx :80
+k8s/                  Kubernetes manifests (k3s target, k3d local), kustomize base+overlays, mirrors compose  (see k8s/README.md)
 .env / .env.example   compose ${VAR} interpolation (gitignored / template)
 .env.prod.example     template for the prod server .env (Neon + R2 secrets)
 Makefile              `make lint-backend` / `lint-frontend` / `lint-moderation` / `lint-all`, `make openapi`

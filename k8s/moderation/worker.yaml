@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moderation-worker
+  namespace: moderation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moderation-worker
+  template:
+    metadata:
+      labels:
+        app: moderation-worker
+    spec:
+      containers:
+        - name: moderation-worker
+          image: yachan-moderation:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: moderation-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi

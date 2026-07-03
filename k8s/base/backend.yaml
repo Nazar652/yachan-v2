@@ -1,0 +1,108 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: yachan
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: yachan-config
+            - secretRef:
+                name: yachan-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: yachan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: wait-migrations
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: yachan-secret
+          command:
+            - python
+            - -c
+            - |
+              import asyncio, os, asyncpg
+              url = os.environ["DATABASE_URL"].replace("+asyncpg", "")
+              async def wait():
+                  while True:
+                      try:
+                          conn = await asyncpg.connect(url)
+                          count = await conn.fetchval("SELECT count(*) FROM alembic_version")
+                          await conn.close()
+                          if not count:
+                              raise RuntimeError("alembic_version is empty")
+                          print("migrations present")
+                          return
+                      except Exception as exc:
+                          print("waiting for migrations:", exc)
+                          await asyncio.sleep(2)
+              asyncio.run(wait())
+      containers:
+        - name: backend
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: yachan-config
+            - secretRef:
+                name: yachan-secret
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /openapi.json
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /openapi.json
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: yachan
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
