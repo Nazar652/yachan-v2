@@ -71,6 +71,22 @@ describe('BoardListView', () => {
     expect(wrapper.text()).toContain('weeb stuff')
   })
 
+  it('shows an 18+ badge only for nsfw boards', () => {
+    stubBoards({
+      data: ref([
+        { id: 1, slug: 'a', title: 'Anime', description: 'weeb stuff', is_nsfw: false },
+        { id: 2, slug: 'nsfw', title: 'Adult', description: null, is_nsfw: true },
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('18+')
+    const cards = wrapper.findAll('li')
+    expect(cards[0]!.text()).not.toContain('18+')
+    expect(cards[1]!.text()).toContain('18+')
+  })
+
   it('renders hero stats and per-board counters from the stats endpoint', () => {
     stubBoards({
       data: ref([{ id: 1, slug: 'b', title: 'Random', description: null }]),
