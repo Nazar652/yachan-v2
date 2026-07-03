@@ -1171,6 +1171,66 @@
         }
       }
     },
+    "/api/mod/{board_slug}/threads/{thread_id}/summary": {
+      "post": {
+        "tags": [
+          "mod"
+        ],
+        "summary": "Regenerate Summary",
+        "operationId": "regenerate_summary_api_mod__board_slug__threads__thread_id__summary_post",
+        "parameters": [
+          {
+            "name": "board_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Slug"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mod/{board_slug}/posts/{post_number}/ban": {
       "post": {
         "tags": [

@@ -192,6 +192,7 @@ POST   /api/mod/reports/{id}/resolve                  (204)
 DELETE /api/mod/{slug}/posts/{post_number}            (204)
 POST   /api/mod/{slug}/threads/{id}/lock[?locked=]    (204, query bool)
 POST   /api/mod/{slug}/threads/{id}/sticky[?sticky=]  (204, query bool)
+POST   /api/mod/{slug}/threads/{id}/summary           (204, admin-only, manual AI re-summarize)
 POST   /api/mod/{slug}/posts/{post_number}/ban        -> BanResponse (201, body BanCreate)
 
 WS     /api/{slug}/threads/{id}/ws                    (not in OpenAPI)
