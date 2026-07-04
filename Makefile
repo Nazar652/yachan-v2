@@ -6,7 +6,7 @@ openapi:
 	cd frontend && npm run gen:api
 
 lint-backend:
-	cd backend && ruff check --force-exclude src/
+	cd backend && ruff check src/
 	cd backend && pyright
 	cd backend && pytest tests/
 

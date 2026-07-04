@@ -120,6 +120,7 @@ jobs:
 
       - name: Run moderation linters
         run: |
+          ls -a
           poetry -C moderation run ruff check app/
           poetry -C moderation run pyright
 
