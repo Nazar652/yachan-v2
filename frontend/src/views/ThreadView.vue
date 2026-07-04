@@ -23,7 +23,11 @@ const { data: thread, isPending, isError } = useThread(
   toRef(threadId),
 )
 
-useThreadWs(slug, threadId)
+// if a mod deletes the thread while it is open, leave for the catalog instead
+// of staying on a dead page
+useThreadWs(slug, threadId, () => {
+  void router.push(`/${slug.value}`)
+})
 
 const auth = useAuthStore()
 const moderation = useModeration(slug, threadId)

@@ -6,6 +6,7 @@ import { useEditPost } from '@/composables/useEditPost'
 import { useOwnPosts } from '@/composables/useOwnPosts'
 import { usePostHistory } from '@/composables/usePostHistory'
 import { useAuthStore } from '@/stores/auth'
+import { createReport } from '@/api/reports'
 import { errorDetail } from '@/api/errors'
 import type { AttachmentResponse, PostResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -66,6 +67,38 @@ async function saveEdit() {
 // show-original: fetch the pre-edit body lazily and only while the button is hovered
 const showOriginal = ref(false)
 const { data: original } = usePostHistory(toRef(props, 'slug'), props.post.post_number, showOriginal)
+
+const isReporting = ref(false)
+const isSendingReport = ref(false)
+const isReported = ref(false)
+const reportReason = ref('')
+const reportError = ref<string | null>(null)
+
+function startReport() {
+  isReporting.value = true
+  reportReason.value = ''
+  reportError.value = null
+}
+
+function cancelReport() {
+  isReporting.value = false
+  reportReason.value = ''
+}
+
+async function confirmReport() {
+  isSendingReport.value = true
+  reportError.value = null
+
+  try {
+    await createReport(props.slug, props.post.post_number, reportReason.value.trim() || null)
+    isReporting.value = false
+    isReported.value = true
+  } catch (error: unknown) {
+    reportError.value = errorDetail(error, 'Failed to report post.')
+  } finally {
+    isSendingReport.value = false
+  }
+}
 
 const isBanning = ref(false)
 const banReason = ref('')
@@ -165,6 +198,16 @@ function hiddenLabel(attachment: AttachmentResponse): string {
         </button>
         <span v-if="isOwn(post.post_number)" class="post-you font-mono text-xs font-bold">(You)</span>
         <span v-if="post.sage" class="text-xs text-text-muted">sage</span>
+        <button
+          v-if="!isReported"
+          type="button"
+          class="cursor-pointer font-mono text-xs text-text-muted hover:text-danger hover:underline"
+          title="Report this post"
+          @click="startReport"
+        >
+          Report
+        </button>
+        <span v-else class="font-mono text-xs italic text-text-muted">reported ✓</span>
       </div>
 
       <div
@@ -272,6 +315,19 @@ function hiddenLabel(attachment: AttachmentResponse): string {
         >&gt;&gt;{{ backlinkNumber }}</a>
         <span v-if="isOwn(backlinkNumber)" class="post-you"> (You)</span>
       </span>
+    </div>
+
+    <div v-if="isReporting" class="mt-3 flex flex-col gap-2 border-t border-dashed border-border pt-2.5">
+      <div class="flex items-center gap-2">
+        <BaseInput v-model="reportReason" placeholder="Report reason (optional)" maxlength="500" />
+        <BaseButton variant="danger" size="sm" :disabled="isSendingReport" @click="confirmReport">
+          {{ isSendingReport ? 'Sending…' : 'Send report' }}
+        </BaseButton>
+        <BaseButton variant="ghost" size="sm" :disabled="isSendingReport" @click="cancelReport">
+          Cancel
+        </BaseButton>
+      </div>
+      <p v-if="reportError" class="text-sm text-danger">{{ reportError }}</p>
     </div>
 
     <div v-if="auth.isAuthenticated" class="mt-3 flex flex-col gap-2 border-t border-dashed border-border pt-2.5">

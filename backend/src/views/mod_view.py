@@ -105,8 +105,22 @@ class ModView:
         self, token: str, board_id: int | None = None
     ) -> list[ReportResponse]:
         await self.mod_service.resolve_mod(token)
-        reports = await self.report_service.list_unresolved(board_id)
-        return [ReportResponse.model_validate(report) for report in reports]
+        rows = await self.report_service.list_unresolved(board_id)
+        return [
+            ReportResponse(
+                id=report.id,
+                post_id=report.post_id,
+                board_id=report.board_id,
+                board_slug=board_slug,
+                thread_id=thread_id,
+                post_number=post_number,
+                reason=report.reason,
+                is_auto=report.is_auto,
+                is_resolved=report.is_resolved,
+                created_at=report.created_at,
+            )
+            for report, post_number, thread_id, board_slug in rows
+        ]
 
     async def resolve_report(self, token: str, report_id: int) -> None:
         mod = await self.mod_service.resolve_mod(token)

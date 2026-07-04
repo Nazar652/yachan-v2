@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/stores/auth'
@@ -17,7 +17,8 @@ const router = useRouter()
 const auth = useAuthStore()
 const queryClient = useQueryClient()
 
-const { data: reports, isPending, isError } = useReports()
+const reportBoardId = ref<number | null>(null)
+const { data: reports, isPending, isError } = useReports(reportBoardId)
 const { data: boards } = useBoards()
 
 function errorDetail(error: unknown): string | null {
@@ -171,6 +172,17 @@ function formatDate(iso: string): string {
     <div class="mb-3 flex items-center gap-3">
       <h2 class="text-lg font-extrabold">Reports</h2>
       <span class="h-px flex-1 bg-border" />
+      <select
+        id="report-board-filter"
+        v-model="reportBoardId"
+        class="rounded-field border border-border bg-bg px-2 py-1 text-sm text-text outline-none transition-colors focus:border-gold focus:ring-[3px] focus:ring-gold/25"
+        aria-label="Filter reports by board"
+      >
+        <option :value="null">All boards</option>
+        <option v-for="boardOption in boards ?? []" :key="boardOption.id" :value="boardOption.id">
+          /{{ boardOption.slug }}/ {{ boardOption.title }}
+        </option>
+      </select>
     </div>
 
     <p v-if="isPending" class="text-text-muted">Loading…</p>
@@ -190,7 +202,16 @@ function formatDate(iso: string): string {
         class="flex items-center gap-3 rounded-card border border-border bg-surface p-3 text-sm shadow-card"
       >
         <span class="font-mono text-text-muted">#{{ report.id }}</span>
-        <span class="font-mono">post {{ report.post_id }}</span>
+        <RouterLink
+          :to="{
+            name: 'thread',
+            params: { slug: report.board_slug, id: report.thread_id },
+            hash: `#post-${report.post_number}`,
+          }"
+          class="font-mono text-accent hover:underline"
+        >
+          /{{ report.board_slug }}/ No.{{ report.post_number }}
+        </RouterLink>
         <span
           v-if="report.is_auto"
           class="rounded-full bg-gold/25 px-2 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide text-accent"

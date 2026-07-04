@@ -24,7 +24,7 @@ spec:
             - worker
             - -Q
             - celery,moderation_results
-            - --concurrency=1
+            - --concurrency=2
             - --loglevel=info
           envFrom:
             - configMapRef:

@@ -6,8 +6,9 @@ from src.core.exceptions import ForbiddenError, SummaryNotConfiguredError, Threa
 from src.models.mod_account import ModRole
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
+from src.schemas.report import ReportResponse
 from src.views.mod_view import ModView
-from tests.views._factories import ban_ns, board_ns, post_ns, thread_ns
+from tests.views._factories import ban_ns, board_ns, post_ns, report_ns, thread_ns
 
 
 def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
@@ -141,6 +142,21 @@ async def test_ban_poster_returns_response():
     view, _ = build()
     result = await view.ban_poster("tok", "b", 5, BanCreate(reason="spam"))
     assert isinstance(result, BanResponse)
+
+
+async def test_list_reports_maps_post_and_board_location():
+    view, mocks = build()
+    mocks.report_service.list_unresolved = AsyncMock(
+        return_value=[(report_ns(), 3, 5, "b")]
+    )
+
+    result = await view.list_reports("tok")
+
+    assert len(result) == 1
+    assert isinstance(result[0], ReportResponse)
+    assert result[0].board_slug == "b"
+    assert result[0].thread_id == 5
+    assert result[0].post_number == 3
 
 
 async def test_resolve_report_uses_mod_id():

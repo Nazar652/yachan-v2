@@ -13,6 +13,9 @@ class ReportResponse(BaseModel):
     id: int
     post_id: int
     board_id: int | None
+    board_slug: str
+    thread_id: int
+    post_number: int
     reason: str | None
     is_auto: bool
     is_resolved: bool

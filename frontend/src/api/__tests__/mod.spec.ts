@@ -119,7 +119,15 @@ describe('listReports', () => {
     getMock.mockResolvedValue({ data: reports, error: undefined })
 
     await expect(listReports()).resolves.toBe(reports)
-    expect(getMock).toHaveBeenCalledWith('/api/mod/reports')
+    expect(getMock).toHaveBeenCalledWith('/api/mod/reports', { params: { query: undefined } })
+  })
+
+  it('passes the board filter as a query parameter', async () => {
+    getMock.mockResolvedValue({ data: [], error: undefined })
+
+    await listReports(3)
+
+    expect(getMock).toHaveBeenCalledWith('/api/mod/reports', { params: { query: { board_id: 3 } } })
   })
 
   it('throws when the client returns an error', async () => {

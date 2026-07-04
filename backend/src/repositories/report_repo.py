@@ -3,6 +3,8 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from src.models.board import Board
+from src.models.post import Post
 from src.models.report import Report
 
 from .base import BaseRepository
@@ -17,12 +19,21 @@ class ReportRepository(BaseRepository):
         result = await self.session.execute(select(Report).where(col(Report.id) == report_id))
         return result.scalar_one_or_none()
 
-    async def list_unresolved(self, board_id: int | None = None) -> list[Report]:
-        stmt = select(Report).where(col(Report.is_resolved).is_(False))
+    async def list_unresolved(
+        self, board_id: int | None = None
+    ) -> list[tuple[Report, int, int, str]]:
+        # join through the post (not report.board_id, which is only set at report time)
+        # so the returned board/thread always match where the post actually lives
+        stmt = (
+            select(Report, col(Post.post_number), col(Post.thread_id), col(Board.slug))
+            .join(Post, col(Report.post_id) == col(Post.id))
+            .join(Board, col(Post.board_id) == col(Board.id))
+            .where(col(Report.is_resolved).is_(False))
+        )
         if board_id is not None:
             stmt = stmt.where(col(Report.board_id) == board_id)
         result = await self.session.execute(stmt.order_by(col(Report.created_at).asc()))
-        return list(result.scalars().all())
+        return [(report, post_number, thread_id, slug) for report, post_number, thread_id, slug in result.all()]
 
     async def create(self, report: Report) -> Report:
         self.session.add(report)
@@ -49,6 +60,18 @@ class ReportRepository(BaseRepository):
             select(func.count())
             .select_from(Report)
             .where(col(Report.post_id) == post_id, col(Report.is_resolved).is_(False))
+        )
+        return result.scalar_one()
+
+    async def count_unresolved_for_post_by_ip(self, post_id: int, ip_hash: str) -> int:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Report)
+            .where(
+                col(Report.post_id) == post_id,
+                col(Report.ip_hash) == ip_hash,
+                col(Report.is_resolved).is_(False),
+            )
         )
         return result.scalar_one()
 

@@ -18,6 +18,8 @@ def build(*, board=SimpleNamespace(id=1), post=SimpleNamespace(id=10, board_id=1
     report_repo.list_unresolved = AsyncMock(return_value=[])
     report_repo.mark_resolved = AsyncMock()
     report_repo.count_auto_for_post = AsyncMock(return_value=0)
+    report_repo.count_unresolved_for_post = AsyncMock(return_value=0)
+    report_repo.count_unresolved_for_post_by_ip = AsyncMock(return_value=0)
     service = ReportService(
         report_repo=report_repo, post_repo=post_repo, board_repo=board_repo
     )
@@ -28,6 +30,22 @@ async def test_create_report_happy_path():
     service, mocks = build()
     await service.create_report("b", 10, ReportCreate(reason="spam"), "iphash")
     mocks.report_repo.create.assert_awaited_once()
+
+
+async def test_create_report_skips_duplicate_from_same_ip():
+    service, mocks = build()
+    mocks.report_repo.count_unresolved_for_post_by_ip = AsyncMock(return_value=1)
+
+    assert await service.create_report("b", 10, ReportCreate(), "iphash") is None
+    mocks.report_repo.create.assert_not_awaited()
+
+
+async def test_create_report_skips_when_post_report_cap_reached():
+    service, mocks = build()
+    mocks.report_repo.count_unresolved_for_post = AsyncMock(return_value=5)
+
+    assert await service.create_report("b", 10, ReportCreate(), "iphash") is None
+    mocks.report_repo.create.assert_not_awaited()
 
 
 async def test_create_report_unknown_board():

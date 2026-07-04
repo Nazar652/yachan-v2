@@ -7,13 +7,15 @@ import PostArticle from '@/components/PostArticle.vue'
 import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
-const { editPostMock, removePostMock, banMock, usePostHistoryMock, isOwnMock } = vi.hoisted(() => ({
-  editPostMock: vi.fn(),
-  removePostMock: vi.fn(),
-  banMock: vi.fn(),
-  usePostHistoryMock: vi.fn(),
-  isOwnMock: vi.fn(),
-}))
+const { editPostMock, removePostMock, banMock, usePostHistoryMock, isOwnMock, createReportMock } =
+  vi.hoisted(() => ({
+    editPostMock: vi.fn(),
+    removePostMock: vi.fn(),
+    banMock: vi.fn(),
+    usePostHistoryMock: vi.fn(),
+    isOwnMock: vi.fn(),
+    createReportMock: vi.fn(),
+  }))
 
 vi.mock('@/composables/useEditPost', () => ({
   useEditPost: () => ({ editPost: editPostMock }),
@@ -29,6 +31,10 @@ vi.mock('@/composables/useModeration', () => ({
 
 vi.mock('@/composables/usePostHistory', () => ({
   usePostHistory: usePostHistoryMock,
+}))
+
+vi.mock('@/api/reports', () => ({
+  createReport: createReportMock,
 }))
 
 const stubs = {
@@ -70,6 +76,7 @@ beforeEach(() => {
   banMock.mockReset().mockResolvedValue(undefined)
   usePostHistoryMock.mockReset().mockReturnValue({ data: ref(undefined) })
   isOwnMock.mockReset().mockReturnValue(false)
+  createReportMock.mockReset().mockResolvedValue(undefined)
 })
 
 describe('PostArticle', () => {
@@ -228,6 +235,51 @@ describe('PostArticle', () => {
 
     await wrapper.find('.edit-wrap').trigger('mouseleave')
     expect(wrapper.text()).not.toContain('before edit')
+  })
+
+  it('reports the post through the inline report form', async () => {
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Report').trigger('click')
+    await wrapper.find('input').setValue('  off-topic spam  ')
+    await clickButton(wrapper, 'Send report').trigger('click')
+    await flushPromises()
+
+    expect(createReportMock).toHaveBeenCalledWith('b', 101, 'off-topic spam')
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(wrapper.text()).toContain('reported ✓')
+  })
+
+  it('sends a null reason when the report field is left empty', async () => {
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Report').trigger('click')
+    await clickButton(wrapper, 'Send report').trigger('click')
+    await flushPromises()
+
+    expect(createReportMock).toHaveBeenCalledWith('b', 101, null)
+  })
+
+  it('cancels reporting without calling the api', async () => {
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Report').trigger('click')
+    await clickButton(wrapper, 'Cancel').trigger('click')
+
+    expect(createReportMock).not.toHaveBeenCalled()
+    expect(wrapper.find('input').exists()).toBe(false)
+  })
+
+  it('shows the api detail when reporting fails', async () => {
+    createReportMock.mockRejectedValue(new ApiError('too many reports, slow down', 429))
+    const wrapper = mountPost()
+
+    await clickButton(wrapper, 'Report').trigger('click')
+    await clickButton(wrapper, 'Send report').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.text-danger').text()).toBe('too many reports, slow down')
+    expect(wrapper.text()).not.toContain('reported ✓')
   })
 
   it('hides mod controls when not authenticated', () => {
