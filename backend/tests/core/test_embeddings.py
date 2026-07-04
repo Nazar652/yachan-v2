@@ -44,6 +44,21 @@ def test_embed_runs_session_and_returns_normalized_vector():
     assert set(feed) == {"input_ids", "attention_mask", "token_type_ids"}
 
 
+def test_from_paths_caps_intra_op_threads(monkeypatch):
+    options = MagicMock()
+    monkeypatch.setattr("src.core.embeddings.ort.SessionOptions", MagicMock(return_value=options))
+    session_factory = MagicMock()
+    monkeypatch.setattr("src.core.embeddings.ort.InferenceSession", session_factory)
+    monkeypatch.setattr("src.core.embeddings.Tokenizer.from_file", MagicMock(return_value=MagicMock()))
+
+    EmbeddingModel.from_paths("model.onnx", "tokenizer.json")
+
+    assert options.intra_op_num_threads == 1
+    session_factory.assert_called_once_with(
+        "model.onnx", sess_options=options, providers=["CPUExecutionProvider"]
+    )
+
+
 @pytest.mark.skipif(
     not os.path.exists(get_settings().embedding_model_path)
     or not os.path.exists(get_settings().embedding_tokenizer_path),
