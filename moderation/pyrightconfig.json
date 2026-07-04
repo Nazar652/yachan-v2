@@ -1,0 +1,23 @@
+{
+  "include": ["app"],
+  "exclude": ["**/__pycache__", "**/.venv", "**/venv", "**/tests"],
+
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "standard",
+  "venvPath": ".",
+  "venv": ".venv",
+  "useLibraryCodeForTypes": true,
+
+  "extraPaths": ["app", "."],
+
+  "reportImplicitStringConcatenation": "error",
+
+  "reportUnusedImport": "none",
+  "reportUnusedVariable": "none",
+  "reportMissingTypeStubs": false,
+  "reportIncompatibleVariableOverride": "none",
+  "reportIncompatibleMethodOverride": "none",
+
+  "reportCallInDefaultInitializer": "error"
+}
+
