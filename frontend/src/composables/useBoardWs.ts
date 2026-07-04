@@ -1,8 +1,9 @@
-import { onScopeDispose, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { threadsPageQueryKey } from '@/composables/useThreads'
-import { wsUrl, WS_EVENT, type WsEnvelope } from '@/api/ws'
+import { useReconnectingWs } from '@/composables/useReconnectingWs'
+import { WS_EVENT, type WsEnvelope } from '@/api/ws'
 import type { ThreadResponse } from '@/api/types'
 
 // catalog order matches the backend: stickies first, then most recent bump.
@@ -16,9 +17,9 @@ function sortThreads(threads: ThreadResponse[]): ThreadResponse[] {
 // subscribes to a board's realtime feed and keeps the first catalog page's
 // query cache live: new_thread prepends (deduped by id); thread_updated merges
 // lock/sticky flags onto the matching card and re-sorts so a sticky jumps up.
+// the socket reconnects on slug change and heals itself on an unexpected drop.
 export function useBoardWs(slug: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
-  let socket: WebSocket | null = null
 
   function applyEvent(envelope: WsEnvelope) {
     const key = threadsPageQueryKey(toValue(slug), 1)
@@ -54,30 +55,12 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
     }
   }
 
-  function onMessage(event: MessageEvent) {
-    try {
-      applyEvent(JSON.parse(event.data as string) as WsEnvelope)
-    } catch {
-    }
-  }
-
-  function close() {
-    if (socket) {
-      socket.onmessage = null
-      socket.close()
-      socket = null
-    }
-  }
-
-  function connect() {
-    close()
-    socket = new WebSocket(wsUrl(`/${toValue(slug)}/ws`))
-    socket.onmessage = onMessage
-  }
-
-  connect()
-  watch(() => toValue(slug), connect)
-  onScopeDispose(close)
-
-  return { close }
+  return useReconnectingWs(
+    () => `/${toValue(slug)}/ws`,
+    applyEvent,
+    () => {
+      // catch up on threads missed during the drop
+      void queryClient.invalidateQueries({ queryKey: threadsPageQueryKey(toValue(slug), 1) })
+    },
+  )
 }

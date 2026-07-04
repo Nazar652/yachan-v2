@@ -15,3 +15,9 @@ def bearer_token(authorization: str | None = Header(default=None)) -> str:
     if authorization is None or not authorization.lower().startswith("bearer "):
         raise UnauthorizedError("missing bearer token")
     return authorization[len("bearer ") :].strip()
+
+
+def optional_bearer_token(authorization: str | None = Header(default=None)) -> str | None:
+    if authorization is None or not authorization.lower().startswith("bearer "):
+        return None
+    return authorization[len("bearer ") :].strip()

@@ -7,6 +7,7 @@ import { createThread } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
 import { useOwnPosts } from '@/composables/useOwnPosts'
 import { threadsQueryKey } from '@/composables/useThreads'
+import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import CaptchaWidget from '@/components/ui/CaptchaWidget.vue'
@@ -15,11 +16,15 @@ import MarkupTextarea from '@/components/ui/MarkupTextarea.vue'
 const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
+const authStore = useAuthStore()
 
 const slug = computed(() => route.params.slug as string)
 const { markOwn } = useOwnPosts(slug)
 
-const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha()
+// admins post without a captcha, so skip fetching a challenge they'll never see
+const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha(
+  computed(() => !authStore.isAdmin),
+)
 
 const title = ref('')
 const name = ref('')
@@ -47,14 +52,16 @@ async function onSubmit() {
     return
   }
 
-  if (!captchaAnswer.value.trim()) {
-    submitError.value = 'Please enter the captcha answer.'
-    return
-  }
+  if (!authStore.isAdmin) {
+    if (!captchaAnswer.value.trim()) {
+      submitError.value = 'Please enter the captcha answer.'
+      return
+    }
 
-  if (!captcha.value) {
-    submitError.value = 'Captcha not loaded yet.'
-    return
+    if (!captcha.value) {
+      submitError.value = 'Captcha not loaded yet.'
+      return
+    }
   }
 
   isSubmitting.value = true
@@ -67,8 +74,9 @@ async function onSubmit() {
         body: body.value || undefined,
       },
       selectedFiles.value,
-      captcha.value.token,
-      captchaAnswer.value.trim(),
+      authStore.isAdmin ? null : captcha.value!.token,
+      authStore.isAdmin ? null : captchaAnswer.value.trim(),
+      authStore.isAdmin ? authStore.token : null,
     )
     // remember the OP as one of "your" posts so it renders a (You) tag
     if (thread.posts?.[0]) markOwn(thread.posts[0].post_number)
@@ -77,8 +85,10 @@ async function onSubmit() {
   } catch (error: unknown) {
     const detail = (error as Record<string, unknown>)?.detail
     submitError.value = typeof detail === 'string' ? detail : 'Failed to create thread.'
-    await refreshCaptcha()
-    captchaAnswer.value = ''
+    if (!authStore.isAdmin) {
+      await refreshCaptcha()
+      captchaAnswer.value = ''
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -145,6 +155,7 @@ async function onSubmit() {
       </div>
 
       <CaptchaWidget
+        v-if="!authStore.isAdmin"
         v-model="captchaAnswer"
         :captcha="captcha"
         :is-pending="captchaPending"

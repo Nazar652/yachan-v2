@@ -1,10 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
 import ReplyForm from '@/components/ReplyForm.vue'
 import { useCaptcha } from '@/composables/useCaptcha'
 import { createReply } from '@/api/threads'
+import { useAuthStore } from '@/stores/auth'
 
 const setQueryDataMock = vi.fn()
 vi.mock('@tanstack/vue-query', () => ({
@@ -53,6 +55,8 @@ function mountForm() {
 
 describe('ReplyForm', () => {
   beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
     setQueryDataMock.mockReset()
     createReplyMock.mockReset()
     refetchMock.mockReset()
@@ -107,6 +111,7 @@ describe('ReplyForm', () => {
       [],
       'tok',
       'ans',
+      null,
     )
     expect(setQueryDataMock).toHaveBeenCalledOnce()
     expect(refetchMock).toHaveBeenCalled()
@@ -146,5 +151,31 @@ describe('ReplyForm', () => {
       posts: [{ id: 1, post_number: 1 }, { id: 7, post_number: 102 }],
     })
     expect(updater(undefined)).toBeUndefined()
+  })
+
+  it('hides the captcha widget for an admin poster', () => {
+    useAuthStore().login('admin-jwt', 'admin')
+    const wrapper = mountForm()
+    expect(wrapper.find('.captcha-input').exists()).toBe(false)
+  })
+
+  it('posts as admin without a captcha answer, sending the bearer token', async () => {
+    useAuthStore().login('admin-jwt', 'admin')
+    createReplyMock.mockResolvedValue({ id: 7, post_number: 102 } as never)
+
+    const wrapper = mountForm()
+    await wrapper.find('#reply-body').setValue('hello')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(createReplyMock).toHaveBeenCalledWith(
+      'b',
+      42,
+      { name: undefined, body: 'hello', sage: false },
+      [],
+      null,
+      null,
+      'admin-jwt',
+    )
   })
 })

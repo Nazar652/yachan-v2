@@ -112,6 +112,20 @@ describe('createThread', () => {
 
     await expect(createThread('b', {}, [], 'tok', 'wrong')).rejects.toMatchObject(error)
   })
+
+  it('sends a bearer token and omits captcha headers for an admin post', async () => {
+    const thread = { id: 1, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 0, bump_at: '', created_at: '', posts: [] }
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve(thread) })
+
+    const file = new File(['img'], 'photo.jpg', { type: 'image/jpeg' })
+    await createThread('b', { title: 'T', body: 'Hi' }, [file], null, null, 'admin-jwt')
+
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const headers = options.headers as Record<string, string>
+    expect(headers['Authorization']).toBe('Bearer admin-jwt')
+    expect(headers['X-Captcha-Token']).toBeUndefined()
+    expect(headers['X-Captcha-Answer']).toBeUndefined()
+  })
 })
 
 describe('createReply', () => {
@@ -143,6 +157,19 @@ describe('createReply', () => {
     fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve(error), statusText: 'Forbidden' })
 
     await expect(createReply('b', 42, {}, [], 'tok', 'wrong')).rejects.toMatchObject(error)
+  })
+
+  it('sends a bearer token and omits captcha headers for an admin post', async () => {
+    const post = { id: 7, post_number: 102 }
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve(post) })
+
+    await createReply('b', 42, { body: 'Hi' }, [], null, null, 'admin-jwt')
+
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const headers = options.headers as Record<string, string>
+    expect(headers['Authorization']).toBe('Bearer admin-jwt')
+    expect(headers['X-Captcha-Token']).toBeUndefined()
+    expect(headers['X-Captcha-Answer']).toBeUndefined()
   })
 })
 

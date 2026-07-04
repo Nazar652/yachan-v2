@@ -137,6 +137,10 @@ Identity:
 - **Mod auth**: username/password (PBKDF2 in `utils/auth`) -> JWT bearer token.
   `bearer_token` dependency (`views/dependencies.py`) extracts the token; mod
   views validate it and load the `ModAccount`.
+- **Admin captcha bypass**: `create_thread`/`create_reply` accept an optional
+  `Authorization: Bearer` header (`optional_bearer_token`); `ModService.is_admin`
+  resolves it and skips the captcha check for `ModRole.ADMIN` only — moderators
+  and anonymous posters still solve it.
 
 ## Auditing
 
@@ -176,10 +180,10 @@ Read the trail with plain SQL, e.g.
 GET    /api/boards                                   -> BoardResponse[]
 GET    /api/{slug}/threads                           -> ThreadResponse[]
 POST   /api/{slug}/threads                           -> ThreadDetailResponse (201)
-       headers X-Captcha-Token, X-Captcha-Answer; multipart title?,name?,body?,sage,files[]
+       headers X-Captcha-Token, X-Captcha-Answer (omit with an admin Bearer token); multipart title?,name?,body?,sage,files[]
 GET    /api/{slug}/threads/{id}                       -> ThreadDetailResponse
 POST   /api/{slug}/threads/{id}/posts                 -> PostResponse (201)
-       headers X-Captcha-Token, X-Captcha-Answer; multipart name?,body?,sage,files[]
+       headers X-Captcha-Token, X-Captcha-Answer (omit with an admin Bearer token); multipart name?,body?,sage,files[]
 PATCH  /api/{slug}/posts/{post_number}                -> PostResponse (edit window)
 GET    /api/{slug}/posts/{post_number}/history        -> PostEditResponse | null
 POST   /api/{slug}/posts/{post_number}/report

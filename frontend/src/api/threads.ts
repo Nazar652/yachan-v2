@@ -40,6 +40,22 @@ export async function getThread(
   return data
 }
 
+function captchaHeaders(
+  captchaToken: string | null,
+  captchaAnswer: string | null,
+  adminToken?: string | null,
+): Record<string, string> {
+  const headers: Record<string, string> = {}
+  if (captchaToken && captchaAnswer) {
+    headers['X-Captcha-Token'] = captchaToken
+    headers['X-Captcha-Answer'] = captchaAnswer
+  }
+  if (adminToken) {
+    headers['Authorization'] = `Bearer ${adminToken}`
+  }
+  return headers
+}
+
 export interface ThreadFields {
   title?: string
   name?: string
@@ -48,12 +64,14 @@ export interface ThreadFields {
 }
 
 // openapi-fetch does not cleanly support nested form schemas, so we use fetch directly and build FormData manually.
+// captchaToken/captchaAnswer are null for an admin post, which instead carries adminToken as a bearer header.
 export async function createThread(
   boardSlug: string,
   fields: ThreadFields,
   files: File[],
-  captchaToken: string,
-  captchaAnswer: string,
+  captchaToken: string | null,
+  captchaAnswer: string | null,
+  adminToken?: string | null,
 ): Promise<ThreadDetailResponse> {
   const formData = new FormData()
   if (fields.title) formData.append('title', fields.title)
@@ -66,10 +84,7 @@ export async function createThread(
 
   const response = await fetch(`${API_BASE}/api/${boardSlug}/threads`, {
     method: 'POST',
-    headers: {
-      'X-Captcha-Token': captchaToken,
-      'X-Captcha-Answer': captchaAnswer,
-    },
+    headers: captchaHeaders(captchaToken, captchaAnswer, adminToken),
     body: formData,
   })
 
@@ -88,13 +103,15 @@ export interface ReplyFields {
 }
 
 // a reply needs no title and its image is optional.
+// captchaToken/captchaAnswer are null for an admin post, which instead carries adminToken as a bearer header.
 export async function createReply(
   boardSlug: string,
   threadId: number,
   fields: ReplyFields,
   files: File[],
-  captchaToken: string,
-  captchaAnswer: string,
+  captchaToken: string | null,
+  captchaAnswer: string | null,
+  adminToken?: string | null,
 ): Promise<PostResponse> {
   const formData = new FormData()
   if (fields.name) formData.append('name', fields.name)
@@ -106,10 +123,7 @@ export async function createReply(
 
   const response = await fetch(`${API_BASE}/api/${boardSlug}/threads/${threadId}/posts`, {
     method: 'POST',
-    headers: {
-      'X-Captcha-Token': captchaToken,
-      'X-Captcha-Answer': captchaAnswer,
-    },
+    headers: captchaHeaders(captchaToken, captchaAnswer, adminToken),
     body: formData,
   })
 

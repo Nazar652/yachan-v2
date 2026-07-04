@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import src.views.threads_view as threads_view_module
 import src.views.uploads as uploads_module
-from src.core.exceptions import RateLimitedError
+from src.core.exceptions import InvalidCaptchaError, RateLimitedError
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.utils.clock import utcnow
 from src.views.threads_view import ThreadsView
@@ -45,6 +45,8 @@ def build(*, allowed=True, replies=None, op_images=None):
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
     captcha_service.validate = AsyncMock()
+    mod_service = MagicMock()
+    mod_service.is_admin = AsyncMock(return_value=False)
     rate_limiter = MagicMock()
     rate_limiter.is_allowed = AsyncMock(return_value=allowed)
     events = MagicMock()
@@ -58,6 +60,7 @@ def build(*, allowed=True, replies=None, op_images=None):
         board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
+        mod_service=mod_service,
         rate_limiter=rate_limiter,
         events=events,
         storage=storage,
@@ -69,6 +72,7 @@ def build(*, allowed=True, replies=None, op_images=None):
         board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
+        mod_service=mod_service,
         rate_limiter=rate_limiter,
         events=events,
         online_tracker=online_tracker,
@@ -249,3 +253,27 @@ async def test_create_thread_rate_limited():
     with pytest.raises(RateLimitedError):
         await view.create_thread("b", ThreadCreate(), [upload_ns()], request_ns(), "tok", "ans")
     mocks.thread_service.create_thread.assert_not_called()
+
+
+async def test_create_thread_requires_captcha_when_missing():
+    view, mocks = build()
+    with pytest.raises(InvalidCaptchaError):
+        await view.create_thread("b", ThreadCreate(body="hi"), [], request_ns(), None, None)
+    mocks.captcha_service.validate.assert_not_called()
+    mocks.thread_service.create_thread.assert_not_called()
+
+
+async def test_create_thread_admin_skips_captcha(monkeypatch):
+    monkeypatch.setattr(uploads_module, "process_attachment", SimpleNamespace(delay=MagicMock()))
+    monkeypatch.setattr(uploads_module.celery, "send_task", MagicMock())
+    view, mocks = build()
+    mocks.mod_service.is_admin = AsyncMock(return_value=True)
+
+    result = await view.create_thread(
+        "b", ThreadCreate(body="hi"), [], request_ns(), None, None, admin_token="admin-jwt"
+    )
+
+    assert isinstance(result, ThreadDetailResponse)
+    mocks.mod_service.is_admin.assert_awaited_once_with("admin-jwt")
+    mocks.captcha_service.validate.assert_not_called()
+    mocks.thread_service.create_thread.assert_awaited_once()
