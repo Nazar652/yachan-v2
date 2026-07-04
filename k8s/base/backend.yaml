@@ -17,15 +17,6 @@ spec:
         - name: backend
           image: yachan-backend:dev
           imagePullPolicy: IfNotPresent
-          command:
-            - uvicorn
-            - main:app
-            - --host
-            - "0.0.0.0"
-            - --port
-            - "8000"
-            - --workers
-            - "2"
           envFrom:
             - configMapRef:
                 name: yachan-config
