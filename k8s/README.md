@@ -23,18 +23,26 @@ k8s/
   base/                       yachan set — deployment-agnostic app
     namespaces.yaml           namespace: yachan
     redis.yaml                Deployment + Service (broker)
-    backend.yaml              migrate Job + backend Deployment (initContainer waits on migrations) + Service
+    backend.yaml              backend Deployment + Service
     celery.yaml               celery-worker (-Q celery,moderation_results) + celery-beat
     nginx.yaml                edge Deployment + Service (ClusterIP; prod overlay turns it into a LoadBalancer)
     secret.example.yaml       documented template for the yachan Secret (NOT applied)
+  migrate/                    standalone `alembic upgrade head` Job — applied and AWAITED
+                              before the app rolls (a discrete deploy step, not part of the app set)
   overlays/
     prod/
       kustomization.yaml      ../../base + config + nginx patch + GHCR images
-      yachan-config.yaml      non-secret prod env (R2 bucket/endpoint, CORS, domain)
+      yachan-config.yaml      static non-secret env (PYTHONUNBUFFERED, REDIS_URL, STORAGE_BACKEND, S3_REGION, SENTRY_ENVIRONMENT)
       nginx.yaml              patch: Service -> LoadBalancer :80/:443, mount the origin-cert
       tls-secret.example.yaml documented template for the Cloudflare origin-cert Secret
   moderation/                 moderation set — namespace, config, worker Deployment (concurrency=1)
 ```
+
+Ordering: k8s has no `depends_on`, so "migrate then start the app" lives in the deploy
+step (like a Helm pre-upgrade hook / Argo PreSync). The deploy applies `k8s/migrate`,
+`kubectl wait`s for the Job to complete, and only then rolls the Deployments — so new code
+never runs against an un-upgraded schema. The migrate Job needs only `yachan-secret`
+(`get_settings()` requires just `JWT_SECRET`/`IP_HASH_SALT`, and reads `DATABASE_URL`).
 
 ## Images & CI/CD
 
@@ -46,9 +54,10 @@ no `/media` proxy — media is served straight from R2).
 Pipeline (`.github/workflows/deploy.yml`, triggered by a green `CI` run on `master`):
 
 1. **build-push** — build the three images, push `:latest` + `:<sha>` to GHCR.
-2. **deploy** — SSH to the server, `git reset --hard <sha>`, `kustomize edit set image`
-   to pin the sha (immutable + rollback-able), recreate the `migrate` Job, `kubectl
-   apply -k` both sets, wait for the migration, then `rollout status` everything.
+2. **deploy** — SSH to the server, `git reset --hard <sha>`, generate `yachan-secret` from
+   GitHub Secrets, `kustomize edit set image` to pin the sha (immutable + rollback-able),
+   then: `apply -k k8s/migrate` → `kubectl wait job/migrate` → `apply -k` the app + moderation
+   → `rollout status` everything.
 
 Rollback: re-run the deploy for an older commit, or
 `kubectl -n yachan rollout undo deploy/backend`.

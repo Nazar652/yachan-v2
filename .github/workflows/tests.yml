@@ -97,3 +97,51 @@ jobs:
         run: |
           npm run lint
           npm run type-check
+
+  moderation-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: moderation
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install moderation dependencies
+        run: poetry install --no-interaction
+
+      - name: Run moderation linters
+        run: |
+          poetry run ruff check .
+          poetry run pyright
+
+  moderation-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: moderation
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install moderation dependencies
+        run: poetry install --no-interaction
+
+      - name: Run moderation tests
+        run: poetry run pytest tests/
