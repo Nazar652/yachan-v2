@@ -56,6 +56,16 @@ describe('SearchView', () => {
     expect(wrapper.find('a').attributes('href')).toBe('/b/thread/7#post-42')
   })
 
+  it('renders body_html markup instead of raw source text', () => {
+    routeMock.query = { q: 'cats' }
+    stub([
+      { board_slug: 'b', thread_id: 7, post_number: 42, is_op: true, name: 'Anon', body: '~~cat~~', body_html: '<s>cat</s>', created_at: '2026-01-01T00:00:00Z', score: 0.88 },
+    ])
+    const wrapper = mount(SearchView)
+    expect(wrapper.find('.post-body').html()).toContain('<s>cat</s>')
+    expect(wrapper.text()).not.toContain('~~cat~~')
+  })
+
   it('shows an empty state when nothing matches', () => {
     routeMock.query = { q: 'zzz' }
     stub([])
