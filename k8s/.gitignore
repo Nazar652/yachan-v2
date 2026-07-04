@@ -1,0 +1,3 @@
+# out-of-band secret material for prod (created via kubectl --from-env-file)
+*-secret.env
+prod-secret.env

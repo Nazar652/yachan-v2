@@ -20,14 +20,17 @@ class CaptchaService:
         token = captcha.new_token()
         answer = captcha.generate_answer()
         await self.redis.set(self._key(token), answer, ex=CAPTCHA_TTL_SECONDS)
+
         # pillow rendering is cpu-bound; keep it off the event loop
         light_image, dark_image = await anyio.to_thread.run_sync(captcha.render_image_pair, answer)
+
         return token, base64.b64encode(light_image).decode(), base64.b64encode(dark_image).decode()
 
     async def validate(self, token: str, answer: str) -> None:
         stored = await self.redis.get(self._key(token))
         if stored is None or stored.upper() != answer.strip().upper():
             raise InvalidCaptchaError()
+
         # one-time use: a solved captcha cannot be replayed
         await self.redis.delete(self._key(token))
 

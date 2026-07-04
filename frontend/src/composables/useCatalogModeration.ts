@@ -26,11 +26,13 @@ export function useCatalogModeration(
 
   async function setLocked(threadId: number, locked: boolean) {
     await setThreadLocked(toValue(slug), threadId, locked)
+
     patchThread(threadId, { is_locked: locked })
   }
 
   async function setSticky(threadId: number, sticky: boolean) {
     await setThreadSticky(toValue(slug), threadId, sticky)
+
     patchThread(threadId, { is_sticky: sticky })
   }
 

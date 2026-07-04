@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: moderation-config
+  namespace: moderation
+data:
+  REDIS_URL: redis://redis.yachan.svc.cluster.local:6379/0

@@ -13,9 +13,6 @@ import {
 } from '@/api/mod'
 import type { BanCreate, BanResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
-// mod-only actions scoped to one thread. each call hits the api, then patches
-// the thread cache so the change shows immediately, and invalidates the catalog
-// so its lock/sticky icons refresh on the next visit.
 export function useModeration(
   slug: MaybeRefOrGetter<string>,
   threadId: MaybeRefOrGetter<number>,
@@ -35,28 +32,34 @@ export function useModeration(
 
   async function setLocked(locked: boolean) {
     await setThreadLocked(toValue(slug), toValue(threadId), locked)
+
     patchThread({ is_locked: locked })
     await invalidateCatalog()
   }
 
   async function setSticky(sticky: boolean) {
     await setThreadSticky(toValue(slug), toValue(threadId), sticky)
+
     patchThread({ is_sticky: sticky })
     await invalidateCatalog()
   }
 
   async function removePost(postNumber: number) {
     await deletePost(toValue(slug), postNumber)
+
     queryClient.setQueryData<ThreadDetailResponse>(
       threadQueryKey(toValue(slug), toValue(threadId)),
       (old) => {
         if (!old) return old
+
         const posts = old.posts ?? []
         const removed = posts.find((post) => post.post_number === postNumber)
         if (!removed) return old
-        // mirror the server: reply_count tracks non-op replies, so drop it by one
-        // unless the deleted post is the op
+
+        // mirror the server: reply_count tracks non-op replies, so decrement only
+        // if the deleted post is not the op
         const reply_count = removed.is_op ? old.reply_count : Math.max(0, old.reply_count - 1)
+
         return {
           ...old,
           reply_count,
@@ -66,10 +69,9 @@ export function useModeration(
     )
   }
 
-  // admin-only: hard-delete the whole thread, then drop it from the catalog
-  // cache and invalidate so every page refetches without it
   async function removeThread() {
     await deleteThread(toValue(slug), toValue(threadId))
+
     queryClient.setQueryData<ThreadResponse[]>(
       threadsPageQueryKey(toValue(slug), 1),
       (old) => (old ? old.filter((thread) => thread.id !== toValue(threadId)) : old),
@@ -81,8 +83,6 @@ export function useModeration(
     return banPoster(toValue(slug), postNumber, data)
   }
 
-  // the new summary arrives over the thread's ws channel (useThreadWs), same as
-  // the automatic beat-triggered run, so this just kicks the job off
   async function generateSummary() {
     await regenerateSummary(toValue(slug), toValue(threadId))
   }

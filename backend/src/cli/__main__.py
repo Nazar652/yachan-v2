@@ -3,8 +3,6 @@ import argparse
 from src.bootstrap.container import setup_di
 from src.cli import create_admin, dump_openapi, embed_posts
 
-# register a command module here to expose it; each module provides
-# COMMAND, HELP, configure(parser) and handle(args)
 COMMANDS = [create_admin, dump_openapi, embed_posts]
 
 
@@ -19,6 +17,7 @@ def main() -> None:
         handlers[module.COMMAND] = module.handle
 
     args = parser.parse_args()
+
     setup_di()
     handlers[args.command](args)
 

@@ -62,6 +62,7 @@ export function useRefPreviews(getPost: (postNumber: number) => PostResponse | u
 
     const rect = anchor.getBoundingClientRect()
     const left = Math.min(rect.left, window.innerWidth - PREVIEW_MAX_WIDTH - 8)
+
     const entry: RefPreview = {
       postNumber,
       level,
@@ -86,6 +87,7 @@ export function useRefPreviews(getPost: (postNumber: number) => PostResponse | u
     // over a preview card but not a ref: keep it and its ancestors, and schedule
     // (don't force) dropping any cards stacked deeper than it
     const level = previewLevelOf(target)
+
     if (level >= 0) shrinkTo(level + 1)
   }
 
@@ -104,6 +106,7 @@ export function useRefPreviews(getPost: (postNumber: number) => PostResponse | u
 
   function clear() {
     cancelSettle()
+
     previews.value = []
   }
 

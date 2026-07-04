@@ -1,0 +1,18 @@
+# Static, non-sensitive prod env only. Deployment-specific values that vary or leak
+# infra detail — S3_BUCKET, S3_ENDPOINT_URL, STORAGE_BASE_URL, CORS_ORIGINS — plus all
+# real secrets (DATABASE_URL, JWT_SECRET, IP_HASH_SALT, S3_ACCESS_KEY, S3_SECRET_KEY,
+# GEMINI_API_KEY, SENTRY_DSN) are injected from GitHub Secrets into the yachan-secret by
+# the deploy workflow (see base/secret.example.yaml), so nothing here needs editing.
+# MEDIA_INTERNAL_URL is intentionally unset in prod: media is served from R2's public
+# url, so yachan builds the moderation image_url from the public bucket url instead.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yachan-config
+  namespace: yachan
+data:
+  PYTHONUNBUFFERED: "1"
+  REDIS_URL: redis://redis:6379/0
+  STORAGE_BACKEND: s3
+  S3_REGION: auto
+  SENTRY_ENVIRONMENT: production

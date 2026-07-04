@@ -3,7 +3,6 @@ import type { PostResponse, ThreadResponse } from '@/api/types'
 // the backend websocket routes are not part of the openapi schema (ws is not
 // rest), so the url and event shapes are declared here by hand.
 
-// http://host → ws://host, https://host → wss://host
 export function toWsBase(apiBase: string): string {
   return apiBase.replace(/^http/, 'ws')
 }
@@ -26,20 +25,17 @@ export const WS_EVENT = {
   THREAD_SUMMARIZED: 'thread_summarized',
 } as const
 
-// carried by attachment_moderated when a verdict lands on an attachment
 export interface AttachmentModeratedData {
   attachment_id: number
   post_id: number
   moderation_status: string
 }
 
-// carried by thread_summarized when a fresh tl;dr lands on a thread
 export interface ThreadSummarizedData {
   thread_id: number
   summary: string
 }
 
-// envelope pushed on every channel: { type, data }
 export interface WsEnvelope {
   type: string
   data: PostResponse | ThreadResponse | AttachmentModeratedData | ThreadSummarizedData

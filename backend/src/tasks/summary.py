@@ -15,9 +15,9 @@ async def summarize_thread(thread_id: int, summary_service: SummaryService) -> N
 @celery.task(base=ScopedTask, name="summarize_stale_threads", typing=False)
 @inject
 async def summarize_stale_threads(summary_service: SummaryService) -> None:
-    # periodic: enqueue a summary for every thread that grew enough since its last.
-    # no api key means the feature is off, so do nothing rather than enqueue work.
+    # no api key means the feature is off, so do nothing rather than enqueue work
     if not get_settings().gemini_api_key:
         return
+
     for thread_id in await summary_service.stale_thread_ids():
-        summarize_thread.delay(thread_id)  # type: ignore[attr-defined]  celery task
+        summarize_thread.delay(thread_id)  # type: ignore[attr-defined]

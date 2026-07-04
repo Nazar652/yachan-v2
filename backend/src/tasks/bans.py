@@ -8,5 +8,5 @@ from src.tasks.base import ScopedTask
 @celery.task(base=ScopedTask, name="expire_bans", typing=False)
 @inject
 async def expire_bans(ban_service: BanService) -> int:
-    # periodic: deactivate bans whose expiry has passed; returns how many
+    # periodic task to deactivate expired bans
     return await ban_service.expire_due()

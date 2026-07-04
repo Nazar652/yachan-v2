@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-// the brand mark: a slender herringbone barley ear, two-tone amber + gold.
-// paths are generated from grain anchor points so the mark stays crisp at any size
+// paths are generated from grain anchors so the mark stays crisp at any size
 const props = withDefaults(
   defineProps<{ height?: number; amber?: string; gold?: string }>(),
   { height: 36, amber: 'var(--color-gold-2)', gold: 'var(--color-gold)' },

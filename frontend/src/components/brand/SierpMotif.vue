@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-// downward sierpinski-triangle motif used as a decorative divider mark
 const props = withDefaults(defineProps<{ size?: number; color?: string }>(), {
   size: 20,
   color: 'currentColor',

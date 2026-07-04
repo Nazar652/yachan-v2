@@ -31,6 +31,7 @@ class PostRepository(BaseRepository):
     async def get_op_posts_by_thread_ids(self, thread_ids: list[int]) -> dict[int, Post]:
         if not thread_ids:
             return {}
+
         result = await self.session.execute(
             select(Post).where(
                 col(Post.thread_id).in_(thread_ids),
@@ -139,6 +140,7 @@ class PostRepository(BaseRepository):
             )
         )
         await self.session.flush()
+
         result = await self.session.execute(select(Post).where(col(Post.id) == post_id))
         return result.scalar_one()
 

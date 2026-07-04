@@ -35,8 +35,6 @@ class BoardUpdate(BaseModel):
 
 
 class BoardReorder(BaseModel):
-    # the complete set of board slugs in the desired display order; the service
-    # rejects anything that is not a permutation of all existing boards
     slugs: list[str] = Field(min_length=1)
 
 

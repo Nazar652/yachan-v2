@@ -28,6 +28,7 @@ class PostEditRepository(BaseRepository):
     async def delete_by_post_ids(self, post_ids: list[int]) -> None:
         if not post_ids:
             return
+
         await self.session.execute(
             delete(PostEdit).where(col(PostEdit.post_id).in_(post_ids))
         )

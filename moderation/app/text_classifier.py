@@ -21,13 +21,16 @@ def is_spam(text: str) -> bool:
     urls = count_urls(text)
     if urls >= 3:
         return True
+
     words = text.split()
     if urls >= 1 and len(words) <= 3:
         return True
+
     if words:
         top_count = max(words.count(word) for word in set(words))
         if top_count >= 10 and top_count / len(words) > 0.5:
             return True
+
     return False
 
 
@@ -53,6 +56,7 @@ class OnnxTextClassifier:
         session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
         tokenizer = Tokenizer.from_file(tokenizer_path)
         tokenizer.enable_truncation(max_length=_MAX_TOKENS)
+
         return cls(session, tokenizer, threshold)
 
     def toxicity_score(self, text: str) -> float:
@@ -66,6 +70,7 @@ class OnnxTextClassifier:
 
     def classify(self, text: str) -> Verdict:
         score = self.toxicity_score(text)
+
         return {
             "toxic": score >= self.threshold,
             "spam": is_spam(text),

@@ -1,7 +1,6 @@
 import re
 
-# strip imageboard/markdown noise so the embedding sees words, not syntax:
-# post refs (>>123), emphasis/spoiler/code markers, greentext arrows
+# strip imageboard/markdown noise so the embedding sees words, not syntax
 _POST_REF = re.compile(r">>\d+")
 _MARKUP = re.compile(r"\*\*|__|~~|%%|\^\^|```|`|\*|_|\^|>")
 _WHITESPACE = re.compile(r"\s+")

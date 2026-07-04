@@ -25,6 +25,7 @@ class OnlineTracker:
     # noinspection PyAsyncCall
     async def touch(self, ip_hash: str, board_slug: str | None = None) -> None:
         now = utcnow().timestamp()
+
         pipeline = self.redis.pipeline()
         pipeline.zadd(_SITE_KEY, {ip_hash: now})
         pipeline.expire(_SITE_KEY, self.window_seconds)
@@ -46,8 +47,8 @@ class OnlineTracker:
 
     # noinspection PyAsyncCall
     async def _count(self, *keys: str) -> list[int]:
-        # prune entries older than the window, then count what is left
         cutoff = utcnow().timestamp() - self.window_seconds
+
         pipeline = self.redis.pipeline()
         for key in keys:
             pipeline.zremrangebyscore(key, "-inf", cutoff)

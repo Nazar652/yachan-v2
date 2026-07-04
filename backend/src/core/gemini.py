@@ -26,9 +26,11 @@ class GeminiClient:
     async def generate(self, prompt: str) -> str:
         url = f"{_API_BASE}/{self.model}:generateContent"
         body = {"contents": [{"parts": [{"text": prompt}]}]}
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(
                 url, headers={"x-goog-api-key": self.api_key}, json=body
             )
             response.raise_for_status()
-            return extract_text(response.json())
+
+        return extract_text(response.json())

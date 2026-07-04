@@ -30,7 +30,9 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
         if (old.some((existing) => existing.id === thread.id)) return old
         return [thread, ...old]
       })
-    } else if (envelope.type === WS_EVENT.THREAD_UPDATED) {
+    }
+
+    if (envelope.type === WS_EVENT.THREAD_UPDATED) {
       const update = envelope.data as ThreadResponse
       queryClient.setQueryData<ThreadResponse[]>(key, (old) => {
         if (!old) return old
@@ -42,7 +44,9 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
           ),
         )
       })
-    } else if (envelope.type === WS_EVENT.THREAD_DELETED) {
+    }
+
+    if (envelope.type === WS_EVENT.THREAD_DELETED) {
       const { id } = envelope.data as { id: number }
       queryClient.setQueryData<ThreadResponse[]>(key, (old) =>
         old ? old.filter((existing) => existing.id !== id) : old,
@@ -54,7 +58,6 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
     try {
       applyEvent(JSON.parse(event.data as string) as WsEnvelope)
     } catch {
-      // ignore malformed frames
     }
   }
 

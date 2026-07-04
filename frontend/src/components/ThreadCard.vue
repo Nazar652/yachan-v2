@@ -77,7 +77,6 @@ function galleryImageStyle(image: ImagePreview): { width: string; height: string
     @click="openThread"
   >
     <div class="flex flex-col gap-3.5 p-5">
-      <!-- head -->
       <div class="flex flex-wrap items-baseline gap-2.5">
         <span class="font-mono text-xs text-text-muted">No.{{ thread.id }}</span>
         <RouterLink
@@ -105,7 +104,6 @@ function galleryImageStyle(image: ImagePreview): { width: string; height: string
         </span>
       </div>
 
-      <!-- several images: gallery across the top -->
       <div v-if="!isSingleImage" class="gallery-scroll flex gap-2 overflow-x-auto pb-1.5">
         <RouterLink v-for="(image, index) in images" :key="index" :to="threadTo" class="shrink-0">
           <img
@@ -118,7 +116,6 @@ function galleryImageStyle(image: ImagePreview): { width: string; height: string
         </RouterLink>
       </div>
 
-      <!-- lower split: op text left, latest replies right -->
       <div class="grid items-start gap-6 md:grid-cols-[1fr_288px]">
         <div class="min-w-0">
           <RouterLink v-if="isSingleImage && images[0]" :to="threadTo" class="mb-3 inline-block">

@@ -29,9 +29,9 @@ class ScopedTask(Task):
             had_session = self._session() is not None
             await self._close()
             close_scope()
-            # each task runs in its own asyncio.run() loop; asyncpg connections are
-            # loop-bound, so drop the pool or the next task reuses a connection from
-            # a dead loop ("got Future attached to a different loop")
+
+            # asyncpg connections are loop-bound; each task gets its own asyncio.run loop,
+            # so we must dispose the pool or the next task reuses a dead connection
             if had_session:
                 await get_engine().dispose()
 

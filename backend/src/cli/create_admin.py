@@ -24,8 +24,11 @@ def handle(args: argparse.Namespace) -> None:
 
 def _prompt_password() -> str:
     password = getpass.getpass("Password: ")
+
     if not password:
         raise SystemExit("password must not be empty")
+
     if password != getpass.getpass("Confirm password: "):
         raise SystemExit("passwords do not match")
+
     return password

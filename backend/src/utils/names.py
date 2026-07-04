@@ -8,7 +8,9 @@ def parse_name(raw: str | None) -> tuple[str, str | None]:
     """
     if not raw:
         return "Anonymous", None
+
     if "#" in raw:
         name, password = raw.split("#", 1)
         return (name.strip() or "Anonymous"), compute_tripcode(password)
+
     return (raw.strip() or "Anonymous"), None

@@ -30,6 +30,7 @@ def select_posts(posts: list[Post]) -> list[Post]:
 
 def build_prompt(title: str | None, posts: list[Post]) -> str:
     lines = [f"Thread title: {title}"] if title else []
+
     for post in select_posts(posts):
         if post.body:
             lines.append(f"#{post.post_number}: {post.body}")
@@ -66,6 +67,7 @@ class SummaryService:
         summary = await self.gemini_client.generate(build_prompt(thread.title, posts))
         if not summary:
             return
+
         await self.thread_repo.set_summary(thread_id, summary, thread.reply_count)
         await self.events.publish(
             thread_channel(thread_id),

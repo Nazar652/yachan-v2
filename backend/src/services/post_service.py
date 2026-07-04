@@ -93,7 +93,6 @@ class PostService:
         reply_count = await self.post_repo.count_replies(thread_id)
         await self.thread_repo.set_reply_count(thread_id, reply_count)
 
-        # bump the thread unless the poster saged or the bump limit is reached
         if not data.sage and reply_count <= board.bump_limit:
             await self.thread_repo.update_bump_at(thread_id)
 
@@ -157,5 +156,6 @@ class PostService:
                 links.append(
                     PostBacklink(source_post_id=source_post_id, target_post_id=target.id)
                 )
+
         if links:
             await self.backlink_repo.create_many(links)

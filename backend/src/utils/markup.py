@@ -4,7 +4,6 @@ from typing import cast
 import mistune
 from mistune.block_parser import BlockParser
 
-# matches imageboard post references like >>123
 _POST_REF_RE = re.compile(r">>(\d+)")
 _POST_REF_PATTERN = r">>(?P<post_ref_num>\d+)"
 
@@ -53,6 +52,7 @@ def render_post_ref(renderer, raw: str) -> str:
 def post_ref_plugin(md: mistune.Markdown) -> None:
     # the parameter must be named `md` to satisfy mistune's plugin protocol type
     md.inline.register("post_ref", _POST_REF_PATTERN, parse_post_ref, before="link")
+
     if md.renderer is not None and md.renderer.NAME == "html":
         md.renderer.register("post_ref", render_post_ref)
 
@@ -82,6 +82,7 @@ def render_spoiler(renderer, text: str) -> str:
 
 def spoiler_plugin(md: mistune.Markdown) -> None:
     md.inline.register("spoiler", _SPOILER_PATTERN, parse_spoiler, before="link")
+
     if md.renderer is not None and md.renderer.NAME == "html":
         md.renderer.register("spoiler", render_spoiler)
 

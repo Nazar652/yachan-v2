@@ -17,10 +17,12 @@ function applyTheme(theme: Theme) {
 // theme in one component (e.g. AppHeader) is reflected reactively in others
 // (e.g. CaptchaWidget) without prop drilling
 const theme = ref<Theme>(readStoredTheme())
+
 applyTheme(theme.value)
 
 function toggle() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
+
   applyTheme(theme.value)
 }
 

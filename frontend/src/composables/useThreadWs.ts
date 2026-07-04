@@ -5,9 +5,11 @@ import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
 import { wsUrl, WS_EVENT, type WsEnvelope, type ThreadSummarizedData } from '@/api/ws'
 import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
-// subscribes to a thread's realtime feed and merges events into the thread
-// query cache: new_post appends, post_edited replaces. appends are deduped by
-// post id because the poster also appended their own reply optimistically.
+/**
+ * subscribes to a thread's realtime feed and merges events into the thread
+ * query cache: new_post appends, post_edited replaces. appends are deduped by
+ * post id because the poster also appended their own reply optimistically.
+ */
 export function useThreadWs(
   slug: MaybeRefOrGetter<string>,
   threadId: MaybeRefOrGetter<number>,
@@ -56,7 +58,6 @@ export function useThreadWs(
     try {
       applyEvent(JSON.parse(event.data as string) as WsEnvelope)
     } catch {
-      // ignore malformed frames
     }
   }
 

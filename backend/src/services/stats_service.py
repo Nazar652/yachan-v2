@@ -40,6 +40,7 @@ class StatsService:
             [board.slug for board in boards]
         )
         online_total = await self.online_tracker.count_site()
+
         return SiteStats(
             boards=boards,
             thread_counts=thread_counts,

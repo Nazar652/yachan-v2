@@ -52,7 +52,6 @@ class ModService:
     ) -> ModAccount:
         if await self.mod_account_repo.get_by_username(username) is not None:
             raise ModAccountExistsError(username)
-
         password_hash = await anyio.to_thread.run_sync(hash_password, password)
         return await self.mod_account_repo.create(
             ModAccount(username=username, password_hash=password_hash, role=role)
@@ -74,7 +73,6 @@ class ModService:
             payload = decode_access_token(token, self.settings)
         except jwt.InvalidTokenError as error:
             raise InvalidCredentialsError() from error
-
         account = await self.mod_account_repo.get_by_id(int(payload["sub"]))
         if account is None or not account.is_active:
             raise ModInactiveError()
@@ -118,6 +116,7 @@ class ModService:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
+
         post = await self.post_repo.get_by_board_and_number(board.id, post_number)
         if post is None:
             raise PostNotFoundError(post_number)
@@ -127,6 +126,7 @@ class ModService:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
+
         thread = await self.thread_repo.get_by_id(thread_id)
         if thread is None or thread.board_id != board.id:
             raise ThreadNotFoundError(thread_id)

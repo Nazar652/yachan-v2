@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: yachan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      initContainers:
+        - name: wait-migrations
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: yachan-secret
+          command:
+            - python
+            - -c
+            - |
+              import asyncio, os, asyncpg
+              url = os.environ["DATABASE_URL"].replace("+asyncpg", "")
+              async def wait():
+                  while True:
+                      try:
+                          conn = await asyncpg.connect(url)
+                          count = await conn.fetchval("SELECT count(*) FROM alembic_version")
+                          await conn.close()
+                          if not count:
+                              raise RuntimeError("alembic_version is empty")
+                          print("migrations present")
+                          return
+                      except Exception as exc:
+                          print("waiting for migrations:", exc)
+                          await asyncio.sleep(2)
+              asyncio.run(wait())
+      containers:
+        - name: celery-worker
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - src.celery_app.celery
+            - worker
+            - -Q
+            - celery,moderation_results
+            - --concurrency=1
+            - --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: yachan-config
+            - secretRef:
+                name: yachan-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: yachan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      initContainers:
+        - name: wait-migrations
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: yachan-secret
+          command:
+            - python
+            - -c
+            - |
+              import asyncio, os, asyncpg
+              url = os.environ["DATABASE_URL"].replace("+asyncpg", "")
+              async def wait():
+                  while True:
+                      try:
+                          conn = await asyncpg.connect(url)
+                          count = await conn.fetchval("SELECT count(*) FROM alembic_version")
+                          await conn.close()
+                          if not count:
+                              raise RuntimeError("alembic_version is empty")
+                          print("migrations present")
+                          return
+                      except Exception as exc:
+                          print("waiting for migrations:", exc)
+                          await asyncio.sleep(2)
+              asyncio.run(wait())
+      containers:
+        - name: celery-beat
+          image: yachan-backend:dev
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - src.celery_app.celery
+            - beat
+            - --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: yachan-config
+            - secretRef:
+                name: yachan-secret
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi

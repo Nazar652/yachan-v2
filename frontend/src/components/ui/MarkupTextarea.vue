@@ -44,6 +44,7 @@ async function onFormat(format: TextFormat) {
 
   refusalReason.value = null
   model.value = outcome.text
+
   await nextTick()
   textarea.focus()
   textarea.setSelectionRange(outcome.selectionStart, outcome.selectionEnd)

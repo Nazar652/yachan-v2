@@ -15,13 +15,13 @@ class Post(TimestampMixin, table=True):
     )
 
     id: int = Field(default=None, primary_key=True)
-    post_number: int  # per-board counter, unique within a board
+    post_number: int
     thread_id: int = Field(foreign_key="thread.id", index=True)
     board_id: int = Field(foreign_key="board.id", index=True)
     name: str = Field(default="Anonymous", max_length=100)
     tripcode: str | None = Field(default=None, max_length=50)
-    body: str | None = Field(default=None, max_length=5000)  # raw markdown
-    body_html: str | None = Field(default=None)  # rendered html sent to clients
+    body: str | None = Field(default=None, max_length=5000)
+    body_html: str | None = Field(default=None)
     sage: bool = Field(default=False)
     is_op: bool = Field(default=False)
     is_edited: bool = Field(default=False)
