@@ -4,3 +4,7 @@ resources:
   - namespace.yaml
   - config.yaml
   - worker.yaml
+images:
+  - name: yachan-moderation
+    newName: ghcr.io/nazar652/yachan-moderation
+    newTag: latest

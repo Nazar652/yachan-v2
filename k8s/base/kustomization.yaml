@@ -6,4 +6,3 @@ resources:
   - backend.yaml
   - celery.yaml
   - nginx.yaml
-  - ingress.yaml

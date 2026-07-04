@@ -1,107 +1,128 @@
-# yachan-v2 — Kubernetes (k3s)
+# yachan-v2 — Kubernetes (k3s), production only
 
-Kubernetes manifests for the whole stack, as an alternative to `docker-compose`.
-The real target is a **single-node k3s on Hetzner**; local iteration uses **k3d**
-(k3s-in-Docker), so the same manifests port over 1:1.
+These manifests run the stack on a **single-node k3s on Hetzner**. They are the
+**production** deployment — local development uses `docker compose` (k8s on one node
+duplicates Docker and costs RAM for no gain, so it is not used locally).
 
 **Two independent manifest sets that share only Redis:**
 
-- **yachan set** — `base/` + `overlays/{dev,prod}` (namespace `yachan`): postgres,
-  redis, minio, backend, celery worker/beat, nginx + ingress.
+- **yachan set** — `base/` + `overlays/prod` (namespace `yachan`): redis, backend,
+  celery worker/beat, nginx edge. Postgres and object storage are **external**
+  (Neon + Cloudflare R2), same as `docker-compose.prod.yml`.
 - **moderation set** — `moderation/` (namespace `moderation`): the stateless
   moderation worker. Reaches the broker cross-namespace at
   `redis.yachan.svc.cluster.local`.
 
-They are applied separately (`kubectl apply -k …` each). No GPU anywhere — the ML
-is CPU onnx (baked into the images) plus Gemini via API.
+Applied separately (`kubectl apply -k` each). No GPU — the ML is CPU onnx (baked
+into the images) plus Gemini via API.
 
 ## Layout
 
 ```
 k8s/
-  base/                       yachan set — shared across dev/prod
+  base/                       yachan set — deployment-agnostic app
     namespaces.yaml           namespace: yachan
-    redis.yaml                Deployment + Service (broker; in-cluster in dev and prod)
+    redis.yaml                Deployment + Service (broker)
     backend.yaml              migrate Job + backend Deployment (initContainer waits on migrations) + Service
     celery.yaml               celery-worker (-Q celery,moderation_results) + celery-beat
-    nginx.yaml                edge Deployment (SPA + /api + /media proxy) + Service
-    ingress.yaml              Traefik Ingress → nginx:80
+    nginx.yaml                edge Deployment + Service (ClusterIP; prod overlay turns it into a LoadBalancer)
     secret.example.yaml       documented template for the yachan Secret (NOT applied)
   overlays/
-    dev/                      in-cluster postgres + minio + createbucket, dev config + secret
-    prod/                     Neon/R2 config template; secret injected out-of-band
-  moderation/                 moderation set — namespace, config, worker Deployment
+    prod/
+      kustomization.yaml      ../../base + config + nginx patch + GHCR images
+      yachan-config.yaml      non-secret prod env (R2 bucket/endpoint, CORS, domain)
+      nginx.yaml              patch: Service -> LoadBalancer :80/:443, mount the origin-cert
+      tls-secret.example.yaml documented template for the Cloudflare origin-cert Secret
+  moderation/                 moderation set — namespace, config, worker Deployment (concurrency=1)
 ```
 
-## Prerequisites
+## Images & CI/CD
 
-- Docker (k3d runs the k3s node as a container).
-- [`k3d`](https://k3d.io) ≥ 5.9 and `kubectl` (Docker Desktop ships one; it bundles
-  Kustomize, so `kubectl apply -k` works with no extra tools).
+Images live in **GHCR** (`ghcr.io/nazar652/yachan-{backend,nginx,moderation}`) and are
+built by CI — never on the 4 GB server (the ML image would OOM). The nginx image is
+built with `--build-arg NGINX_CONF=nginx.prod.conf` (Cloudflare real-ip + origin-cert,
+no `/media` proxy — media is served straight from R2).
 
-## Local quickstart (k3d)
+Pipeline (`.github/workflows/deploy.yml`, triggered by a green `CI` run on `master`):
+
+1. **build-push** — build the three images, push `:latest` + `:<sha>` to GHCR.
+2. **deploy** — SSH to the server, `git reset --hard <sha>`, `kustomize edit set image`
+   to pin the sha (immutable + rollback-able), recreate the `migrate` Job, `kubectl
+   apply -k` both sets, wait for the migration, then `rollout status` everything.
+
+Rollback: re-run the deploy for an older commit, or
+`kubectl -n yachan rollout undo deploy/backend`.
+
+## Server bring-up (one-time)
+
+Hetzner CX22 (2 vCPU / 4 GB / 40 GB), Ubuntu. All commands run on the server unless noted.
 
 ```bash
-# 1. cluster — publish host :8081 → Traefik :80 (fixed at create time)
-k3d cluster create yachan --servers 1 --port "8081:80@loadbalancer" --wait
+# 1. swap (headroom against RAM spikes on 4 GB)
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
-# 2. build the three images and import them into the cluster (no registry locally)
-docker build -t yachan-backend:dev ./backend
-docker build -t yachan-moderation:dev ./moderation
-docker build -t yachan-nginx:dev ./frontend
-k3d image import yachan-backend:dev yachan-moderation:dev yachan-nginx:dev -c yachan
+# 2. firewall (Cloudflare reaches :80/:443; keep ssh)
+sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
 
-# 3. apply both sets
-kubectl apply -k k8s/overlays/dev
-kubectl apply -k k8s/moderation
+# 3. k3s — no Traefik (nginx is the edge), no metrics-server (save RAM),
+#    world-readable kubeconfig so the SSH user can run kubectl
+curl -sfL https://get.k3s.io | \
+  INSTALL_K3S_EXEC="--disable traefik --disable metrics-server --write-kubeconfig-mode 644" sh -
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-# 4. open the app
-#    http://localhost:8081
+# 4. standalone kustomize (the deploy uses `kustomize edit set image`)
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+sudo mv kustomize /usr/local/bin/
 
-# 5. seed a mod account (interactive password prompt)
+# 5. repo checkout (the deploy git-resets this)
+git clone https://github.com/nazar652/yachan-v2 ~/yachan-v2 && cd ~/yachan-v2
+```
+
+# 6. Cloudflare origin cert — the one manual secret (same as the compose ./certs mount).
+#    Put origin.pem + origin.key on the server, then create it once; the deploy never
+#    touches yachan-tls afterward.
+kubectl create namespace yachan --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic yachan-tls -n yachan \
+  --from-file=origin.pem=./certs/origin.pem --from-file=origin.key=./certs/origin.key
+```
+
+Everything else is automatic: the deploy workflow (re)creates the `yachan` namespace and
+the app Secret `yachan-secret` from GitHub Secrets on every run (idempotent
+`create --dry-run | apply`), so no other secret is created by hand.
+
+One-time, off the server:
+- **GitHub Secrets** the deploy needs (Settings -> Secrets -> Actions): `SSH_HOST`
+  `SSH_USER` `SSH_KEY` `SSH_PORT`, plus the config/secrets it writes into `yachan-secret`
+  — `DATABASE_URL` (Neon url with `?ssl=require`), `JWT_SECRET`, `IP_HASH_SALT`,
+  `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_ENDPOINT_URL`, `STORAGE_BASE_URL`,
+  `CORS_ORIGINS`, `GEMINI_API_KEY`, `BACKEND_SENTRY_DSN` — and the nginx build arg
+  `FRONTEND_SENTRY_DSN`. (All already exist from the compose deploy.)
+- **GHCR packages -> public** after the first CI push (GitHub package settings), so k3s
+  pulls without an imagePullSecret.
+- **Cloudflare DNS**: an `A` record for the domain -> server IP, **proxied** (orange
+  cloud); SSL/TLS mode **Full (strict)**. Origin cert: dashboard -> SSL/TLS -> Origin
+  Server -> Create Certificate (this is the origin.pem/key used above).
+
+## First deploy
+
+Trigger the `Deploy` workflow (via `workflow_dispatch`, or by merging to `master`). It
+builds+pushes the images, creates the namespace + secrets, applies both sets and waits for
+the rollout. Then seed a mod on the server:
+
+```bash
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+kubectl -n yachan get pods
 kubectl -n yachan exec -it deploy/backend -- python -m src.cli create-admin <username>
 ```
 
-Images use `imagePullPolicy: IfNotPresent` and a fixed `:dev` tag, so k3d serves the
-imported image and never tries to pull. After rebuilding an image, re-run
-`k3d image import …` and delete the pods (`kubectl -n yachan delete pod -l app=backend`)
-so the new image is picked up (the tag does not change, so pods don't auto-roll).
-
-## How it maps from docker-compose
-
-- **Startup ordering** (`depends_on: service_completed_successfully`) → one-shot
-  **Jobs** (`migrate`, `createbucket`) plus an **initContainer** on backend/worker/beat
-  that blocks until migrations are applied (a small Python `asyncpg` loop that polls
-  `alembic_version` via `DATABASE_URL` — works identically against in-cluster postgres
-  and Neon, no kubectl/RBAC needed). `migrate` uses `backoffLimit`, so if the DB is not
-  up yet the Job just retries.
-- **Service discovery** — compose service names become Services. nginx keeps the bare
-  names `backend:8000` / `minio:9000` from `nginx.conf`, so nginx, backend and minio must
-  stay in the same namespace (`yachan`).
-- **Config vs secrets** — `x-app-env` is split into a ConfigMap (URLs, bucket,
-  `STORAGE_BACKEND`) and a Secret (`DATABASE_URL`, `JWT_SECRET`, `IP_HASH_SALT`, S3 keys,
-  `GEMINI_API_KEY`). See `base/secret.example.yaml`.
-- **Storage** — postgres/minio use PVCs on the k3s `local-path` StorageClass. In k3d the
-  bytes live inside the node container (`/var/lib/rancher/k3s/storage/…`); they survive pod
-  restarts and `k3d cluster stop/start`, but not `k3d cluster delete`.
-
-## Production (Hetzner)
-
-Same images, `overlays/prod` swaps the in-cluster data layer for managed services (mirrors
-`docker-compose.prod.yml`):
-
-- postgres/minio/createbucket are **not** deployed — `DATABASE_URL` points at Neon,
-  S3 vars at Cloudflare R2. `overlays/prod/yachan-config.yaml` carries the non-secret prod
-  values (fill the `REPLACE_WITH_…` placeholders); the Secret is injected out-of-band, e.g.
-  `kubectl create secret generic yachan-secret -n yachan --from-env-file=prod-secret.env`
-  (that file is gitignored — see `k8s/.gitignore`).
-- Still TODO for the real deploy: image distribution (a registry / GHCR, or
-  `k3s ctr images import`), TLS on the Traefik Ingress, and a prod nginx config
-  (`nginx.prod.conf`, no `/media` proxy).
+After this, every merge to `master` deploys itself.
 
 ## Resource notes
 
-k3s + the full stack wants more than a ~2 GiB Docker VM — below that the node flaps
-`NodeNotReady` and probes time out. Give Docker Desktop **≥4 GiB** (Settings → Resources on
-the Hyper-V backend; `.wslconfig` on WSL2). The celery worker runs `--concurrency=1` and all
-probes carry generous `timeoutSeconds`/`failureThreshold` to tolerate a busy single node.
+Prod is much lighter than in-cluster dev (no postgres/minio pods, no Docker-Desktop
+overhead — native k3s on Linux). Budget on 4 GB: ~0.5-0.6 GB k3s system, the rest split
+across backend / celery-worker / moderation-worker (each loads onnx) plus redis / nginx /
+beat. The 2 GB swap and `--concurrency=1` on both workers keep it inside 4 GB. If it gets
+tight, moderation is the first thing to move to its own node.

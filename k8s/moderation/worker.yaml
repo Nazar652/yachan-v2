@@ -17,6 +17,15 @@ spec:
         - name: moderation-worker
           image: yachan-moderation:dev
           imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - app.celery_app.celery
+            - worker
+            - -Q
+            - moderation
+            - --concurrency=1
+            - --loglevel=info
           envFrom:
             - configMapRef:
                 name: moderation-config

@@ -3,3 +3,14 @@ kind: Kustomization
 resources:
   - ../../base
   - yachan-config.yaml
+patches:
+  - path: nginx.yaml
+# tags default to latest for a manual apply; the deploy workflow pins them to the
+# commit sha via `kustomize edit set image` so each rollout is immutable + rollback-able.
+images:
+  - name: yachan-backend
+    newName: ghcr.io/nazar652/yachan-backend
+    newTag: latest
+  - name: yachan-nginx
+    newName: ghcr.io/nazar652/yachan-nginx
+    newTag: latest

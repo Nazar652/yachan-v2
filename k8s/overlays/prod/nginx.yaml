@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: yachan
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          ports:
+            - containerPort: 443
+          volumeMounts:
+            - name: origin-cert
+              mountPath: /etc/nginx/ssl
+              readOnly: true
+      volumes:
+        - name: origin-cert
+          secret:
+            secretName: yachan-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: yachan
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
