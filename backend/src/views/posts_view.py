@@ -4,12 +4,13 @@ from starlette.requests import Request
 
 from src.celery_app import celery
 from src.core.config import Settings
-from src.core.exceptions import RateLimitedError
+from src.core.exceptions import InvalidCaptchaError, RateLimitedError
 from src.core.storage import Storage
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.services.board_service import BoardService
 from src.services.captcha_service import CaptchaService
 from src.services.file_service import FileService
+from src.services.mod_service import ModService
 from src.services.post_service import PostService
 from src.tasks.search import embed_post
 from src.utils.events import NEW_POST, POST_EDITED, EventPublisher, thread_channel
@@ -31,6 +32,7 @@ class PostsView:
         board_service: BoardService,
         file_service: FileService,
         captcha_service: CaptchaService,
+        mod_service: ModService,
         rate_limiter: RateLimiter,
         events: EventPublisher,
         storage: Storage,
@@ -41,6 +43,7 @@ class PostsView:
         self.board_service = board_service
         self.file_service = file_service
         self.captcha_service = captcha_service
+        self.mod_service = mod_service
         self.rate_limiter = rate_limiter
         self.events = events
         self.storage = storage
@@ -54,12 +57,18 @@ class PostsView:
         data: PostCreate,
         files: list[UploadFile],
         request: Request,
-        captcha_token: str,
-        captcha_answer: str,
+        captcha_token: str | None,
+        captcha_answer: str | None,
+        admin_token: str | None = None,
     ) -> PostResponse:
         ip_hash = client_ip_hash(request, self.settings)
         await self.online_tracker.touch(ip_hash, board_slug)
-        await self.captcha_service.validate(captcha_token, captcha_answer)
+
+        if not await self.mod_service.is_admin(admin_token):
+            if captcha_token is None or captcha_answer is None:
+                raise InvalidCaptchaError("captcha is required")
+            await self.captcha_service.validate(captcha_token, captcha_answer)
+
         if not await self.rate_limiter.is_allowed(
             f"reply:{ip_hash}", REPLY_RATE_LIMIT, REPLY_RATE_WINDOW
         ):

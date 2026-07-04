@@ -78,6 +78,12 @@ class ModService:
             raise ModInactiveError()
         return account
 
+    async def is_admin(self, token: str | None) -> bool:
+        if token is None:
+            return False
+        account = await self.resolve_mod(token)
+        return account.role == ModRole.ADMIN
+
     async def delete_post(self, board_slug: str, post_number: int, mod: ModAccount) -> None:
         post = await self._require_post(board_slug, post_number)
         await self.post_repo.soft_delete(post.id, deleted_by=mod.id)

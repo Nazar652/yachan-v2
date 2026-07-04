@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import src.views.posts_view as posts_view_module
-from src.core.exceptions import RateLimitedError
+from src.core.exceptions import InvalidCaptchaError, RateLimitedError
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
 from src.views.posts_view import PostsView
 from tests.views._factories import attachment_ns, board_ns, post_ns, request_ns, settings_ns
@@ -35,6 +35,8 @@ def build(*, allowed=True):
     file_service.store_attachment = AsyncMock(return_value=attachment_ns())
     captcha_service = MagicMock()
     captcha_service.validate = AsyncMock()
+    mod_service = MagicMock()
+    mod_service.is_admin = AsyncMock(return_value=False)
     rate_limiter = MagicMock()
     rate_limiter.is_allowed = AsyncMock(return_value=allowed)
     events = MagicMock()
@@ -48,6 +50,7 @@ def build(*, allowed=True):
         board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
+        mod_service=mod_service,
         rate_limiter=rate_limiter,
         events=events,
         storage=storage,
@@ -59,6 +62,7 @@ def build(*, allowed=True):
         board_service=board_service,
         file_service=file_service,
         captcha_service=captcha_service,
+        mod_service=mod_service,
         rate_limiter=rate_limiter,
         events=events,
         online_tracker=online_tracker,
@@ -119,6 +123,28 @@ async def test_create_reply_rate_limited():
     with pytest.raises(RateLimitedError):
         await view.create_reply("b", 5, PostCreate(), [], request_ns(), "tok", "ans")
     mocks.post_service.create_reply.assert_not_called()
+
+
+async def test_create_reply_requires_captcha_when_missing():
+    view, mocks = build()
+    with pytest.raises(InvalidCaptchaError):
+        await view.create_reply("b", 5, PostCreate(body="hi"), [], request_ns(), None, None)
+    mocks.captcha_service.validate.assert_not_called()
+    mocks.post_service.create_reply.assert_not_called()
+
+
+async def test_create_reply_admin_skips_captcha():
+    view, mocks = build()
+    mocks.mod_service.is_admin = AsyncMock(return_value=True)
+
+    result = await view.create_reply(
+        "b", 5, PostCreate(body="hi"), [], request_ns(), None, None, admin_token="admin-jwt"
+    )
+
+    assert isinstance(result, PostResponse)
+    mocks.mod_service.is_admin.assert_awaited_once_with("admin-jwt")
+    mocks.captcha_service.validate.assert_not_called()
+    mocks.post_service.create_reply.assert_awaited_once()
 
 
 async def test_edit_post_delegates_with_ip_hash():

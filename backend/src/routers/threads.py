@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 
 from src.bootstrap.container import get_dependency
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
+from src.views.dependencies import optional_bearer_token
 from src.views.threads_view import ThreadsView
 
 router = APIRouter(prefix="/{board_slug}/threads", tags=["threads"])
@@ -45,10 +46,11 @@ async def create_thread(
     request: Request,
     data: Annotated[ThreadCreate, Depends(thread_create_from_form)],
     files: list[UploadFile] = File(default=[]),
-    captcha_token: str = Header(alias="X-Captcha-Token"),
-    captcha_answer: str = Header(alias="X-Captcha-Answer"),
+    captcha_token: str | None = Header(alias="X-Captcha-Token", default=None),
+    captcha_answer: str | None = Header(alias="X-Captcha-Answer", default=None),
+    admin_token: str | None = Depends(optional_bearer_token),
     view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> ThreadDetailResponse:
     return await view.create_thread(
-        board_slug, data, files, request, captcha_token, captcha_answer
+        board_slug, data, files, request, captcha_token, captcha_answer, admin_token
     )

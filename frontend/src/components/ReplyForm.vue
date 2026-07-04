@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { createReply } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
 import { useOwnPosts } from '@/composables/useOwnPosts'
 import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
+import { useAuthStore } from '@/stores/auth'
 import type { ThreadDetailResponse } from '@/api/types'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -18,11 +19,15 @@ const props = defineProps<{
 }>()
 
 const queryClient = useQueryClient()
+const authStore = useAuthStore()
 const { markOwn } = useOwnPosts(() => props.slug)
 
 const formElement = ref<HTMLFormElement | null>(null)
 
-const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha()
+// admins post without a captcha, so skip fetching a challenge they'll never see
+const { data: captcha, isPending: captchaPending, isError: captchaError, refetch: refreshCaptcha } = useCaptcha(
+  computed(() => !authStore.isAdmin),
+)
 
 const name = ref('')
 const body = ref('')
@@ -64,14 +69,16 @@ async function onSubmit() {
     return
   }
 
-  if (!captchaAnswer.value.trim()) {
-    submitError.value = 'Please enter the captcha answer.'
-    return
-  }
+  if (!authStore.isAdmin) {
+    if (!captchaAnswer.value.trim()) {
+      submitError.value = 'Please enter the captcha answer.'
+      return
+    }
 
-  if (!captcha.value) {
-    submitError.value = 'Captcha not loaded yet.'
-    return
+    if (!captcha.value) {
+      submitError.value = 'Captcha not loaded yet.'
+      return
+    }
   }
 
   isSubmitting.value = true
@@ -85,8 +92,9 @@ async function onSubmit() {
         sage: sage.value,
       },
       selectedFiles.value,
-      captcha.value.token,
-      captchaAnswer.value.trim(),
+      authStore.isAdmin ? null : captcha.value!.token,
+      authStore.isAdmin ? null : captchaAnswer.value.trim(),
+      authStore.isAdmin ? authStore.token : null,
     )
     markOwn(post.post_number)
     queryClient.setQueryData<ThreadDetailResponse>(
@@ -94,12 +102,14 @@ async function onSubmit() {
       (old) => appendPostToThread(old, post),
     )
     resetForm()
-    await refreshCaptcha()
+    if (!authStore.isAdmin) await refreshCaptcha()
   } catch (error: unknown) {
     const detail = (error as Record<string, unknown>)?.detail
     submitError.value = typeof detail === 'string' ? detail : 'Failed to post reply.'
-    await refreshCaptcha()
-    captchaAnswer.value = ''
+    if (!authStore.isAdmin) {
+      await refreshCaptcha()
+      captchaAnswer.value = ''
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -152,6 +162,7 @@ async function onSubmit() {
     </label>
 
     <CaptchaWidget
+      v-if="!authStore.isAdmin"
       v-model="captchaAnswer"
       :captcha="captcha"
       :is-pending="captchaPending"

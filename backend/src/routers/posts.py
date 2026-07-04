@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
 
 from src.bootstrap.container import get_dependency
 from src.schemas.post import PostCreate, PostEditCreate, PostEditResponse, PostResponse
+from src.views.dependencies import optional_bearer_token
 from src.views.posts_view import PostsView
 
 router = APIRouter(prefix="/{board_slug}", tags=["posts"])
@@ -24,12 +25,13 @@ async def create_reply(
     request: Request,
     data: Annotated[PostCreate, Depends(post_create_from_form)],
     files: list[UploadFile] = File(default=[]),
-    captcha_token: str = Header(alias="X-Captcha-Token"),
-    captcha_answer: str = Header(alias="X-Captcha-Answer"),
+    captcha_token: str | None = Header(alias="X-Captcha-Token", default=None),
+    captcha_answer: str | None = Header(alias="X-Captcha-Answer", default=None),
+    admin_token: str | None = Depends(optional_bearer_token),
     view: PostsView = Depends(lambda: get_dependency(PostsView)),
 ) -> PostResponse:
     return await view.create_reply(
-        board_slug, thread_id, data, files, request, captcha_token, captcha_answer
+        board_slug, thread_id, data, files, request, captcha_token, captcha_answer, admin_token
     )
 
 

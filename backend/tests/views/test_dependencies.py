@@ -1,7 +1,7 @@
 import pytest
 from src.core.exceptions import UnauthorizedError
 from src.utils.ip import hash_ip
-from src.views.dependencies import bearer_token, client_ip_hash
+from src.views.dependencies import bearer_token, client_ip_hash, optional_bearer_token
 from tests.views._factories import request_ns, settings_ns
 
 
@@ -38,3 +38,15 @@ def test_bearer_token_rejects_missing():
 def test_bearer_token_rejects_wrong_scheme():
     with pytest.raises(UnauthorizedError):
         bearer_token("Basic abc")
+
+
+def test_optional_bearer_token_extracts_value():
+    assert optional_bearer_token("Bearer abc.def") == "abc.def"
+
+
+def test_optional_bearer_token_returns_none_when_missing():
+    assert optional_bearer_token(None) is None
+
+
+def test_optional_bearer_token_returns_none_for_wrong_scheme():
+    assert optional_bearer_token("Basic abc") is None

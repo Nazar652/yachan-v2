@@ -1,21 +1,22 @@
-import { onScopeDispose, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { appendPostToThread, threadQueryKey } from '@/composables/useThread'
-import { wsUrl, WS_EVENT, type WsEnvelope, type ThreadSummarizedData } from '@/api/ws'
+import { useReconnectingWs } from '@/composables/useReconnectingWs'
+import { WS_EVENT, type WsEnvelope, type ThreadSummarizedData } from '@/api/ws'
 import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/types'
 
 /**
  * subscribes to a thread's realtime feed and merges events into the thread
  * query cache: new_post appends, post_edited replaces. appends are deduped by
- * post id because the poster also appended their own reply optimistically.
+ * post id because the poster also appended their own reply optimistically. the
+ * socket reconnects on param change and heals itself on an unexpected drop.
  */
 export function useThreadWs(
   slug: MaybeRefOrGetter<string>,
   threadId: MaybeRefOrGetter<number>,
 ) {
   const queryClient = useQueryClient()
-  let socket: WebSocket | null = null
 
   function applyEvent(envelope: WsEnvelope) {
     const key = threadQueryKey(toValue(slug), toValue(threadId))
@@ -54,30 +55,14 @@ export function useThreadWs(
     }
   }
 
-  function onMessage(event: MessageEvent) {
-    try {
-      applyEvent(JSON.parse(event.data as string) as WsEnvelope)
-    } catch {
-    }
-  }
-
-  function close() {
-    if (socket) {
-      socket.onmessage = null
-      socket.close()
-      socket = null
-    }
-  }
-
-  function connect() {
-    close()
-    socket = new WebSocket(wsUrl(`/${toValue(slug)}/threads/${toValue(threadId)}/ws`))
-    socket.onmessage = onMessage
-  }
-
-  connect()
-  watch(() => [toValue(slug), toValue(threadId)], connect)
-  onScopeDispose(close)
-
-  return { close }
+  return useReconnectingWs(
+    () => `/${toValue(slug)}/threads/${toValue(threadId)}/ws`,
+    applyEvent,
+    () => {
+      // catch up on posts/edits missed during the drop
+      void queryClient.invalidateQueries({
+        queryKey: threadQueryKey(toValue(slug), toValue(threadId)),
+      })
+    },
+  )
 }

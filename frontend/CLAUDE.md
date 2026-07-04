@@ -74,15 +74,16 @@ frontend/src/
     __tests__/         boards, captcha, threads, mod, client, ws
   composables/
     useBoards.ts            useBoards + boardsQueryKey
-    useCaptcha.ts           useCaptcha (staleTime 0, gcTime 0 — single-use images)
+    useCaptcha.ts           useCaptcha(enabled?) (staleTime 0, gcTime 0 — single-use images; disabled for admins)
     useThreads.ts           useThreads(slug) + threadsQueryKey
     useThread.ts            useThread(slug, id) + threadQueryKey + appendPostToThread()
+    useReconnectingWs.ts    shared ws lifecycle: forwards envelopes, reconnects with backoff on drop
     useThreadWs.ts          per-thread realtime: merges new_post/post_edited into cache
     useBoardWs.ts           per-board realtime: prepends new_thread into the catalog cache
     useReports.ts           useReports + reportsQueryKey
     useModeration.ts        thread-scoped mod actions (setLocked/setSticky/removePost/ban)
     useCatalogModeration.ts catalog-scoped mod actions (setLocked/setSticky)
-    __tests__/              useThread, useThreadWs, useBoardWs, useModeration, useCatalogModeration
+    __tests__/              useThread, useReconnectingWs, useThreadWs, useBoardWs, useModeration, useCatalogModeration
   components/
     ReplyForm.vue           reply form mounted at the bottom of ThreadView
     layout/AppHeader.vue    logo + mod login/panel link
@@ -120,6 +121,12 @@ In the Docker image it is built **empty**, so the SPA talks to the same origin
   (error) throw error; return data`. Multipart wrapper builds `FormData` and
   `fetch`es `${VITE_API_BASE_URL}/api/...` with the captcha headers, throwing the
   parsed error body on `!response.ok`.
+- **Admin captcha bypass**: `createThread`/`createReply` (`api/threads.ts`) take
+  `captchaToken`/`captchaAnswer` as nullable and an optional `adminToken`. When
+  posting as `auth.isAdmin`, the views (`CreateThreadView`, `ReplyForm`) pass
+  `null` captcha fields and `auth.token` as `adminToken`, which goes out as an
+  `Authorization: Bearer` header instead of the captcha headers — mirrors the
+  backend's `ModService.is_admin` bypass.
 
 ## Server state (composables)
 
@@ -145,7 +152,11 @@ WS routes are **not** in the OpenAPI schema, so `api/ws.ts` declares them by han
   param change (`watch`), closes on `onScopeDispose`, ignores malformed frames.
 - `useBoardWs(slug)` (called in `CatalogView`): `new_thread` → prepend to the
   threads-list cache (deduped by id).
-- No auto-reconnect on drop yet (only on slug/threadId change).
+- Both are thin wrappers over **`useReconnectingWs(pathGetter, onEnvelope)`**, which owns
+  the socket lifecycle: it forwards decoded envelopes, reconnects with capped exponential
+  backoff (1s→30s) on an **unexpected drop** so a backend restart (e.g. a deploy) self-heals,
+  and treats a path change / scope dispose as an intentional close (no backoff). A successful
+  reopen resets the backoff.
 
 ## Mod panel & auth (Pinia)
 

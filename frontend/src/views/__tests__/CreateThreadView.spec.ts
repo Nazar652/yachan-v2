@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
 import CreateThreadView from '@/views/CreateThreadView.vue'
 import { useCaptcha } from '@/composables/useCaptcha'
+import { createThread } from '@/api/threads'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { slug: 'b' } }),
@@ -43,7 +46,19 @@ function stubCaptcha(overrides: Record<string, unknown> = {}) {
   } as unknown as ReturnType<typeof useCaptcha>)
 }
 
+async function selectImage(wrapper: VueWrapper) {
+  const input = wrapper.find('#files')
+  const file = new File(['img'], 'photo.jpg', { type: 'image/jpeg' })
+  Object.defineProperty(input.element, 'files', { value: [file] })
+  await input.trigger('change')
+}
+
 describe('CreateThreadView', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   it('renders the form heading', () => {
     stubCaptcha()
     const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
@@ -74,6 +89,33 @@ describe('CreateThreadView', () => {
     const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
     expect(wrapper.find('button[title="Bold"]').exists()).toBe(true)
     expect(wrapper.find('button[title="Quote"]').exists()).toBe(true)
+  })
+
+  it('hides the captcha widget for an admin poster', () => {
+    stubCaptcha()
+    useAuthStore().login('admin-jwt', 'admin')
+    const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.find('[data-testid="captcha"]').exists()).toBe(false)
+  })
+
+  it('posts as admin without a captcha answer, sending the bearer token', async () => {
+    stubCaptcha()
+    useAuthStore().login('admin-jwt', 'admin')
+    vi.mocked(createThread).mockResolvedValue({ id: 1, posts: [{ post_number: 1 }] } as never)
+
+    const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
+    await selectImage(wrapper)
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(createThread).toHaveBeenCalledWith(
+      'b',
+      { title: undefined, name: undefined, body: undefined },
+      [expect.any(File)],
+      null,
+      null,
+      'admin-jwt',
+    )
   })
 })
 

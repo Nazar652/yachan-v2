@@ -124,6 +124,33 @@ async def test_resolve_mod_inactive():
         await service.resolve_mod(token)
 
 
+async def test_is_admin_true_for_admin_token():
+    mod_account_repo = MagicMock()
+    mod_account_repo.get_by_id = AsyncMock(
+        return_value=SimpleNamespace(id=7, is_active=True, role=ModRole.ADMIN)
+    )
+    service, _ = build(mod_account_repo=mod_account_repo)
+    token = create_access_token("7", get_settings())
+
+    assert await service.is_admin(token) is True
+
+
+async def test_is_admin_false_for_moderator_token():
+    mod_account_repo = MagicMock()
+    mod_account_repo.get_by_id = AsyncMock(
+        return_value=SimpleNamespace(id=7, is_active=True, role=ModRole.MODERATOR)
+    )
+    service, _ = build(mod_account_repo=mod_account_repo)
+    token = create_access_token("7", get_settings())
+
+    assert await service.is_admin(token) is False
+
+
+async def test_is_admin_false_when_token_missing():
+    service, _ = build()
+    assert await service.is_admin(None) is False
+
+
 async def test_delete_post_soft_deletes_and_recounts():
     board_repo = MagicMock()
     board_repo.get_by_slug = AsyncMock(return_value=SimpleNamespace(id=1))
