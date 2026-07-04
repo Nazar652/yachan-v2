@@ -143,4 +143,25 @@ describe('BoardListView', () => {
     expect(wrapper.text()).toContain('(no title)')
     expect(wrapper.text()).toContain('Nobody posted anything yet')
   })
+
+  it('renders last_reply body_html markup instead of raw source text', () => {
+    stubBoards({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    stubLatest(
+      ref([
+        {
+          id: 15,
+          board_slug: 'b',
+          title: 'check',
+          reply_count: 1,
+          bump_at: '2026-06-10T12:53:00Z',
+          created_at: '2026-06-08T20:34:00Z',
+          thumbnail_url: null,
+          last_reply: { id: 15, name: 'Anonymous', body: '~~%%test%%~~', body_html: '<s>test</s>', created_at: '2026-06-10T12:53:00Z' },
+        },
+      ]),
+    )
+    const wrapper = mount(BoardListView, { global: { stubs: globalStubs } })
+    expect(wrapper.find('.post-body').html()).toContain('<s>test</s>')
+    expect(wrapper.text()).not.toContain('~~%%test%%~~')
+  })
 })
