@@ -1,5 +1,5 @@
 import io
-from typing import Protocol
+from typing import Protocol, cast
 
 import numpy as np
 import onnxruntime as ort
@@ -44,7 +44,8 @@ class OnnxClassifier:
         return cls(ort.InferenceSession(model_path, providers=["CPUExecutionProvider"]))
 
     def classify(self, data: bytes, mode: str) -> Verdict:
-        probabilities = self.session.run(None, {"image": preprocess(data)})[0][0]
+        outputs = cast(list[np.ndarray], self.session.run(None, {"image": preprocess(data)}))
+        probabilities = outputs[0][0]
         scores = {label: float(probabilities[index]) for index, label in enumerate(_LABELS)}
 
         return verdict_from_scores(scores)

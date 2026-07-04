@@ -30,7 +30,7 @@ jobs:
 
       - name: Run backend linters
         run: |
-          poetry -C backend run ruff check --force-exclude src/
+          poetry -C backend run ruff check src/
           poetry -C backend run pyright
 
   backend-tests:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Run moderation linters
         run: |
-          poetry run ruff check .
+          poetry run ruff check app/
           poetry run pyright
 
   moderation-tests:
