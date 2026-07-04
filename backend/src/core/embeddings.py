@@ -30,7 +30,13 @@ class EmbeddingModel:
 
     @classmethod
     def from_paths(cls, model_path: str, tokenizer_path: str) -> EmbeddingModel:
-        session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+        # cap intra-op threads so one inference call doesn't claim every core on the
+        # (cpu-constrained) box, starving the event loop and sibling containers
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = 1
+        session = ort.InferenceSession(
+            model_path, sess_options=options, providers=["CPUExecutionProvider"]
+        )
         tokenizer = Tokenizer.from_file(tokenizer_path)
         tokenizer.enable_truncation(max_length=_MAX_TOKENS)
         return cls(session, tokenizer)
