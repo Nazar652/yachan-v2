@@ -122,19 +122,25 @@ jobs:
               --from-literal=CORS_ORIGINS="$CORS_ORIGINS" \
               --dry-run=client -o yaml | kubectl apply -f -
 
-            # pin images to this commit for an immutable, rollback-able rollout
+            # pin all image refs to this commit (immutable, rollback-able)
+            ( cd k8s/migrate && kustomize edit set image \
+                yachan-backend=ghcr.io/nazar652/yachan-backend:${IMAGE_SHA} )
             ( cd k8s/overlays/prod && kustomize edit set image \
                 yachan-backend=ghcr.io/nazar652/yachan-backend:${IMAGE_SHA} \
                 yachan-nginx=ghcr.io/nazar652/yachan-nginx:${IMAGE_SHA} )
             ( cd k8s/moderation && kustomize edit set image \
                 yachan-moderation=ghcr.io/nazar652/yachan-moderation:${IMAGE_SHA} )
 
-            # migrate is a Job (immutable spec) — recreate it, then wait before rolling
+            # 1. migrations as a discrete step — WAIT for them before touching the app,
+            #    so the new code never rolls against an un-upgraded schema (no per-pod
+            #    wait loop). migrate is a Job (immutable spec) — recreate it each deploy.
             kubectl -n yachan delete job migrate --ignore-not-found
+            kubectl apply -k k8s/migrate
+            kubectl -n yachan wait --for=condition=complete job/migrate --timeout=300s
+
+            # 2. only now roll the app + moderation
             kubectl apply -k k8s/overlays/prod
             kubectl apply -k k8s/moderation
-
-            kubectl -n yachan wait --for=condition=complete job/migrate --timeout=300s
             kubectl -n yachan rollout status deploy/backend --timeout=180s
             kubectl -n yachan rollout status deploy/celery-worker --timeout=180s
             kubectl -n yachan rollout status deploy/celery-beat --timeout=120s
