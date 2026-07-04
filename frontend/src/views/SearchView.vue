@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import PostBody from '@/components/ui/PostBody.vue'
 import { useSearch } from '@/composables/useSearch'
 import { formatCompactWhen } from '@/utils/display'
 
@@ -73,9 +74,18 @@ const hasQuery = computed(() => queryText.value.trim().length >= 2)
             <span v-if="result.is_op" class="font-semibold text-greentext">OP</span>
             <span class="ml-auto">{{ formatCompactWhen(result.created_at) }}</span>
           </div>
-          <p class="line-clamp-3 whitespace-pre-wrap text-[13.5px] text-text">
-            {{ result.body || '(no text)' }}
+          <PostBody
+            v-if="result.body_html"
+            :html="result.body_html"
+            class="line-clamp-3 overflow-hidden text-[13.5px]"
+          />
+          <p
+            v-else-if="result.body"
+            class="line-clamp-3 whitespace-pre-wrap text-[13.5px] text-text"
+          >
+            {{ result.body }}
           </p>
+          <p v-else class="text-[13.5px] italic text-text-muted">(no text)</p>
         </RouterLink>
       </li>
     </ul>
