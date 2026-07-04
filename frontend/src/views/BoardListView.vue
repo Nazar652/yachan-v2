@@ -6,6 +6,7 @@ import { useBoards } from '@/composables/useBoards'
 import { useSiteStats } from '@/composables/useSiteStats'
 import { useLatestThreads } from '@/composables/useLatestThreads'
 import BarleyEar from '@/components/brand/BarleyEar.vue'
+import PostBody from '@/components/ui/PostBody.vue'
 import { formatCompactNumber, formatCompactWhen } from '@/utils/display'
 
 const { data: boards, isPending, isError } = useBoards()
@@ -121,7 +122,13 @@ const statsBySlug = computed(
               <div class="text-[14.5px] font-bold text-text">
                 {{ thread.title ?? '(no title)' }}
               </div>
+              <PostBody
+                v-if="thread.last_reply?.body_html"
+                :html="thread.last_reply.body_html"
+                class="line-clamp-1 overflow-hidden text-[13px] text-text-muted"
+              />
               <div
+                v-else
                 class="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-text-muted"
                 :class="{ italic: !thread.last_reply }"
               >
