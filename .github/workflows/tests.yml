@@ -121,8 +121,8 @@ jobs:
       - name: Run moderation linters
         run: |
           ls -a
-          poetry -C moderation run ruff check app/
-          poetry -C moderation run pyright
+          poetry run ruff check app/
+          poetry run pyright
 
   moderation-tests:
     runs-on: ubuntu-latest
