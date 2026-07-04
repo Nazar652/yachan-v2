@@ -39,8 +39,10 @@ export async function reorderBoards(slugs: string[]): Promise<BoardResponse[]> {
   return data
 }
 
-export async function listReports(): Promise<ReportResponse[]> {
-  const { data, error, response } = await apiClient.GET('/api/mod/reports')
+export async function listReports(boardId: number | null = null): Promise<ReportResponse[]> {
+  const { data, error, response } = await apiClient.GET('/api/mod/reports', {
+    params: { query: boardId == null ? undefined : { board_id: boardId } },
+  })
   if (error) throw toApiError(error, response)
   return data
 }

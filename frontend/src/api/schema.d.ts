@@ -752,6 +752,12 @@ export interface components {
             post_id: number;
             /** Board Id */
             board_id: number | null;
+            /** Board Slug */
+            board_slug: string;
+            /** Thread Id */
+            thread_id: number;
+            /** Post Number */
+            post_number: number;
             /** Reason */
             reason: string | null;
             /** Is Auto */
@@ -1048,9 +1054,10 @@ export interface operations {
     create_thread_api__board_slug__threads_post: {
         parameters: {
             query?: never;
-            header: {
-                "X-Captcha-Token": string;
-                "X-Captcha-Answer": string;
+            header?: {
+                "X-Captcha-Token"?: string | null;
+                "X-Captcha-Answer"?: string | null;
+                authorization?: string | null;
             };
             path: {
                 board_slug: string;
@@ -1118,9 +1125,10 @@ export interface operations {
     create_reply_api__board_slug__threads__thread_id__posts_post: {
         parameters: {
             query?: never;
-            header: {
-                "X-Captcha-Token": string;
-                "X-Captcha-Answer": string;
+            header?: {
+                "X-Captcha-Token"?: string | null;
+                "X-Captcha-Answer"?: string | null;
+                authorization?: string | null;
             };
             path: {
                 board_slug: string;
@@ -1239,13 +1247,11 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ReportResponse"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

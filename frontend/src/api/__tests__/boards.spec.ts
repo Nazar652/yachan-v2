@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { apiClient } from '@/api/client'
-import { listBoards } from '@/api/boards'
+import { getBoard, listBoards } from '@/api/boards'
 
 vi.mock('@/api/client', () => ({
   apiClient: { GET: vi.fn() },
@@ -25,5 +25,24 @@ describe('listBoards', () => {
     getMock.mockResolvedValue({ data: undefined, error })
 
     await expect(listBoards()).rejects.toMatchObject(error)
+  })
+})
+
+describe('getBoard', () => {
+  beforeEach(() => getMock.mockReset())
+
+  it('returns the board on success', async () => {
+    const board = { id: 1, slug: 'b', title: 'Random' }
+    getMock.mockResolvedValue({ data: board, error: undefined })
+
+    await expect(getBoard('b')).resolves.toBe(board)
+    expect(getMock).toHaveBeenCalledWith('/api/boards/{slug}', { params: { path: { slug: 'b' } } })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'board not found' }
+    getMock.mockResolvedValue({ data: undefined, error })
+
+    await expect(getBoard('nope')).rejects.toMatchObject(error)
   })
 })

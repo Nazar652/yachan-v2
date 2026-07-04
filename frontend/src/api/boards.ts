@@ -10,3 +10,11 @@ export async function listBoards(): Promise<BoardResponse[]> {
   if (error) throw toApiError(error, response)
   return data
 }
+
+export async function getBoard(slug: string): Promise<BoardResponse> {
+  const { data, error, response } = await apiClient.GET('/api/boards/{slug}', {
+    params: { path: { slug } },
+  })
+  if (error) throw toApiError(error, response)
+  return data
+}

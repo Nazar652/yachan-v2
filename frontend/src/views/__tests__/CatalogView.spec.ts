@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CatalogView from '@/views/CatalogView.vue'
 import { useThreads } from '@/composables/useThreads'
 import { useSiteStats } from '@/composables/useSiteStats'
-import { useBoards } from '@/composables/useBoards'
+import { useBoard } from '@/composables/useBoards'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('vue-router', () => ({
@@ -28,7 +28,7 @@ vi.mock('@/composables/useBoardWs', () => ({
 }))
 
 vi.mock('@/composables/useBoards', () => ({
-  useBoards: vi.fn(),
+  useBoard: vi.fn(),
 }))
 
 vi.mock('@/composables/useSiteStats', () => ({
@@ -43,7 +43,7 @@ vi.mock('@/composables/useCatalogModeration', () => ({
 
 const useThreadsMock = vi.mocked(useThreads)
 const useSiteStatsMock = vi.mocked(useSiteStats)
-const useBoardsMock = vi.mocked(useBoards)
+const useBoardMock = vi.mocked(useBoard)
 
 function stubThreads(state: Record<string, unknown>) {
   useThreadsMock.mockReturnValue(state as ReturnType<typeof useThreads>)
@@ -53,8 +53,8 @@ function stubStats(data: Ref<unknown>) {
   useSiteStatsMock.mockReturnValue({ data } as ReturnType<typeof useSiteStats>)
 }
 
-function stubBoards(boards: Array<Record<string, unknown>>) {
-  useBoardsMock.mockReturnValue({ data: ref(boards) } as ReturnType<typeof useBoards>)
+function stubBoard(board: Record<string, unknown>) {
+  useBoardMock.mockReturnValue({ data: ref(board) } as ReturnType<typeof useBoard>)
 }
 
 function makeThread(overrides: Record<string, unknown> = {}) {
@@ -84,7 +84,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setLockedMock.mockReset()
   setStickyMock.mockReset()
-  stubBoards([{ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: false }])
+  stubBoard({ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: false })
 })
 
 describe('CatalogView', () => {
@@ -132,7 +132,7 @@ describe('CatalogView', () => {
   })
 
   it('shows an 18+ badge in the banner for nsfw boards', () => {
-    stubBoards([{ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: true }])
+    stubBoard({ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: true })
     stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('18+')

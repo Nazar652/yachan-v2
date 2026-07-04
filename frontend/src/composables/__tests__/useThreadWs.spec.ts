@@ -34,10 +34,10 @@ function emit(payload: unknown) {
   lastSocket().onmessage?.({ data: JSON.stringify(payload) })
 }
 
-function mountThreadWs(queryClient: QueryClient) {
+function mountThreadWs(queryClient: QueryClient, onThreadDeleted?: () => void) {
   const Host = defineComponent({
     setup() {
-      useThreadWs('b', 42)
+      useThreadWs('b', 42, onThreadDeleted)
       return () => null
     },
   })
@@ -134,6 +134,18 @@ describe('useThreadWs', () => {
       summary: 'a fresh tl;dr',
       posts: [],
     })
+  })
+
+  it('drops the thread cache and notifies the caller on thread_deleted', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadQueryKey('b', 42), { id: 42, posts: [] })
+    const onThreadDeleted = vi.fn()
+    mountThreadWs(queryClient, onThreadDeleted)
+
+    emit({ type: 'thread_deleted', data: { id: 42 } })
+
+    expect(queryClient.getQueryData(threadQueryKey('b', 42))).toBeUndefined()
+    expect(onThreadDeleted).toHaveBeenCalled()
   })
 
   it('ignores malformed frames', () => {

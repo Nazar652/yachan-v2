@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 
-import { useBoards } from '@/composables/useBoards'
+import { useBoard } from '@/composables/useBoards'
 import { useThreads, THREADS_PAGE_SIZE } from '@/composables/useThreads'
 import { useSiteStats } from '@/composables/useSiteStats'
 import { useBoardWs } from '@/composables/useBoardWs'
@@ -21,7 +21,7 @@ watch(slug, () => {
   page.value = 1
 })
 
-const { data: boards } = useBoards()
+const { data: board } = useBoard(slug)
 const { data: stats } = useSiteStats()
 const { data: threads, isPending, isError } = useThreads(slug, page)
 
@@ -30,7 +30,6 @@ useBoardWs(slug)
 const auth = useAuthStore()
 const moderation = useCatalogModeration(slug, page)
 
-const board = computed(() => boards.value?.find((candidate) => candidate.slug === slug.value))
 const boardStats = computed(() =>
   stats.value?.boards.find((candidate) => candidate.slug === slug.value),
 )

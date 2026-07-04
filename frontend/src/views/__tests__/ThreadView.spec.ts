@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import ThreadView from '@/views/ThreadView.vue'
 import { useThread } from '@/composables/useThread'
+import { useThreadWs } from '@/composables/useThreadWs'
 import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
@@ -277,6 +278,17 @@ describe('ThreadView', () => {
     await clickButton(wrapper, 'Lock')
     await flushPromises()
     expect(wrapper.find('p.text-danger').text()).toBe('session expired')
+  })
+
+  it('navigates to the board when the live feed reports the thread deleted', () => {
+    stubThreadDetail()
+    mount(ThreadView, { global: { stubs: globalStubs } })
+
+    const wsCalls = vi.mocked(useThreadWs).mock.calls
+    const onThreadDeleted = wsCalls[wsCalls.length - 1]?.[2]
+    onThreadDeleted?.()
+
+    expect(pushMock).toHaveBeenCalledWith('/b')
   })
 
   it('derives backlinks for a post from the references in other posts', () => {

@@ -11,6 +11,8 @@ from src.schemas.report import ReportCreate
 _AUTO_REPORTER = "auto-moderation"
 # verdict keys -> human-readable reason parts for the auto-report
 _VERDICT_LABELS = {"toxic": "toxicity", "spam": "spam"}
+# once a post has this many open reports, further ones are silently dropped
+_MAX_UNRESOLVED_REPORTS_PER_POST = 5
 
 
 class ReportService:
@@ -27,7 +29,7 @@ class ReportService:
 
     async def create_report(
         self, board_slug: str, post_number: int, data: ReportCreate, ip_hash: str
-    ) -> Report:
+    ) -> Report | None:
         board = await self.board_repo.get_by_slug(board_slug)
         if board is None:
             raise BoardNotFoundError(board_slug)
@@ -35,6 +37,16 @@ class ReportService:
         post = await self.post_repo.get_by_board_and_number(board.id, post_number)
         if post is None:
             raise PostNotFoundError(post_number)
+
+        # duplicates and dog-piles are dropped silently: the reporter always sees
+        # success, the mod queue gets at most a handful of rows per post
+        if await self.report_repo.count_unresolved_for_post_by_ip(post.id, ip_hash) > 0:
+            return None
+        if (
+            await self.report_repo.count_unresolved_for_post(post.id)
+            >= _MAX_UNRESOLVED_REPORTS_PER_POST
+        ):
+            return None
 
         return await self.report_repo.create(
             Report(post_id=post.id, board_id=board.id, reason=data.reason, ip_hash=ip_hash)
@@ -65,7 +77,9 @@ class ReportService:
             )
         )
 
-    async def list_unresolved(self, board_id: int | None = None) -> list[Report]:
+    async def list_unresolved(
+        self, board_id: int | None = None
+    ) -> list[tuple[Report, int, int, str]]:
         return await self.report_repo.list_unresolved(board_id)
 
     async def resolve(self, report_id: int, mod_id: int) -> None:

@@ -11,10 +11,13 @@ import type { PostResponse, ThreadDetailResponse, ThreadResponse } from '@/api/t
  * query cache: new_post appends, post_edited replaces. appends are deduped by
  * post id because the poster also appended their own reply optimistically. the
  * socket reconnects on param change and heals itself on an unexpected drop.
+ * thread_deleted is surfaced via the optional callback so the view can leave
+ * the now-gone page.
  */
 export function useThreadWs(
   slug: MaybeRefOrGetter<string>,
   threadId: MaybeRefOrGetter<number>,
+  onThreadDeleted?: () => void,
 ) {
   const queryClient = useQueryClient()
 
@@ -52,6 +55,11 @@ export function useThreadWs(
       queryClient.setQueryData<ThreadDetailResponse>(key, (old) =>
         old ? { ...old, summary: data.summary } : old,
       )
+    } else if (envelope.type === WS_EVENT.THREAD_DELETED) {
+      // a mod deleted the thread under the viewer's feet: drop the cache entry
+      // and let the view navigate away instead of refetching a 404
+      queryClient.removeQueries({ queryKey: key })
+      onThreadDeleted?.()
     }
   }
 

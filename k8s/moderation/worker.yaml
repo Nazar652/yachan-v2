@@ -24,7 +24,7 @@ spec:
             - worker
             - -Q
             - moderation
-            - --concurrency=1
+            - --concurrency=2
             - --loglevel=info
           envFrom:
             - configMapRef:

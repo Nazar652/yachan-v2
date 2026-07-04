@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { RouterLink } from 'vue-router'
 
 import ModDashboardView from '@/views/mod/ModDashboardView.vue'
 import { useReports } from '@/composables/useReports'
@@ -12,6 +13,7 @@ import { useAuthStore } from '@/stores/auth'
 const pushMock = vi.fn()
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: pushMock }),
+  RouterLink: { template: '<a><slot /></a>', props: ['to'] },
 }))
 
 const invalidateMock = vi.fn()
@@ -132,18 +134,31 @@ describe('ModDashboardView', () => {
     expect(wrapper.text()).toContain('No open reports. The fields are calm.')
   })
 
-  it('renders a report row with its reason and post id', () => {
+  it('renders a report row with its reason and a link to the reported post', () => {
     stubReports({
-      data: ref([{ id: 1, post_id: 42, board_id: 1, reason: 'spam', is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+      data: ref([{ id: 1, post_id: 42, board_id: 1, board_slug: 'b', thread_id: 3, post_number: 42, reason: 'spam', is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
     })
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
-    expect(wrapper.text()).toContain('post 42')
+    expect(wrapper.text()).toContain('/b/ No.42')
     expect(wrapper.text()).toContain('spam')
+  })
+
+  it('links to the reported post inside its thread', () => {
+    stubReports({
+      data: ref([{ id: 1, post_id: 42, board_id: 1, board_slug: 'b', thread_id: 3, post_number: 42, reason: 'spam', is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+    })
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+    const link = wrapper.findComponent(RouterLink)
+    expect(link.props('to')).toEqual({
+      name: 'thread',
+      params: { slug: 'b', id: 3 },
+      hash: '#post-42',
+    })
   })
 
   it('shows an auto badge for auto-flagged reports', () => {
     stubReports({
-      data: ref([{ id: 5, post_id: 7, board_id: 1, reason: 'Auto-flagged: toxicity', is_auto: true, is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+      data: ref([{ id: 5, post_id: 7, board_id: 1, board_slug: 'b', thread_id: 3, post_number: 7, reason: 'Auto-flagged: toxicity', is_auto: true, is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
     })
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('auto')
@@ -152,7 +167,7 @@ describe('ModDashboardView', () => {
 
   it('shows a resolved label instead of a button for resolved reports', () => {
     stubReports({
-      data: ref([{ id: 1, post_id: 42, board_id: 1, reason: 'spam', is_resolved: true, created_at: '2024-01-01T00:00:00' }]),
+      data: ref([{ id: 1, post_id: 42, board_id: 1, board_slug: 'b', thread_id: 3, post_number: 42, reason: 'spam', is_resolved: true, created_at: '2024-01-01T00:00:00' }]),
     })
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
     expect(wrapper.text()).toContain('resolved')
@@ -161,7 +176,7 @@ describe('ModDashboardView', () => {
 
   it('resolves a report and invalidates the reports query', async () => {
     stubReports({
-      data: ref([{ id: 3, post_id: 9, board_id: 1, reason: 'x', is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
+      data: ref([{ id: 3, post_id: 9, board_id: 1, board_slug: 'b', thread_id: 3, post_number: 9, reason: 'x', is_resolved: false, created_at: '2024-01-01T00:00:00' }]),
     })
     resolveReportMock.mockResolvedValue(undefined)
     const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
@@ -171,6 +186,25 @@ describe('ModDashboardView', () => {
 
     expect(resolveReportMock).toHaveBeenCalledWith(3)
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['reports'] })
+  })
+
+  it('renders a report filter option per board', () => {
+    stubBoards([board({ id: 1, slug: 'a', title: 'Anime' }), board({ id: 2, slug: 'b', title: 'Random' })])
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+
+    const options = wrapper.findAll('#report-board-filter option')
+    expect(options.map((option) => option.text())).toEqual(['All boards', '/a/ Anime', '/b/ Random'])
+  })
+
+  it('passes the selected board to the reports query', async () => {
+    stubBoards([board({ id: 7, slug: 'a', title: 'Anime' })])
+    const wrapper = mount(ModDashboardView, { global: { stubs: globalStubs } })
+
+    await wrapper.find('#report-board-filter').setValue(7)
+
+    const reportsCalls = useReportsMock.mock.calls
+    const boardIdArgument = reportsCalls[reportsCalls.length - 1]?.[0] as Ref<number | null>
+    expect(boardIdArgument.value).toBe(7)
   })
 
   it('hides board management for a moderator', () => {
