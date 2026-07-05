@@ -158,6 +158,17 @@ kubectl apply -k k8s/monitoring
 kubectl apply -k k8s/monitoring
 ```
 
+**Incident (2026-07-06):** the upstream chart ships two Jobs as Helm
+post-install/pre-delete hooks (`*-add-finalizer`, `*-remove-alloy-and-finalizer`) that
+patch/clear a finalizer on the operator Deployment around the three `Alloy` CRs. `kubectl`
+has no concept of Helm hook timing, so on a plain `apply` it ran the pre-delete Job
+immediately — which deleted all three just-created `Alloy` resources within seconds,
+silently leaving the operator/kube-state-metrics/node-exporter running but nothing
+actually shipping logs or metrics. `generated/k8s-monitoring.yaml` now has both hook
+Jobs (and their ServiceAccount/Role/RoleBinding) stripped out — they're already reflected
+in the file that's checked in, no action needed on a fresh apply, but if you ever
+regenerate from a newer chart version, strip them again (see the file header).
+
 The two Grafana Cloud destination Secrets it needs (`grafana-cloud-logs-grafana-k8s-monitoring`,
 `grafana-cloud-metrics-grafana-k8s-monitoring`) are **not** part of this manual apply —
 `deploy.yml` keeps them in sync from `GRAFANA_CLOUD_TOKEN` on every deploy, same as
