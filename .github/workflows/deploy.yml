@@ -92,12 +92,13 @@ jobs:
           S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
           STORAGE_BASE_URL: ${{ secrets.STORAGE_BASE_URL }}
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          GRAFANA_CLOUD_TOKEN: ${{ secrets.GRAFANA_CLOUD_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: IMAGE_SHA,DATABASE_URL,JWT_SECRET,IP_HASH_SALT,S3_ACCESS_KEY,S3_SECRET_KEY,GEMINI_API_KEY,SENTRY_DSN,S3_BUCKET,S3_ENDPOINT_URL,STORAGE_BASE_URL,CORS_ORIGINS
+          envs: IMAGE_SHA,DATABASE_URL,JWT_SECRET,IP_HASH_SALT,S3_ACCESS_KEY,S3_SECRET_KEY,GEMINI_API_KEY,SENTRY_DSN,S3_BUCKET,S3_ENDPOINT_URL,STORAGE_BASE_URL,CORS_ORIGINS,GRAFANA_CLOUD_TOKEN
           script: |
             set -e
             cd ~/yachan-v2
@@ -120,6 +121,20 @@ jobs:
               --from-literal=S3_ENDPOINT_URL="$S3_ENDPOINT_URL" \
               --from-literal=STORAGE_BASE_URL="$STORAGE_BASE_URL" \
               --from-literal=CORS_ORIGINS="$CORS_ORIGINS" \
+              --dry-run=client -o yaml | kubectl apply -f -
+
+            # grafana cloud destination secrets for k8s/monitoring (see k8s/README.md —
+            # the monitoring stack itself is applied once by hand, but these two secrets stay
+            # idempotently in sync here, same pattern as yachan-secret). usernames are the
+            # numeric Grafana Cloud stack ids, not secret; only the token is.
+            kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+            kubectl create secret generic grafana-cloud-logs-grafana-k8s-monitoring -n monitoring \
+              --from-literal=username="1671125" \
+              --from-literal=password="$GRAFANA_CLOUD_TOKEN" \
+              --dry-run=client -o yaml | kubectl apply -f -
+            kubectl create secret generic grafana-cloud-metrics-grafana-k8s-monitoring -n monitoring \
+              --from-literal=username="3350900" \
+              --from-literal=password="$GRAFANA_CLOUD_TOKEN" \
               --dry-run=client -o yaml | kubectl apply -f -
 
             # pin all image refs to this commit (immutable, rollback-able)
