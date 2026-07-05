@@ -99,6 +99,7 @@ def attachment_ns(**overrides):
         height=None,
         duration_seconds=None,
         size_bytes=100,
+        md5="deadbeefdeadbeefdeadbeefdeadbeef",
         moderation_status=ModerationStatus.SAFE,
     )
     data.update(overrides)
