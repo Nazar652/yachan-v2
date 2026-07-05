@@ -1,6 +1,9 @@
+import json
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from botocore.exceptions import ClientError
 
 from src.core.storage import LocalStorage, S3Storage, build_storage
@@ -111,6 +114,44 @@ async def test_s3_exists_false_on_client_error():
     storage, client = _s3_storage()
     client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
     assert await storage.exists("missing") is False
+
+
+async def test_s3_save_logs_external_call(caplog):
+    storage, _ = _s3_storage()
+    with caplog.at_level(logging.INFO, logger="src.external"):
+        await storage.save("abc.png", b"data")
+
+    payload = json.loads(caplog.records[-1].message)
+    assert payload["event"] == "external_call"
+    assert payload["target"] == "s3"
+    assert payload["operation"] == "save"
+    assert payload["bucket"] == "media"
+    assert payload["key"] == "abc.png"
+    assert payload["error"] is None
+
+
+async def test_s3_save_logs_error_and_reraises(caplog):
+    storage, client = _s3_storage()
+    client.put_object.side_effect = ClientError({"Error": {"Code": "500"}}, "PutObject")
+
+    with caplog.at_level(logging.INFO, logger="src.external"), pytest.raises(ClientError):
+        await storage.save("abc.png", b"data")
+
+    payload = json.loads(caplog.records[-1].message)
+    assert payload["operation"] == "save"
+    assert "500" in payload["error"]
+
+
+async def test_s3_exists_logs_exists_field(caplog):
+    storage, client = _s3_storage()
+    client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
+
+    with caplog.at_level(logging.INFO, logger="src.external"):
+        await storage.exists("missing")
+
+    payload = json.loads(caplog.records[-1].message)
+    assert payload["operation"] == "exists"
+    assert payload["exists"] is False
 
 
 def test_s3_public_url_strips_trailing_slash():

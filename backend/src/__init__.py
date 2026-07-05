@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from src.bootstrap.container import setup_di
 from src.core.config import get_settings
+from src.core.logging import configure_logging
 from src.core.sentry import init_sentry
 from src.core.exceptions import (
     BadRequestError,
@@ -13,6 +14,7 @@ from src.core.exceptions import (
     RateLimitedError,
     UnauthorizedError,
 )
+from src.middleware.logging import LoggingMiddleware
 from src.middleware.scope import ScopeMiddleware
 from src.routers import (
     boards,
@@ -31,10 +33,12 @@ from src.routers import (
 def create_app() -> FastAPI:
     setup_di()
     settings = get_settings()
+    configure_logging(settings.debug)
     init_sentry(settings)
 
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     app.add_middleware(ScopeMiddleware)
+    app.add_middleware(LoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

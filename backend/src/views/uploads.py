@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 from fastapi import UploadFile
@@ -5,11 +6,14 @@ from fastapi import UploadFile
 from src.celery_app import celery
 from src.core.config import get_settings
 from src.core.exceptions import TooManyAttachmentsError
+from src.core.logging import log_event
 from src.models.attachment import Attachment, MediaType
 from src.services.file_service import FileService
 from src.tasks.attachments import process_attachment
 
 MAX_ATTACHMENTS = 10
+
+logger = logging.getLogger("src.http")
 
 
 @dataclass(frozen=True)
@@ -68,4 +72,23 @@ async def store_uploads(
             queue="moderation",
         )
         stored.append(attachment)
+
+    # the request body log only captures multipart size (see LoggingMiddleware); the
+    # per-file breakdown the request actually carried is logged here instead
+    if stored:
+        log_event(
+            logger,
+            "http_attachments",
+            count=len(stored),
+            files=[
+                {
+                    "filename": attachment.original_name,
+                    "size": attachment.size_bytes,
+                    "content_type": attachment.mime_type,
+                    "md5": attachment.md5,
+                }
+                for attachment in stored
+            ],
+        )
+
     return stored

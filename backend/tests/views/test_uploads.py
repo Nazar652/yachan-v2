@@ -1,3 +1,5 @@
+import json
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -71,6 +73,37 @@ async def test_store_uploads_stores_and_enqueues(monkeypatch):
     assert send_task.call_args.args[0] == "moderate_image"
     assert send_task.call_args.kwargs["queue"] == "moderation"
     assert send_task.call_args.kwargs["args"] == [7, "http://media/abc.png", "nsfw"]
+
+
+async def test_store_uploads_logs_file_metadata_without_content(monkeypatch, caplog):
+    delay, send_task = _patch_enqueue(monkeypatch)
+    file_service = MagicMock()
+    file_service.store_attachment = AsyncMock(
+        return_value=attachment_ns(
+            id=7, original_name="c.png", size_bytes=3, mime_type="image/png", md5="abc123"
+        )
+    )
+    file_service.storage.public_url = MagicMock(return_value="http://media/abc.png")
+
+    uploads = [Upload("c.png", b"xyz", "image/png", MediaType.IMAGE)]
+    with caplog.at_level(logging.INFO, logger="src.http"):
+        await store_uploads(file_service, post_id=10, uploads=uploads)
+
+    payload = json.loads(caplog.records[-1].message)
+    assert payload["event"] == "http_attachments"
+    assert payload["count"] == 1
+    assert payload["files"] == [
+        {"filename": "c.png", "size": 3, "content_type": "image/png", "md5": "abc123"}
+    ]
+
+
+async def test_store_uploads_skips_log_when_no_files(monkeypatch, caplog):
+    file_service = MagicMock()
+    with caplog.at_level(logging.INFO, logger="src.http"):
+        stored = await store_uploads(file_service, post_id=10, uploads=[])
+
+    assert stored == []
+    assert caplog.records == []
 
 
 async def test_store_uploads_builds_internal_media_url(monkeypatch):

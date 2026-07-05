@@ -1,6 +1,8 @@
+import logging
 import mimetypes
 from abc import ABC, abstractmethod
 from pathlib import Path
+from time import perf_counter
 
 import aioboto3
 import anyio.to_thread
@@ -8,6 +10,9 @@ from aiobotocore.config import AioConfig
 from botocore.exceptions import ClientError
 
 from src.core.config import Settings
+from src.core.logging import log_event
+
+logger = logging.getLogger("src.external")
 
 
 class Storage(ABC):
@@ -98,29 +103,81 @@ class S3Storage(Storage):
 
     async def save(self, key: str, data: bytes) -> str:
         content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
-        async with self._client() as client:
-            await client.put_object(
-                Bucket=self.bucket, Key=key, Body=data, ContentType=content_type
-            )
+        start = perf_counter()
+        error = None
+        try:
+            async with self._client() as client:
+                await client.put_object(
+                    Bucket=self.bucket, Key=key, Body=data, ContentType=content_type
+                )
+        except Exception as exc:
+            error = str(exc)
+            raise
+        finally:
+            self._log_call("save", key, start, error)
+
         return key
 
     async def read(self, key: str) -> bytes:
-        async with self._client() as client:
-            response = await client.get_object(Bucket=self.bucket, Key=key)
-            async with response["Body"] as stream:
-                return await stream.read()
+        start = perf_counter()
+        error = None
+        try:
+            async with self._client() as client:
+                response = await client.get_object(Bucket=self.bucket, Key=key)
+                async with response["Body"] as stream:
+                    return await stream.read()
+        except Exception as exc:
+            error = str(exc)
+            raise
+        finally:
+            self._log_call("read", key, start, error)
 
     async def delete(self, key: str) -> None:
-        async with self._client() as client:
-            await client.delete_object(Bucket=self.bucket, Key=key)
+        start = perf_counter()
+        error = None
+        try:
+            async with self._client() as client:
+                await client.delete_object(Bucket=self.bucket, Key=key)
+        except Exception as exc:
+            error = str(exc)
+            raise
+        finally:
+            self._log_call("delete", key, start, error)
 
     async def exists(self, key: str) -> bool:
+        start = perf_counter()
+        found = True
+
         async with self._client() as client:
             try:
                 await client.head_object(Bucket=self.bucket, Key=key)
             except ClientError:
-                return False
-        return True
+                found = False
+
+        log_event(
+            logger,
+            "external_call",
+            target="s3",
+            operation="exists",
+            bucket=self.bucket,
+            key=key,
+            duration_ms=round((perf_counter() - start) * 1000, 2),
+            exists=found,
+        )
+
+        return found
+
+    def _log_call(self, operation: str, key: str, start: float, error: str | None) -> None:
+        log_event(
+            logger,
+            "external_call",
+            target="s3",
+            operation=operation,
+            bucket=self.bucket,
+            key=key,
+            duration_ms=round((perf_counter() - start) * 1000, 2),
+            error=error,
+        )
 
     def public_url(self, key: str) -> str:
         return f"{self.base_url}/{key}"
