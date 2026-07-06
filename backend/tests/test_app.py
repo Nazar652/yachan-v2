@@ -27,6 +27,19 @@ def test_cors_headers_on_actual_response():
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
+def test_metrics_endpoint_exposes_prometheus_format():
+    client = TestClient(create_app())
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+
+
+def test_metrics_endpoint_excluded_from_openapi_schema():
+    app = create_app()
+    assert "/metrics" not in app.openapi()["paths"]
+
+
 def test_app_registers_expected_routes():
     app = create_app()
     paths = {getattr(route, "path", None) for route in app.routes}
