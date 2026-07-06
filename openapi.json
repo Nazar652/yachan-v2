@@ -358,6 +358,63 @@
         }
       }
     },
+    "/api/{board_slug}/threads/similar": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Similar Threads For Text",
+        "operationId": "similar_threads_for_text_api__board_slug__threads_similar_get",
+        "parameters": [
+          {
+            "name": "board_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Slug"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimilarThreadResponse"
+                  },
+                  "title": "Response Similar Threads For Text Api  Board Slug  Threads Similar Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/{board_slug}/threads/{thread_id}": {
       "get": {
         "tags": [
@@ -392,6 +449,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ThreadDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{board_slug}/threads/{thread_id}/similar": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Similar Threads",
+        "operationId": "similar_threads_api__board_slug__threads__thread_id__similar_get",
+        "parameters": [
+          {
+            "name": "board_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Slug"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimilarThreadResponse"
+                  },
+                  "title": "Response Similar Threads Api  Board Slug  Threads  Thread Id  Similar Get"
                 }
               }
             }
@@ -2657,6 +2769,70 @@
           "score"
         ],
         "title": "SearchResultResponse"
+      },
+      "SimilarThreadResponse": {
+        "properties": {
+          "board_slug": {
+            "type": "string",
+            "title": "Board Slug"
+          },
+          "thread_id": {
+            "type": "integer",
+            "title": "Thread Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "op_snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Op Snippet"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "reply_count": {
+            "type": "integer",
+            "title": "Reply Count"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "board_slug",
+          "thread_id",
+          "title",
+          "op_snippet",
+          "thumbnail_url",
+          "reply_count",
+          "score"
+        ],
+        "title": "SimilarThreadResponse"
       },
       "SiteStatsResponse": {
         "properties": {

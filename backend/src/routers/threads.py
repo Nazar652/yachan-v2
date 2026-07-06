@@ -1,10 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Header, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, Query, Request, UploadFile
 
 from src.bootstrap.container import get_dependency
+from src.schemas.search import SimilarThreadResponse
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.views.dependencies import optional_bearer_token
+from src.views.search_view import SearchView
 from src.views.threads_view import ThreadsView
 
 router = APIRouter(prefix="/{board_slug}/threads", tags=["threads"])
@@ -30,6 +32,15 @@ async def list_threads(
     return await view.list_threads(board_slug, request, limit, offset)
 
 
+@router.get("/similar", response_model=list[SimilarThreadResponse])
+async def similar_threads_for_text(
+    board_slug: str,
+    q: str = Query(min_length=1, max_length=200),
+    view: SearchView = Depends(lambda: get_dependency(SearchView)),
+) -> list[SimilarThreadResponse]:
+    return await view.similar_threads_for_text(board_slug, q)
+
+
 @router.get("/{thread_id}", response_model=ThreadDetailResponse)
 async def get_thread(
     board_slug: str,
@@ -38,6 +49,15 @@ async def get_thread(
     view: ThreadsView = Depends(lambda: get_dependency(ThreadsView)),
 ) -> ThreadDetailResponse:
     return await view.get_thread(board_slug, thread_id, request)
+
+
+@router.get("/{thread_id}/similar", response_model=list[SimilarThreadResponse])
+async def similar_threads(
+    board_slug: str,
+    thread_id: int,
+    view: SearchView = Depends(lambda: get_dependency(SearchView)),
+) -> list[SimilarThreadResponse]:
+    return await view.similar_threads(board_slug, thread_id)
 
 
 @router.post("", response_model=ThreadDetailResponse, status_code=201)

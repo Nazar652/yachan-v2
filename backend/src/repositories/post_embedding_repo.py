@@ -7,6 +7,7 @@ from sqlmodel import col
 from src.models.board import Board
 from src.models.post import Post
 from src.models.post_embedding import PostEmbedding
+from src.models.thread import Thread
 
 from .base import BaseRepository
 
@@ -23,6 +24,14 @@ class PostEmbeddingRepository(BaseRepository):
             set_={"embedding": statement.excluded.embedding, "updated_at": func.now()},
         )
         await self.session.execute(statement)
+
+    async def get_by_post_id(self, post_id: int) -> list[float] | None:
+        query = select(col(PostEmbedding.embedding)).where(col(PostEmbedding.post_id) == post_id)
+        result = await self.session.execute(query)
+        embedding = result.scalar_one_or_none()
+        # pgvector deserializes to a numpy array when numpy is installed, a plain
+        # list otherwise; normalize to a plain list of python floats either way
+        return None if embedding is None else [float(value) for value in embedding]
 
     async def search(
         self,
@@ -54,3 +63,31 @@ class PostEmbeddingRepository(BaseRepository):
 
         result = await self.session.execute(query)
         return [(post, slug, dist) for post, slug, dist in result.all()]
+
+    async def similar_threads(
+        self,
+        embedding: list[float],
+        *,
+        exclude_thread_id: int,
+        board_id: int | None = None,
+        limit: int = 5,
+        max_distance: float | None = None,
+    ) -> list[tuple[Thread, str, Post, float]]:
+        distance = col(PostEmbedding.embedding).cosine_distance(embedding).label("distance")  # type: ignore[attr-defined]
+        query = (
+            select(Thread, col(Board.slug), Post, distance)
+            .join(Post, col(PostEmbedding.post_id) == col(Post.id))
+            .join(Thread, col(Post.thread_id) == col(Thread.id))
+            .join(Board, col(Thread.board_id) == col(Board.id))
+            .where(col(Post.is_op).is_(True))
+            .where(col(Post.deleted).is_(False))
+            .where(col(Post.thread_id) != exclude_thread_id)
+        )
+        if board_id is not None:
+            query = query.where(col(Thread.board_id) == board_id)
+        if max_distance is not None:
+            query = query.where(distance < max_distance)
+        query = query.order_by(distance).limit(limit)
+
+        result = await self.session.execute(query)
+        return [(thread, slug, post, dist) for thread, slug, post, dist in result.all()]
