@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter, RouterLink, type LocationQueryValue } from 'vue-router'
 
 import { useBoard } from '@/composables/useBoards'
 import { useThreads, THREADS_PAGE_SIZE } from '@/composables/useThreads'
@@ -14,11 +14,23 @@ import ThreadCard from '@/components/ThreadCard.vue'
 import type { ThreadResponse } from '@/api/types'
 
 const route = useRoute()
+const router = useRouter()
 const slug = computed(() => route.params.slug as string)
 
-const page = ref(1)
-watch(slug, () => {
-  page.value = 1
+function firstQueryValue(value: LocationQueryValue | LocationQueryValue[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+const page = computed(() => {
+  const parsed = Number(firstQueryValue(route.query.page))
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : 1
+})
+
+type SortKey = 'bump' | 'new' | 'replies'
+const SORT_KEYS: SortKey[] = ['bump', 'new', 'replies']
+const sort = computed<SortKey>(() => {
+  const raw = firstQueryValue(route.query.sort)
+  return (SORT_KEYS as string[]).includes(raw ?? '') ? (raw as SortKey) : 'bump'
 })
 
 const { data: board } = useBoard(slug)
@@ -37,8 +49,6 @@ const totalPages = computed(() =>
   boardStats.value ? Math.max(1, Math.ceil(boardStats.value.thread_count / THREADS_PAGE_SIZE)) : 1,
 )
 
-type SortKey = 'bump' | 'new' | 'replies'
-const sort = ref<SortKey>('bump')
 const sortOptions: Array<[SortKey, string]> = [
   ['bump', 'Bump order'],
   ['new', 'Newest'],
@@ -60,8 +70,14 @@ const sortedThreads = computed(() => {
 })
 
 function setPage(nextPage: number) {
-  page.value = nextPage
+  const query = { ...route.query, page: nextPage === 1 ? undefined : String(nextPage) }
+  router.replace({ query })
   window.scrollTo({ top: 0 })
+}
+
+function setSort(nextSort: SortKey) {
+  const query = { ...route.query, sort: nextSort === 'bump' ? undefined : nextSort }
+  router.replace({ query })
 }
 
 async function onToggleLock(thread: ThreadResponse) {
@@ -118,7 +134,7 @@ async function onToggleSticky(thread: ThreadResponse) {
               ? 'bg-gold font-bold text-on-gold'
               : 'bg-surface text-text-muted hover:bg-surface-3'
           "
-          @click="sort = key"
+          @click="setSort(key)"
         >
           {{ label }}
         </button>
