@@ -4,7 +4,9 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 import CatalogView from '@/views/CatalogView.vue'
-import { useThreads } from '@/composables/useThreads'
+import ThreadCard from '@/components/ThreadCard.vue'
+import ThreadGalleryCard from '@/components/ThreadGalleryCard.vue'
+import { useThreads, THREADS_PAGE_SIZE, GALLERY_PAGE_SIZE } from '@/composables/useThreads'
 import { useSiteStats } from '@/composables/useSiteStats'
 import { useBoard } from '@/composables/useBoards'
 import { useAuthStore } from '@/stores/auth'
@@ -65,6 +67,10 @@ const useBoardMock = vi.mocked(useBoard)
 
 function stubThreads(state: Record<string, unknown>) {
   useThreadsMock.mockReturnValue(state as ReturnType<typeof useThreads>)
+}
+
+function lastThreadsCall() {
+  return useThreadsMock.mock.calls[useThreadsMock.mock.calls.length - 1]
 }
 
 function stubStats(data: Ref<unknown>) {
@@ -314,5 +320,72 @@ describe('CatalogView', () => {
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
     await clickButton(wrapper, 'Sticky')
     expect(setStickyMock).toHaveBeenCalledWith(1, true)
+  })
+
+  it('defaults to the list view when neither the url nor localStorage say otherwise', () => {
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(lastThreadsCall()?.[2]).toMatchObject({ value: THREADS_PAGE_SIZE })
+  })
+
+  it('reads the initial view from the url query over localStorage', () => {
+    routeState.query.view = 'gallery'
+    localStorage.setItem('yachan_catalog_view', 'list')
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(lastThreadsCall()?.[2]).toMatchObject({ value: GALLERY_PAGE_SIZE })
+  })
+
+  it('falls back to the stored view when the url has none', () => {
+    localStorage.setItem('yachan_catalog_view', 'gallery')
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    mount(CatalogView, { global: { stubs: globalStubs } })
+    expect(lastThreadsCall()?.[2]).toMatchObject({ value: GALLERY_PAGE_SIZE })
+  })
+
+  it('switching to gallery updates the query, localStorage and pageSize', async () => {
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Gallery')
+
+    expect(replaceMock).toHaveBeenCalledWith({ query: { view: 'gallery' } })
+    expect(localStorage.getItem('yachan_catalog_view')).toBe('gallery')
+    expect(lastThreadsCall()?.[2]).toMatchObject({ value: GALLERY_PAGE_SIZE })
+  })
+
+  it('resets the page to 1 when switching view mode', async () => {
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
+    stubStats(
+      ref({
+        board_count: 1,
+        thread_count: 35,
+        post_count: 100,
+        online_count: 1,
+        boards: [{ slug: 'b', thread_count: 35, post_count: 100, online_count: 1 }],
+      }),
+    )
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Next ›')
+    expect(lastThreadsCall()?.[1]).toMatchObject({ value: 2 })
+
+    await clickButton(wrapper, 'Gallery')
+    expect(lastThreadsCall()?.[1]).toMatchObject({ value: 1 })
+  })
+
+  it('renders gallery tiles instead of list cards in gallery mode', async () => {
+    stubThreads({
+      data: ref([makeThread({ id: 1, title: 'Hello world' })]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+
+    await clickButton(wrapper, 'Gallery')
+
+    expect(wrapper.findComponent(ThreadCard).exists()).toBe(false)
+    expect(wrapper.findComponent(ThreadGalleryCard).exists()).toBe(true)
+    expect(wrapper.text()).toContain('Hello world')
   })
 })
