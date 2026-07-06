@@ -195,6 +195,55 @@
         }
       }
     },
+    "/api/threads/status": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Get Thread Statuses",
+        "operationId": "get_thread_statuses_api_threads_status_get",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "title": "Ids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ThreadStatusResponse"
+                  },
+                  "title": "Response Get Thread Statuses Api Threads Status Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/{board_slug}/threads": {
       "get": {
         "tags": [
@@ -2871,6 +2920,52 @@
           "created_at"
         ],
         "title": "ThreadResponse"
+      },
+      "ThreadStatusResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "board_slug": {
+            "type": "string",
+            "title": "Board Slug"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "is_locked": {
+            "type": "boolean",
+            "title": "Is Locked"
+          },
+          "reply_count": {
+            "type": "integer",
+            "title": "Reply Count"
+          },
+          "bump_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bump At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "board_slug",
+          "title",
+          "is_locked",
+          "reply_count",
+          "bump_at"
+        ],
+        "title": "ThreadStatusResponse"
       },
       "TokenResponse": {
         "properties": {

@@ -26,6 +26,7 @@ from src.routers import (
     reports,
     search,
     stats,
+    thread_status,
     threads,
     ws,
 )
@@ -81,8 +82,10 @@ def create_app() -> FastAPI:
 
     app.include_router(boards.router, prefix="/api")
     app.include_router(search.router, prefix="/api")
-    # the fixed /threads/latest path is registered before the /{board_slug}/threads routes
+    # the fixed /threads/latest and /threads/status paths are registered before
+    # the /{board_slug}/threads routes
     app.include_router(latest_threads.router, prefix="/api")
+    app.include_router(thread_status.router, prefix="/api")
     app.include_router(threads.router, prefix="/api")
     app.include_router(posts.router, prefix="/api")
     app.include_router(reports.router, prefix="/api")

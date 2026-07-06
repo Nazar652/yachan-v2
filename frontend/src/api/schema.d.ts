@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/threads/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Thread Statuses */
+        get: operations["get_thread_statuses_api_threads_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/{board_slug}/threads": {
         parameters: {
             query?: never;
@@ -869,6 +886,24 @@ export interface components {
             /** Last Replies */
             last_replies?: components["schemas"]["ReplyPreview"][];
         };
+        /** ThreadStatusResponse */
+        ThreadStatusResponse: {
+            /** Id */
+            id: number;
+            /** Board Slug */
+            board_slug: string;
+            /** Title */
+            title: string | null;
+            /** Is Locked */
+            is_locked: boolean;
+            /** Reply Count */
+            reply_count: number;
+            /**
+             * Bump At
+             * Format: date-time
+             */
+            bump_at: string;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -1004,6 +1039,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LatestThreadResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_thread_statuses_api_threads_status_get: {
+        parameters: {
+            query: {
+                ids: number[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadStatusResponse"][];
                 };
             };
             /** @description Validation Error */
