@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import ThreadView from '@/views/ThreadView.vue'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
+import { useSimilarThreads } from '@/composables/useSimilarThreads'
 import { ApiError } from '@/api/errors'
 import { useAuthStore } from '@/stores/auth'
 
@@ -28,6 +29,10 @@ vi.mock('@/composables/useThreadWs', () => ({
   useThreadWs: vi.fn(),
 }))
 
+vi.mock('@/composables/useSimilarThreads', () => ({
+  useSimilarThreads: vi.fn(),
+}))
+
 const setLockedMock = vi.fn()
 const setStickyMock = vi.fn()
 const removeThreadMock = vi.fn()
@@ -43,7 +48,19 @@ vi.mock('@/composables/useModeration', () => ({
   }),
 }))
 
+const isWatchedMock = vi.fn()
+const toggleWatchMock = vi.fn()
+const markSeenMock = vi.fn()
+vi.mock('@/composables/useWatchedThreads', () => ({
+  useWatchedThreads: () => ({
+    isWatched: isWatchedMock,
+    toggle: toggleWatchMock,
+    markSeen: markSeenMock,
+  }),
+}))
+
 const useThreadMock = vi.mocked(useThread)
+const useSimilarThreadsMock = vi.mocked(useSimilarThreads)
 
 function stubThread(state: Record<string, unknown>) {
   useThreadMock.mockReturnValue(state as ReturnType<typeof useThread>)
@@ -81,9 +98,13 @@ beforeEach(() => {
   setStickyMock.mockReset()
   removeThreadMock.mockReset()
   generateSummaryMock.mockReset()
+  isWatchedMock.mockReset().mockReturnValue(false)
+  toggleWatchMock.mockReset()
+  markSeenMock.mockReset()
   pushMock.mockReset()
   quoteSpy.mockReset()
   routeStub.hash = ''
+  useSimilarThreadsMock.mockReturnValue({ data: ref([]) } as unknown as ReturnType<typeof useSimilarThreads>)
 })
 
 const postFixture = {
@@ -320,6 +341,37 @@ describe('ThreadView', () => {
     wrapper.unmount()
   })
 
+  it('shows the similar threads panel when there are matches', () => {
+    useSimilarThreadsMock.mockReturnValue({
+      data: ref([
+        {
+          board_slug: 'g', thread_id: 9, title: 'similar thread', op_snippet: null,
+          thumbnail_url: null, reply_count: 2, score: 0.8,
+        },
+      ]),
+    } as unknown as ReturnType<typeof useSimilarThreads>)
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Similar threads')
+    expect(wrapper.text()).toContain('similar thread')
+  })
+
+  it('hides the similar threads panel when there are no matches', () => {
+    useSimilarThreadsMock.mockReturnValue({ data: ref([]) } as unknown as ReturnType<typeof useSimilarThreads>)
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Similar threads')
+  })
+
+  it('hides the similar threads panel when the request fails', () => {
+    useSimilarThreadsMock.mockReturnValue({
+      data: ref(undefined),
+    } as unknown as ReturnType<typeof useSimilarThreads>)
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Similar threads')
+  })
+
   it('scrolls to the post named in the url hash once the thread loads', async () => {
     const scrollSpy = vi.fn()
     Element.prototype.scrollIntoView = scrollSpy
@@ -329,5 +381,44 @@ describe('ThreadView', () => {
     await new Promise((resolve) => setTimeout(resolve))
     expect(scrollSpy).toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it('shows an unfilled star and toggles watch on click when not watched', async () => {
+    stubThreadDetail({ id: 42, title: 'T', reply_count: 5 })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    const star = wrapper.findAll('button').find((candidate) => candidate.text() === '☆')
+    expect(star).toBeDefined()
+    await star!.trigger('click')
+
+    expect(toggleWatchMock).toHaveBeenCalledWith({ id: 42, slug: 'b', title: 'T', reply_count: 5 })
+  })
+
+  it('shows a filled star when the thread is watched', () => {
+    isWatchedMock.mockReturnValue(true)
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('★')
+  })
+
+  it('marks the thread seen at the reply_count on load', () => {
+    stubThreadDetail({ reply_count: 5 })
+    mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(markSeenMock).toHaveBeenCalledWith(42, 5)
+  })
+
+  it('marks the thread seen again when reply_count grows', async () => {
+    const threadRef = ref({
+      id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 1,
+      bump_at: '', created_at: '', posts: [postFixture],
+    })
+    stubThread({ data: threadRef, isPending: ref(false), isError: ref(false) })
+    mount(ThreadView, { global: { stubs: globalStubs } })
+    markSeenMock.mockClear()
+
+    threadRef.value = { ...threadRef.value, reply_count: 6 }
+    await flushPromises()
+
+    expect(markSeenMock).toHaveBeenCalledWith(42, 6)
   })
 })

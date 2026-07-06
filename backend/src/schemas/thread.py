@@ -58,6 +58,15 @@ class ThreadDetailResponse(ThreadResponse):
     posts: list[PostResponse] = Field(default_factory=list)
 
 
+class ThreadStatusResponse(BaseModel):
+    id: int
+    board_slug: str
+    title: str | None
+    is_locked: bool
+    reply_count: int
+    bump_at: datetime
+
+
 class LatestThreadResponse(BaseModel):
     # cross-board "latest activity" strip on the home page
     id: int

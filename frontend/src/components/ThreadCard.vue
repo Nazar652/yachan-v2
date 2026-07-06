@@ -4,6 +4,7 @@ import { RouterLink, useRouter } from 'vue-router'
 
 import BaseButton from '@/components/ui/BaseButton.vue'
 import PostBody from '@/components/ui/PostBody.vue'
+import { useWatchedThreads } from '@/composables/useWatchedThreads'
 import { formatDateTime } from '@/utils/display'
 import type { ImagePreview, ThreadResponse } from '@/api/types'
 
@@ -26,6 +27,17 @@ const threadTo = computed(() => `/${props.slug}/thread/${props.thread.id}`)
 
 function openThread() {
   router.push(threadTo.value)
+}
+
+const { isWatched, toggle } = useWatchedThreads()
+
+function toggleWatch() {
+  toggle({
+    id: props.thread.id,
+    slug: props.slug,
+    title: props.thread.title,
+    reply_count: props.thread.reply_count,
+  })
 }
 
 function replyTo(replyPostNumber: number): string {
@@ -73,9 +85,19 @@ function galleryImageStyle(image: ImagePreview): { width: string; height: string
 
 <template>
   <article
-    class="flex cursor-pointer flex-col rounded-card border border-border bg-surface shadow-card transition-colors hover:border-gold hover:bg-[color-mix(in_srgb,var(--color-gold)_6%,var(--color-surface))]"
+    class="relative flex cursor-pointer flex-col rounded-card border border-border bg-surface shadow-card transition-colors hover:border-gold hover:bg-[color-mix(in_srgb,var(--color-gold)_6%,var(--color-surface))]"
     @click="openThread"
   >
+    <button
+      type="button"
+      class="absolute right-2.5 top-2.5 z-10 text-lg leading-none transition-colors"
+      :class="isWatched(thread.id) ? 'text-gold' : 'text-text-muted hover:text-gold'"
+      :aria-label="isWatched(thread.id) ? 'Unwatch thread' : 'Watch thread'"
+      @click.stop="toggleWatch"
+    >
+      {{ isWatched(thread.id) ? '★' : '☆' }}
+    </button>
+
     <div class="flex flex-col gap-3.5 p-5">
       <div class="flex flex-wrap items-baseline gap-2.5">
         <span class="font-mono text-xs text-text-muted">No.{{ thread.id }}</span>

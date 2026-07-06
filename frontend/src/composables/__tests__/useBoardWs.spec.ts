@@ -51,15 +51,32 @@ describe('useBoardWs', () => {
     expect(lastSocket().url).toMatch(/\/api\/b\/ws$/)
   })
 
-  it('prepends a new_thread to the catalog cache', () => {
+  it('prepends a new_thread to every cached page 1, regardless of pageSize', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsPageQueryKey('b', 1), [{ id: 1, title: 'first' }])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 10), [{ id: 1, title: 'first' }])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 40), [{ id: 1, title: 'first' }])
     mountBoardWs(queryClient)
 
     emit({ type: 'new_thread', data: { id: 2, title: 'second' } })
 
-    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 10))).toEqual([
       { id: 2, title: 'second' },
+      { id: 1, title: 'first' },
+    ])
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 40))).toEqual([
+      { id: 2, title: 'second' },
+      { id: 1, title: 'first' },
+    ])
+  })
+
+  it('does not prepend a new_thread onto a cached page other than 1', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(threadsPageQueryKey('b', 2, 10), [{ id: 1, title: 'first' }])
+    mountBoardWs(queryClient)
+
+    emit({ type: 'new_thread', data: { id: 2, title: 'second' } })
+
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 2, 10))).toEqual([
       { id: 1, title: 'first' },
     ])
   })
@@ -74,9 +91,13 @@ describe('useBoardWs', () => {
     expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 2, title: 'second' }])
   })
 
-  it('merges flags and re-sorts a stickied thread to the top on thread_updated', () => {
+  it('merges flags and re-sorts a stickied thread to the top across every cached page size', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 10), [
+      { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
+      { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
+    ])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 40), [
       { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
       { id: 2, is_sticky: false, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
     ])
@@ -84,10 +105,12 @@ describe('useBoardWs', () => {
 
     emit({ type: 'thread_updated', data: { id: 2, is_sticky: true, is_locked: false } })
 
-    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([
+    const expected = [
       { id: 2, is_sticky: true, is_locked: false, bump_at: '2026-01-01T00:00:00+00:00' },
       { id: 1, is_sticky: false, is_locked: false, bump_at: '2026-01-02T00:00:00+00:00' },
-    ])
+    ]
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 10))).toEqual(expected)
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 40))).toEqual(expected)
   })
 
   it('leaves other threads untouched when locking one on thread_updated', () => {
@@ -106,9 +129,13 @@ describe('useBoardWs', () => {
     ])
   })
 
-  it('drops a thread from the catalog cache on thread_deleted', () => {
+  it('drops a thread from every cached page size on thread_deleted', () => {
     const queryClient = new QueryClient()
-    queryClient.setQueryData(threadsPageQueryKey('b', 1), [
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 10), [
+      { id: 1, title: 'first' },
+      { id: 2, title: 'second' },
+    ])
+    queryClient.setQueryData(threadsPageQueryKey('b', 1, 40), [
       { id: 1, title: 'first' },
       { id: 2, title: 'second' },
     ])
@@ -116,7 +143,12 @@ describe('useBoardWs', () => {
 
     emit({ type: 'thread_deleted', data: { id: 1 } })
 
-    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1))).toEqual([{ id: 2, title: 'second' }])
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 10))).toEqual([
+      { id: 2, title: 'second' },
+    ])
+    expect(queryClient.getQueryData(threadsPageQueryKey('b', 1, 40))).toEqual([
+      { id: 2, title: 'second' },
+    ])
   })
 
   it('ignores unrelated event types', () => {

@@ -4,12 +4,15 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
 import { useModeration } from '@/composables/useModeration'
+import { useSimilarThreads } from '@/composables/useSimilarThreads'
+import { useWatchedThreads } from '@/composables/useWatchedThreads'
 import { useAuthStore } from '@/stores/auth'
 import { errorDetail } from '@/api/errors'
 import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
 import RefPreviews from '@/components/RefPreviews.vue'
+import SimilarThreadsPanel from '@/components/SimilarThreadsPanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import SealDivider from '@/components/ui/SealDivider.vue'
 
@@ -31,6 +34,31 @@ useThreadWs(slug, threadId, () => {
 
 const auth = useAuthStore()
 const moderation = useModeration(slug, threadId)
+const { data: similarThreads } = useSimilarThreads(toRef(slug), toRef(threadId))
+
+const { isWatched, toggle, markSeen } = useWatchedThreads()
+
+function onToggleWatch() {
+  if (!thread.value) return
+  toggle({
+    id: threadId.value,
+    slug: slug.value,
+    title: thread.value.title,
+    reply_count: thread.value.reply_count,
+  })
+}
+
+// keeps the watcher's unread count in sync while the thread is open, covering
+// both the initial load and any later bump from a live new_post or an
+// optimistic reply append
+watch(
+  () => thread.value?.reply_count,
+  (replyCount) => {
+    if (replyCount === undefined) return
+    markSeen(threadId.value, replyCount)
+  },
+  { immediate: true },
+)
 
 const backlinksByPostNumber = computed(() => {
   const map = new Map<number, number[]>()
@@ -159,6 +187,15 @@ async function onGenerateSummary() {
         <h1 class="text-3xl font-extrabold tracking-tight">
           {{ thread.title ?? '(no title)' }}
         </h1>
+        <button
+          type="button"
+          class="text-xl leading-none transition-colors"
+          :class="isWatched(threadId) ? 'text-gold' : 'text-text-muted hover:text-gold'"
+          :aria-label="isWatched(threadId) ? 'Unwatch thread' : 'Watch thread'"
+          @click="onToggleWatch"
+        >
+          {{ isWatched(threadId) ? '★' : '☆' }}
+        </button>
         <span
           v-if="thread.is_sticky"
           class="rounded-full bg-gold/25 px-2 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide text-accent"
@@ -215,6 +252,8 @@ async function onGenerateSummary() {
           {{ thread.summary }}
         </p>
       </details>
+
+      <SimilarThreadsPanel :items="similarThreads ?? []" />
 
       <div class="flex flex-col gap-2.5">
         <PostArticle

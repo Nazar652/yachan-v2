@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import CreateThreadView from '@/views/CreateThreadView.vue'
 import { useCaptcha } from '@/composables/useCaptcha'
+import { useDuplicateThreads } from '@/composables/useDuplicateThreads'
 import { createThread } from '@/api/threads'
 import { useAuthStore } from '@/stores/auth'
 
@@ -22,6 +23,10 @@ vi.mock('@/composables/useCaptcha', () => ({
   useCaptcha: vi.fn(),
 }))
 
+vi.mock('@/composables/useDuplicateThreads', () => ({
+  useDuplicateThreads: vi.fn(),
+}))
+
 vi.mock('@/api/threads', () => ({
   createThread: vi.fn(),
 }))
@@ -35,6 +40,7 @@ const globalStubs = {
 }
 
 const useCaptchaMock = vi.mocked(useCaptcha)
+const useDuplicateThreadsMock = vi.mocked(useDuplicateThreads)
 
 function stubCaptcha(overrides: Record<string, unknown> = {}) {
   useCaptchaMock.mockReturnValue({
@@ -44,6 +50,12 @@ function stubCaptcha(overrides: Record<string, unknown> = {}) {
     refetch: vi.fn(),
     ...overrides,
   } as unknown as ReturnType<typeof useCaptcha>)
+}
+
+function stubDuplicateThreads(items: unknown[] = []) {
+  useDuplicateThreadsMock.mockReturnValue({
+    data: ref(items),
+  } as unknown as ReturnType<typeof useDuplicateThreads>)
 }
 
 async function selectImage(wrapper: VueWrapper) {
@@ -57,6 +69,7 @@ describe('CreateThreadView', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+    stubDuplicateThreads()
   })
 
   it('renders the form heading', () => {
@@ -116,6 +129,26 @@ describe('CreateThreadView', () => {
       null,
       'admin-jwt',
     )
+  })
+
+  it('shows the duplicate-thread hint when matches are found', () => {
+    stubCaptcha()
+    stubDuplicateThreads([
+      {
+        board_slug: 'b', thread_id: 9, title: 'existing discussion', op_snippet: null,
+        thumbnail_url: null, reply_count: 4, score: 0.9,
+      },
+    ])
+    const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('Possibly already being discussed')
+    expect(wrapper.text()).toContain('existing discussion')
+  })
+
+  it('hides the duplicate-thread hint when there are no matches', () => {
+    stubCaptcha()
+    stubDuplicateThreads([])
+    const wrapper = mount(CreateThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).not.toContain('Possibly already being discussed')
   })
 })
 

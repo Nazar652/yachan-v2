@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/threads/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Thread Statuses */
+        get: operations["get_thread_statuses_api_threads_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/{board_slug}/threads": {
         parameters: {
             query?: never;
@@ -90,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/{board_slug}/threads/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Similar Threads For Text */
+        get: operations["similar_threads_for_text_api__board_slug__threads_similar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/{board_slug}/threads/{thread_id}": {
         parameters: {
             query?: never;
@@ -99,6 +133,23 @@ export interface paths {
         };
         /** Get Thread */
         get: operations["get_thread_api__board_slug__threads__thread_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/{board_slug}/threads/{thread_id}/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Similar Threads */
+        get: operations["similar_threads_api__board_slug__threads__thread_id__similar_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -794,6 +845,23 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** SimilarThreadResponse */
+        SimilarThreadResponse: {
+            /** Board Slug */
+            board_slug: string;
+            /** Thread Id */
+            thread_id: number;
+            /** Title */
+            title: string | null;
+            /** Op Snippet */
+            op_snippet: string | null;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** Reply Count */
+            reply_count: number;
+            /** Score */
+            score: number;
+        };
         /** SiteStatsResponse */
         SiteStatsResponse: {
             /** Board Count */
@@ -868,6 +936,24 @@ export interface components {
             op_post?: components["schemas"]["OpPostPreview"] | null;
             /** Last Replies */
             last_replies?: components["schemas"]["ReplyPreview"][];
+        };
+        /** ThreadStatusResponse */
+        ThreadStatusResponse: {
+            /** Id */
+            id: number;
+            /** Board Slug */
+            board_slug: string;
+            /** Title */
+            title: string | null;
+            /** Is Locked */
+            is_locked: boolean;
+            /** Reply Count */
+            reply_count: number;
+            /**
+             * Bump At
+             * Format: date-time
+             */
+            bump_at: string;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -1017,6 +1103,37 @@ export interface operations {
             };
         };
     };
+    get_thread_statuses_api_threads_status_get: {
+        parameters: {
+            query: {
+                ids: number[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadStatusResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_threads_api__board_slug__threads_get: {
         parameters: {
             query?: {
@@ -1090,6 +1207,39 @@ export interface operations {
             };
         };
     };
+    similar_threads_for_text_api__board_slug__threads_similar_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path: {
+                board_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarThreadResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_thread_api__board_slug__threads__thread_id__get: {
         parameters: {
             query?: never;
@@ -1109,6 +1259,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ThreadDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    similar_threads_api__board_slug__threads__thread_id__similar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                board_slug: string;
+                thread_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarThreadResponse"][];
                 };
             };
             /** @description Validation Error */

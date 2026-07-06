@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import src.views.threads_view as threads_view_module
 import src.views.uploads as uploads_module
-from src.core.exceptions import InvalidCaptchaError, RateLimitedError
+from src.core.exceptions import BadRequestError, InvalidCaptchaError, RateLimitedError
 from src.schemas.thread import ThreadCreate, ThreadDetailResponse, ThreadResponse
 from src.utils.clock import utcnow
 from src.views.threads_view import ThreadsView
@@ -183,6 +183,38 @@ async def test_list_latest_threads_maps_responses():
     assert result[1].board_slug == "g"
     assert result[1].thumbnail_url is None
     assert result[1].last_reply is None
+
+
+async def test_get_thread_statuses_maps_responses():
+    view, mocks = build()
+    mocks.thread_service.get_thread_statuses = AsyncMock(
+        return_value=[(thread_ns(id=5, title="t", is_locked=True, reply_count=3), "b")]
+    )
+
+    result = await view.get_thread_statuses([5])
+
+    mocks.thread_service.get_thread_statuses.assert_awaited_once_with([5])
+    assert result[0].id == 5
+    assert result[0].board_slug == "b"
+    assert result[0].title == "t"
+    assert result[0].is_locked is True
+    assert result[0].reply_count == 3
+
+
+async def test_get_thread_statuses_empty_list():
+    view, mocks = build()
+    mocks.thread_service.get_thread_statuses = AsyncMock(return_value=[])
+
+    assert await view.get_thread_statuses([]) == []
+
+
+async def test_get_thread_statuses_rejects_too_many_ids():
+    view, mocks = build()
+    mocks.thread_service.get_thread_statuses = AsyncMock(return_value=[])
+
+    with pytest.raises(BadRequestError):
+        await view.get_thread_statuses(list(range(51)))
+    mocks.thread_service.get_thread_statuses.assert_not_called()
 
 
 async def test_get_thread_includes_posts_with_attachments():

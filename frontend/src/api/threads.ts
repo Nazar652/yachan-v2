@@ -5,6 +5,7 @@ import type {
   PostResponse,
   ThreadDetailResponse,
   ThreadResponse,
+  ThreadStatusResponse,
 } from '@/api/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -35,6 +36,14 @@ export async function getThread(
 ): Promise<ThreadDetailResponse> {
   const { data, error, response } = await apiClient.GET('/api/{board_slug}/threads/{thread_id}', {
     params: { path: { board_slug: boardSlug, thread_id: threadId } },
+  })
+  if (error) throw toApiError(error, response)
+  return data
+}
+
+export async function getThreadStatuses(ids: number[]): Promise<ThreadStatusResponse[]> {
+  const { data, error, response } = await apiClient.GET('/api/threads/status', {
+    params: { query: { ids } },
   })
   if (error) throw toApiError(error, response)
   return data
