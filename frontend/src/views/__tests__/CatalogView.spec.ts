@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { ref, type Ref } from 'vue'
+import { ref, toValue, type Ref } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -11,15 +11,27 @@ import { useSiteStats } from '@/composables/useSiteStats'
 import { useBoard } from '@/composables/useBoards'
 import { useAuthStore } from '@/stores/auth'
 
-const { pushMock, replaceMock, routeMock } = vi.hoisted(() => ({
-  pushMock: vi.fn(),
-  replaceMock: vi.fn(),
-  routeMock: vi.fn(() => ({ params: { slug: 'b' }, query: {} as Record<string, unknown> })),
-}))
+type RouteQuery = Record<string, string | string[] | null | undefined>
+
+// dynamic import (not a static one) so this survives vi.mock/vi.hoisted reordering
+const { routeState, replaceMock } = await vi.hoisted(async () => {
+  const { reactive } = await import('vue')
+  const routeState = reactive<{ params: { slug: string }; query: RouteQuery }>({
+    params: { slug: 'b' },
+    query: {},
+  })
+  const replaceMock = vi.fn((to: { query?: RouteQuery }) => {
+    Object.keys(routeState.query).forEach((key) => delete routeState.query[key])
+    Object.entries(to.query ?? {}).forEach(([key, value]) => {
+      if (value !== undefined) routeState.query[key] = value
+    })
+  })
+  return { routeState, replaceMock }
+})
 
 vi.mock('vue-router', () => ({
-  useRoute: () => routeMock(),
-  useRouter: () => ({ push: pushMock, replace: replaceMock }),
+  useRoute: () => routeState,
+  useRouter: () => ({ replace: replaceMock }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 
@@ -96,9 +108,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setLockedMock.mockReset()
   setStickyMock.mockReset()
-  pushMock.mockReset()
-  replaceMock.mockReset()
-  routeMock.mockReset().mockReturnValue({ params: { slug: 'b' }, query: {} })
+  replaceMock.mockClear()
+  Object.keys(routeState.query).forEach((key) => delete routeState.query[key])
   stubBoard({ id: 1, slug: 'b', title: 'Random', description: 'random board', is_nsfw: false })
 })
 
@@ -191,6 +202,104 @@ describe('CatalogView', () => {
     expect(text.indexOf('many')).toBeLessThan(text.indexOf('few'))
   })
 
+  it('reads the page number from the query and requests that page', () => {
+    routeState.query.page = '3'
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    mount(CatalogView, { global: { stubs: globalStubs } })
+    const [, pageArg] = useThreadsMock.mock.calls[0]!
+    expect(toValue(pageArg)).toBe(3)
+  })
+
+  it('reads the sort key from the query on load', () => {
+    routeState.query.sort = 'replies'
+    stubThreads({
+      data: ref([
+        makeThread({ id: 1, title: 'few', reply_count: 1 }),
+        makeThread({ id: 2, title: 'many', reply_count: 9 }),
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    const text = wrapper.text()
+    expect(text.indexOf('many')).toBeLessThan(text.indexOf('few'))
+  })
+
+  it.each([['abc'], ['0'], ['1.5'], ['']])(
+    'falls back to page 1 for a garbage ?page= value (%j)',
+    (garbage) => {
+      routeState.query.page = garbage
+      stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+      mount(CatalogView, { global: { stubs: globalStubs } })
+      const [, pageArg] = useThreadsMock.mock.calls[0]!
+      expect(toValue(pageArg)).toBe(1)
+    },
+  )
+
+  it('normalizes an array ?page= value by taking its first element', () => {
+    routeState.query.page = ['3', '4']
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    mount(CatalogView, { global: { stubs: globalStubs } })
+    const [, pageArg] = useThreadsMock.mock.calls[0]!
+    expect(toValue(pageArg)).toBe(3)
+  })
+
+  it('falls back to the bump sort for an unknown ?sort= value', () => {
+    routeState.query.sort = 'hack'
+    stubThreads({
+      data: ref([
+        makeThread({ id: 1, title: 'few', reply_count: 1 }),
+        makeThread({ id: 2, title: 'many', reply_count: 9 }),
+      ]),
+      isPending: ref(false),
+      isError: ref(false),
+    })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    const text = wrapper.text()
+    expect(text.indexOf('few')).toBeLessThan(text.indexOf('many'))
+  })
+
+  it('replaces the route query when the pager changes page', async () => {
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    stubStats(
+      ref({
+        board_count: 1,
+        thread_count: 35,
+        post_count: 100,
+        online_count: 1,
+        boards: [{ slug: 'b', thread_count: 35, post_count: 100, online_count: 1 }],
+      }),
+    )
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, '2')
+    expect(replaceMock).toHaveBeenCalledWith({ query: { page: '2' } })
+  })
+
+  it('drops the page param from the query when navigating back to page 1', async () => {
+    routeState.query.page = '2'
+    stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
+    stubStats(
+      ref({
+        board_count: 1,
+        thread_count: 35,
+        post_count: 100,
+        online_count: 1,
+        boards: [{ slug: 'b', thread_count: 35, post_count: 100, online_count: 1 }],
+      }),
+    )
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, '1')
+    expect(replaceMock).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('drops the sort param from the query when picking bump order', async () => {
+    routeState.query.sort = 'replies'
+    stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
+    const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
+    await clickButton(wrapper, 'Bump order')
+    expect(replaceMock).toHaveBeenCalledWith({ query: {} })
+  })
+
   it('hides mod controls for anonymous visitors', () => {
     stubThreads({ data: ref([makeThread()]), isPending: ref(false), isError: ref(false) })
     const wrapper = mount(CatalogView, { global: { stubs: globalStubs } })
@@ -220,7 +329,7 @@ describe('CatalogView', () => {
   })
 
   it('reads the initial view from the url query over localStorage', () => {
-    routeMock.mockReturnValue({ params: { slug: 'b' }, query: { view: 'gallery' } })
+    routeState.query.view = 'gallery'
     localStorage.setItem('yachan_catalog_view', 'list')
     stubThreads({ data: ref([]), isPending: ref(false), isError: ref(false) })
     mount(CatalogView, { global: { stubs: globalStubs } })
