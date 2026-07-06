@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 
 import { useBoard } from '@/composables/useBoards'
-import { useThreads, THREADS_PAGE_SIZE } from '@/composables/useThreads'
+import { useThreads, THREADS_PAGE_SIZE, GALLERY_PAGE_SIZE } from '@/composables/useThreads'
 import { useSiteStats } from '@/composables/useSiteStats'
 import { useBoardWs } from '@/composables/useBoardWs'
 import { useCatalogModeration } from '@/composables/useCatalogModeration'
@@ -11,9 +11,11 @@ import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import CatalogPager from '@/components/ui/CatalogPager.vue'
 import ThreadCard from '@/components/ThreadCard.vue'
+import ThreadGalleryCard from '@/components/ThreadGalleryCard.vue'
 import type { ThreadResponse } from '@/api/types'
 
 const route = useRoute()
+const router = useRouter()
 const slug = computed(() => route.params.slug as string)
 
 const page = ref(1)
@@ -21,9 +23,36 @@ watch(slug, () => {
   page.value = 1
 })
 
+type ViewMode = 'list' | 'gallery'
+const VIEW_STORAGE_KEY = 'yachan_catalog_view'
+const viewOptions: Array<[ViewMode, string]> = [
+  ['list', 'List'],
+  ['gallery', 'Gallery'],
+]
+
+function isViewMode(value: unknown): value is ViewMode {
+  return value === 'list' || value === 'gallery'
+}
+
+function readStoredView(): ViewMode {
+  return localStorage.getItem(VIEW_STORAGE_KEY) === 'gallery' ? 'gallery' : 'list'
+}
+
+const view = ref<ViewMode>(isViewMode(route.query.view) ? route.query.view : readStoredView())
+const pageSize = computed(() => (view.value === 'gallery' ? GALLERY_PAGE_SIZE : THREADS_PAGE_SIZE))
+
+function setView(next: ViewMode) {
+  if (view.value === next) return
+  view.value = next
+  // page sizes differ between modes, so a page number from one mode is meaningless in the other
+  page.value = 1
+  localStorage.setItem(VIEW_STORAGE_KEY, next)
+  void router.replace({ query: { ...route.query, view: next } })
+}
+
 const { data: board } = useBoard(slug)
 const { data: stats } = useSiteStats()
-const { data: threads, isPending, isError } = useThreads(slug, page)
+const { data: threads, isPending, isError } = useThreads(slug, page, pageSize)
 
 useBoardWs(slug)
 
@@ -34,7 +63,7 @@ const boardStats = computed(() =>
   stats.value?.boards.find((candidate) => candidate.slug === slug.value),
 )
 const totalPages = computed(() =>
-  boardStats.value ? Math.max(1, Math.ceil(boardStats.value.thread_count / THREADS_PAGE_SIZE)) : 1,
+  boardStats.value ? Math.max(1, Math.ceil(boardStats.value.thread_count / pageSize.value)) : 1,
 )
 
 type SortKey = 'bump' | 'new' | 'replies'
@@ -123,6 +152,22 @@ async function onToggleSticky(thread: ThreadResponse) {
           {{ label }}
         </button>
       </div>
+      <div class="flex w-full overflow-hidden rounded-field border border-border sm:inline-flex sm:w-auto">
+        <button
+          v-for="[key, label] in viewOptions"
+          :key="key"
+          type="button"
+          class="flex-1 cursor-pointer border-border px-3 py-1.5 font-mono text-xs transition-colors not-first:border-l sm:flex-none"
+          :class="
+            view === key
+              ? 'bg-gold font-bold text-on-gold'
+              : 'bg-surface text-text-muted hover:bg-surface-3'
+          "
+          @click="setView(key)"
+        >
+          {{ label }}
+        </button>
+      </div>
       <div class="hidden flex-1 sm:block" />
       <RouterLink :to="`/${slug}/new`" class="block w-full sm:w-auto">
         <BaseButton variant="primary" class="w-full sm:w-auto">+ New thread</BaseButton>
@@ -132,6 +177,15 @@ async function onToggleSticky(thread: ThreadResponse) {
     <p v-if="isPending" class="mt-2 text-text-muted">Loading…</p>
     <p v-else-if="isError" class="mt-2 text-danger">Failed to load threads.</p>
     <p v-else-if="!threads?.length" class="mt-4 text-text-muted">No threads yet.</p>
+
+    <ul
+      v-else-if="view === 'gallery'"
+      class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+    >
+      <li v-for="thread in sortedThreads" :key="thread.id">
+        <ThreadGalleryCard :thread="thread" :slug="slug" />
+      </li>
+    </ul>
 
     <ul v-else class="flex flex-col gap-2.5">
       <li v-for="thread in sortedThreads" :key="thread.id">
