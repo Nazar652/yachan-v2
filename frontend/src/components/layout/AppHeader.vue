@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useBoards } from '@/composables/useBoards'
 import { useTheme } from '@/composables/useTheme'
 import BarleyEar from '@/components/brand/BarleyEar.vue'
+import WatcherDropdown from '@/components/layout/WatcherDropdown.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -69,6 +70,8 @@ const isOnBoardPage = computed(
       </form>
 
       <div class="flex shrink-0 items-center gap-2">
+        <WatcherDropdown />
+
         <button
           type="button"
           class="grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-field border border-border bg-surface text-text transition-colors hover:border-gold hover:bg-surface-3"

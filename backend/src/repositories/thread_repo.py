@@ -35,6 +35,12 @@ class ThreadRepository(BaseRepository):
         )
         return list(result.scalars().all())
 
+    async def list_by_ids(self, thread_ids: list[int]) -> list[Thread]:
+        if not thread_ids:
+            return []
+        result = await self.session.execute(select(Thread).where(col(Thread.id).in_(thread_ids)))
+        return list(result.scalars().all())
+
     async def count_by_board(self) -> dict[int, int]:
         result = await self.session.execute(
             select(col(Thread.board_id), func.count()).group_by(col(Thread.board_id))
