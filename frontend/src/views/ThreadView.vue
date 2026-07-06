@@ -4,6 +4,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useThread } from '@/composables/useThread'
 import { useThreadWs } from '@/composables/useThreadWs'
 import { useModeration } from '@/composables/useModeration'
+import { useSimilarThreads } from '@/composables/useSimilarThreads'
 import { useWatchedThreads } from '@/composables/useWatchedThreads'
 import { useAuthStore } from '@/stores/auth'
 import { errorDetail } from '@/api/errors'
@@ -11,6 +12,7 @@ import { extractPostRefs } from '@/utils/postRefs'
 import ReplyForm from '@/components/ReplyForm.vue'
 import PostArticle from '@/components/PostArticle.vue'
 import RefPreviews from '@/components/RefPreviews.vue'
+import SimilarThreadsPanel from '@/components/SimilarThreadsPanel.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import SealDivider from '@/components/ui/SealDivider.vue'
 
@@ -32,6 +34,7 @@ useThreadWs(slug, threadId, () => {
 
 const auth = useAuthStore()
 const moderation = useModeration(slug, threadId)
+const { data: similarThreads } = useSimilarThreads(toRef(slug), toRef(threadId))
 
 const { isWatched, toggle, markSeen } = useWatchedThreads()
 
@@ -249,6 +252,8 @@ async function onGenerateSummary() {
           {{ thread.summary }}
         </p>
       </details>
+
+      <SimilarThreadsPanel :items="similarThreads ?? []" />
 
       <div class="flex flex-col gap-2.5">
         <PostArticle

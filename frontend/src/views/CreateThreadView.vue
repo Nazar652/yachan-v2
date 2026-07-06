@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { createThread } from '@/api/threads'
 import { useCaptcha } from '@/composables/useCaptcha'
+import { useDuplicateThreads } from '@/composables/useDuplicateThreads'
 import { useOwnPosts } from '@/composables/useOwnPosts'
 import { threadsQueryKey } from '@/composables/useThreads'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +30,9 @@ const { data: captcha, isPending: captchaPending, isError: captchaError, refetch
 const title = ref('')
 const name = ref('')
 const body = ref('')
+
+const duplicateCheckText = computed(() => `${title.value} ${body.value}`.trim())
+const { data: duplicateThreads } = useDuplicateThreads(slug, duplicateCheckText)
 const captchaAnswer = ref('')
 const selectedFiles = ref<File[]>([])
 const isSubmitting = ref(false)
@@ -134,6 +138,24 @@ async function onSubmit() {
           maxlength="5000"
           placeholder="Post body…"
         />
+      </div>
+
+      <div
+        v-if="duplicateThreads?.length"
+        class="rounded-card border border-border bg-surface-2 p-3 text-[13px]"
+      >
+        <p class="mb-1.5 font-semibold text-text-muted">Possibly already being discussed:</p>
+        <ul class="flex flex-col gap-1">
+          <li v-for="item in duplicateThreads" :key="`${item.board_slug}-${item.thread_id}`">
+            <RouterLink
+              :to="`/${item.board_slug}/thread/${item.thread_id}`"
+              target="_blank"
+              class="text-accent hover:underline"
+            >
+              {{ item.title ?? item.op_snippet ?? '(no title)' }}
+            </RouterLink>
+          </li>
+        </ul>
       </div>
 
       <div class="flex flex-col gap-1.5">
