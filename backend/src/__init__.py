@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.bootstrap.container import setup_di
 from src.core.config import get_settings
@@ -48,6 +49,11 @@ def create_app() -> FastAPI:
     )
     # cors preflight is answered before a db scope is opened because CORSMiddleware
     # is added last and wraps ScopeMiddleware
+
+    # outermost of all, so /metrics duration matches what a client actually experiences.
+    # not proxied by nginx (only /api and /media are), so it is only reachable inside the
+    # cluster network — that's what Alloy's pod-annotation scraper uses, no auth needed.
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
     @app.exception_handler(NotFoundError)
     async def _not_found(request, exc: NotFoundError):

@@ -12,6 +12,9 @@ spec:
     metadata:
       labels:
         app: redis
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.portName: "metrics"
     spec:
       containers:
         - name: redis
@@ -38,6 +41,20 @@ spec:
               memory: 32Mi
             limits:
               memory: 128Mi
+        - name: redis-exporter
+          image: oliver006/redis_exporter:v1.86.0-alpine
+          env:
+            - name: REDIS_ADDR
+              value: redis://localhost:6379
+          ports:
+            - name: metrics
+              containerPort: 9121
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
 ---
 apiVersion: v1
 kind: Service
@@ -50,3 +67,6 @@ spec:
   ports:
     - port: 6379
       targetPort: 6379
+    - name: metrics
+      port: 9121
+      targetPort: metrics

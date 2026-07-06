@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.portNumber: "8000"
+        k8s.grafana.com/metrics.path: "/metrics"
     spec:
       containers:
         - name: backend

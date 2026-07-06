@@ -74,3 +74,53 @@ spec:
               memory: 64Mi
             limits:
               memory: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-exporter
+  namespace: yachan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-exporter
+  template:
+    metadata:
+      labels:
+        app: celery-exporter
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.portName: "metrics"
+    spec:
+      containers:
+        - name: celery-exporter
+          image: danihodovic/celery-exporter:0.12.2
+          env:
+            - name: CE_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: yachan-config
+                  key: REDIS_URL
+          ports:
+            - name: metrics
+              containerPort: 9808
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 96Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: celery-exporter
+  namespace: yachan
+spec:
+  selector:
+    app: celery-exporter
+  ports:
+    - name: metrics
+      port: 9808
+      targetPort: metrics
