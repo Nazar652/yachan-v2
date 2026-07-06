@@ -23,6 +23,7 @@ from src.utils.names import parse_name
 
 ThreadWithPreview = tuple[Thread, Post | None, list[Attachment], list[Post]]
 LatestThreadPreview = tuple[Thread, str, Attachment | None, Post | None]
+ThreadStatus = tuple[Thread, str]
 
 
 class ThreadService:
@@ -191,3 +192,13 @@ class ThreadService:
                 )
             )
         return result
+
+    async def get_thread_statuses(self, thread_ids: list[int]) -> list[ThreadStatus]:
+        threads = await self.thread_repo.list_by_ids(thread_ids)
+        if not threads:
+            return []
+
+        boards = await self.board_repo.list_all()
+        slug_by_board_id = {board.id: board.slug for board in boards}
+
+        return [(thread, slug_by_board_id.get(thread.board_id, "")) for thread in threads]

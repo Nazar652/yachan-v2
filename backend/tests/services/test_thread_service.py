@@ -235,3 +235,24 @@ async def test_list_latest_threads_without_replies_or_images():
     result = await service.list_latest_threads()
 
     assert result == [(mocks.thread, "b", None, None)]
+
+
+async def test_get_thread_statuses_resolves_board_slug():
+    service, mocks = build()
+    mocks.thread_repo.list_by_ids = AsyncMock(return_value=[mocks.thread])
+    mocks.board_repo.list_all = AsyncMock(return_value=[SimpleNamespace(id=1, slug="b")])
+
+    result = await service.get_thread_statuses([mocks.thread.id])
+
+    assert result == [(mocks.thread, "b")]
+    mocks.thread_repo.list_by_ids.assert_awaited_once_with([mocks.thread.id])
+
+
+async def test_get_thread_statuses_empty_input_skips_board_lookup():
+    service, mocks = build()
+    mocks.thread_repo.list_by_ids = AsyncMock(return_value=[])
+
+    result = await service.get_thread_statuses([])
+
+    assert result == []
+    mocks.board_repo.list_all.assert_not_called()

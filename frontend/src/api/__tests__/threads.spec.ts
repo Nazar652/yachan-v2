@@ -1,7 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { apiClient } from '@/api/client'
-import { listThreads, listLatestThreads, getThread, createThread, createReply } from '@/api/threads'
+import {
+  listThreads,
+  listLatestThreads,
+  getThread,
+  getThreadStatuses,
+  createThread,
+  createReply,
+} from '@/api/threads'
 
 vi.mock('@/api/client', () => ({
   apiClient: { GET: vi.fn() },
@@ -78,6 +85,27 @@ describe('getThread', () => {
     getMock.mockResolvedValue({ data: undefined, error })
 
     await expect(getThread('b', 42)).rejects.toMatchObject(error)
+  })
+})
+
+describe('getThreadStatuses', () => {
+  beforeEach(() => getMock.mockReset())
+
+  it('returns the data on success', async () => {
+    const statuses = [{ id: 1, board_slug: 'b', title: 'hello', is_locked: false, reply_count: 3, bump_at: '' }]
+    getMock.mockResolvedValue({ data: statuses, error: undefined })
+
+    await expect(getThreadStatuses([1, 2])).resolves.toBe(statuses)
+    expect(getMock).toHaveBeenCalledWith('/api/threads/status', {
+      params: { query: { ids: [1, 2] } },
+    })
+  })
+
+  it('throws when the client returns an error', async () => {
+    const error = { detail: 'too many ids' }
+    getMock.mockResolvedValue({ data: undefined, error })
+
+    await expect(getThreadStatuses([1])).rejects.toMatchObject(error)
   })
 })
 

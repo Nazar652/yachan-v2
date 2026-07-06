@@ -25,6 +25,21 @@ async def test_list_latest(session, make_result):
     assert await repo.list_latest(limit=2) == threads
 
 
+async def test_list_by_ids(session, make_result):
+    threads = [object(), object()]
+    session.execute.return_value = make_result(all_=threads)
+    repo = ThreadRepository(session=session)
+
+    assert await repo.list_by_ids([1, 2]) == threads
+
+
+async def test_list_by_ids_empty_input_skips_query(session):
+    repo = ThreadRepository(session=session)
+
+    assert await repo.list_by_ids([]) == []
+    session.execute.assert_not_called()
+
+
 async def test_count_by_board(session, make_result):
     result = make_result()
     result.all.return_value = [(1, 4), (2, 9)]

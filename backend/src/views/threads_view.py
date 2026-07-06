@@ -4,7 +4,7 @@ from starlette.requests import Request
 
 from src.celery_app import celery
 from src.core.config import Settings
-from src.core.exceptions import InvalidCaptchaError, RateLimitedError
+from src.core.exceptions import BadRequestError, InvalidCaptchaError, RateLimitedError
 from src.core.storage import Storage
 from src.schemas.thread import (
     ImagePreview,
@@ -14,6 +14,7 @@ from src.schemas.thread import (
     ThreadCreate,
     ThreadDetailResponse,
     ThreadResponse,
+    ThreadStatusResponse,
 )
 from src.services.board_service import BoardService
 from src.services.captcha_service import CaptchaService
@@ -32,6 +33,7 @@ from src.views.uploads import contains_image, read_uploads, store_uploads
 
 THREAD_RATE_LIMIT = 3
 THREAD_RATE_WINDOW = 60
+MAX_THREAD_STATUS_IDS = 50
 
 
 class ThreadsView:
@@ -154,6 +156,23 @@ class ThreadsView:
                 )
             )
         return responses
+
+    async def get_thread_statuses(self, thread_ids: list[int]) -> list[ThreadStatusResponse]:
+        if len(thread_ids) > MAX_THREAD_STATUS_IDS:
+            raise BadRequestError(f"at most {MAX_THREAD_STATUS_IDS} thread ids per request")
+
+        statuses = await self.thread_service.get_thread_statuses(thread_ids)
+        return [
+            ThreadStatusResponse(
+                id=thread.id,
+                board_slug=board_slug,
+                title=thread.title,
+                is_locked=thread.is_locked,
+                reply_count=thread.reply_count,
+                bump_at=thread.bump_at,
+            )
+            for thread, board_slug in statuses
+        ]
 
     async def get_thread(
         self, board_slug: str, thread_id: int, request: Request

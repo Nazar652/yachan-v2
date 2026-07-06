@@ -1,7 +1,7 @@
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { threadsPageQueryKey } from '@/composables/useThreads'
+import { threadsQueryKey } from '@/composables/useThreads'
 import { useReconnectingWs } from '@/composables/useReconnectingWs'
 import { WS_EVENT, type WsEnvelope } from '@/api/ws'
 import type { ThreadResponse } from '@/api/types'
@@ -21,21 +21,33 @@ function sortThreads(threads: ThreadResponse[]): ThreadResponse[] {
 export function useBoardWs(slug: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
 
+  const PAGE_INDEX = 2
+
   function applyEvent(envelope: WsEnvelope) {
-    const key = threadsPageQueryKey(toValue(slug), 1)
+    const prefix = threadsQueryKey(toValue(slug))
 
     if (envelope.type === WS_EVENT.NEW_THREAD) {
       const thread = envelope.data as ThreadResponse
-      queryClient.setQueryData<ThreadResponse[]>(key, (old) => {
-        if (!old) return old
-        if (old.some((existing) => existing.id === thread.id)) return old
-        return [thread, ...old]
-      })
+      // every cached page size gets its own key; only page 1 of each should
+      // receive the prepend, so filter before patching rather than touching
+      // every cached page indiscriminately
+      const firstPageKeys = queryClient
+        .getQueriesData<ThreadResponse[]>({ queryKey: prefix })
+        .map(([key]) => key)
+        .filter((key) => key[PAGE_INDEX] === 1)
+
+      for (const key of firstPageKeys) {
+        queryClient.setQueryData<ThreadResponse[]>(key, (old) => {
+          if (!old) return old
+          if (old.some((existing) => existing.id === thread.id)) return old
+          return [thread, ...old]
+        })
+      }
     }
 
     if (envelope.type === WS_EVENT.THREAD_UPDATED) {
       const update = envelope.data as ThreadResponse
-      queryClient.setQueryData<ThreadResponse[]>(key, (old) => {
+      queryClient.setQueriesData<ThreadResponse[]>({ queryKey: prefix }, (old) => {
         if (!old) return old
         return sortThreads(
           old.map((existing) =>
@@ -49,7 +61,7 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
 
     if (envelope.type === WS_EVENT.THREAD_DELETED) {
       const { id } = envelope.data as { id: number }
-      queryClient.setQueryData<ThreadResponse[]>(key, (old) =>
+      queryClient.setQueriesData<ThreadResponse[]>({ queryKey: prefix }, (old) =>
         old ? old.filter((existing) => existing.id !== id) : old,
       )
     }
@@ -59,8 +71,8 @@ export function useBoardWs(slug: MaybeRefOrGetter<string>) {
     () => `/${toValue(slug)}/ws`,
     applyEvent,
     () => {
-      // catch up on threads missed during the drop
-      void queryClient.invalidateQueries({ queryKey: threadsPageQueryKey(toValue(slug), 1) })
+      // catch up on threads missed during the drop, across every cached page size
+      void queryClient.invalidateQueries({ queryKey: threadsQueryKey(toValue(slug)) })
     },
   )
 }

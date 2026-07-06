@@ -4,9 +4,11 @@ import { mount } from '@vue/test-utils'
 import ThreadCard from '@/components/ThreadCard.vue'
 import type { ThreadResponse } from '@/api/types'
 
-const { pushMock, routerLinkStub } = vi.hoisted(() => ({
+const { pushMock, routerLinkStub, isWatchedMock, toggleMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   routerLinkStub: { props: ['to'], template: '<a :href="to"><slot /></a>' },
+  isWatchedMock: vi.fn(),
+  toggleMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -14,10 +16,28 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ push: pushMock }),
 }))
 
+vi.mock('@/composables/useWatchedThreads', () => ({
+  useWatchedThreads: () => ({ isWatched: isWatchedMock, toggle: toggleMock }),
+}))
+
 const globalStubs = { RouterLink: routerLinkStub }
+
+function clickButton(wrapper: ReturnType<typeof mountCard>, label: string) {
+  const button = wrapper.findAll('button').find((candidate) => candidate.text() === label)
+  if (!button) throw new Error(`button "${label}" not found`)
+  return button.trigger('click')
+}
+
+function watchButton(wrapper: ReturnType<typeof mountCard>) {
+  const button = wrapper.findAll('button').find((candidate) => candidate.attributes('aria-label')?.includes('atch thread'))
+  if (!button) throw new Error('watch star button not found')
+  return button
+}
 
 beforeEach(() => {
   pushMock.mockClear()
+  isWatchedMock.mockReset().mockReturnValue(false)
+  toggleMock.mockReset()
 })
 
 function makeThread(overrides: Partial<ThreadResponse> = {}): ThreadResponse {
@@ -228,7 +248,7 @@ describe('ThreadCard', () => {
 
   it('does not open the thread when a mod button is clicked', async () => {
     const wrapper = mountCard(makeThread(), true)
-    await wrapper.findAll('button')[0]!.trigger('click')
+    await clickButton(wrapper, 'Lock')
     expect(pushMock).not.toHaveBeenCalled()
   })
 
@@ -237,17 +257,35 @@ describe('ThreadCard', () => {
     expect(wrapper.text()).toContain('be the first to sow')
   })
 
-  it('hides the mod bar for anonymous visitors', () => {
+  it('hides the mod bar for anonymous visitors but keeps the watch star', () => {
     const wrapper = mountCard(makeThread())
-    expect(wrapper.findAll('button')).toHaveLength(0)
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Watch thread')
   })
 
   it('emits mod toggles from the mod bar', async () => {
     const wrapper = mountCard(makeThread(), true)
-    const buttons = wrapper.findAll('button')
-    await buttons[0]!.trigger('click')
-    await buttons[1]!.trigger('click')
+    await clickButton(wrapper, 'Lock')
+    await clickButton(wrapper, 'Sticky')
     expect(wrapper.emitted('toggle-lock')).toHaveLength(1)
     expect(wrapper.emitted('toggle-sticky')).toHaveLength(1)
+  })
+
+  it('shows a filled star and toggles it off when the thread is watched', async () => {
+    isWatchedMock.mockReturnValue(true)
+    const wrapper = mountCard(makeThread({ id: 5, title: 'Watched', reply_count: 7 }))
+
+    expect(watchButton(wrapper).attributes('aria-label')).toBe('Unwatch thread')
+    expect(watchButton(wrapper).text()).toBe('★')
+
+    await watchButton(wrapper).trigger('click')
+
+    expect(toggleMock).toHaveBeenCalledWith({ id: 5, slug: 'b', title: 'Watched', reply_count: 7 })
+  })
+
+  it('does not open the thread when the watch star is clicked', async () => {
+    const wrapper = mountCard(makeThread())
+    await watchButton(wrapper).trigger('click')
+    expect(pushMock).not.toHaveBeenCalled()
   })
 })

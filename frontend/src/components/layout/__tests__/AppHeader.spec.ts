@@ -15,6 +15,12 @@ vi.mock('@/composables/useBoards', () => ({
   }),
 }))
 
+// the watcher dropdown's own behaviour is covered by WatcherDropdown.spec.ts;
+// here it just needs to mount without a QueryClient in scope
+vi.mock('@/composables/useWatcherStatus', () => ({
+  useWatcherStatus: () => ({ watchedStatuses: [], totalUnread: 0, remove: vi.fn() }),
+}))
+
 // mutable route stub so each test can place the header on a different page
 const routeMock = { name: 'boards', params: {} as Record<string, string>, query: {} as Record<string, string> }
 const pushMock = vi.fn()

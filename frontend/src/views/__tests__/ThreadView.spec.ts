@@ -48,6 +48,17 @@ vi.mock('@/composables/useModeration', () => ({
   }),
 }))
 
+const isWatchedMock = vi.fn()
+const toggleWatchMock = vi.fn()
+const markSeenMock = vi.fn()
+vi.mock('@/composables/useWatchedThreads', () => ({
+  useWatchedThreads: () => ({
+    isWatched: isWatchedMock,
+    toggle: toggleWatchMock,
+    markSeen: markSeenMock,
+  }),
+}))
+
 const useThreadMock = vi.mocked(useThread)
 const useSimilarThreadsMock = vi.mocked(useSimilarThreads)
 
@@ -87,6 +98,9 @@ beforeEach(() => {
   setStickyMock.mockReset()
   removeThreadMock.mockReset()
   generateSummaryMock.mockReset()
+  isWatchedMock.mockReset().mockReturnValue(false)
+  toggleWatchMock.mockReset()
+  markSeenMock.mockReset()
   pushMock.mockReset()
   quoteSpy.mockReset()
   routeStub.hash = ''
@@ -367,5 +381,44 @@ describe('ThreadView', () => {
     await new Promise((resolve) => setTimeout(resolve))
     expect(scrollSpy).toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it('shows an unfilled star and toggles watch on click when not watched', async () => {
+    stubThreadDetail({ id: 42, title: 'T', reply_count: 5 })
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+
+    const star = wrapper.findAll('button').find((candidate) => candidate.text() === '☆')
+    expect(star).toBeDefined()
+    await star!.trigger('click')
+
+    expect(toggleWatchMock).toHaveBeenCalledWith({ id: 42, slug: 'b', title: 'T', reply_count: 5 })
+  })
+
+  it('shows a filled star when the thread is watched', () => {
+    isWatchedMock.mockReturnValue(true)
+    stubThreadDetail()
+    const wrapper = mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(wrapper.text()).toContain('★')
+  })
+
+  it('marks the thread seen at the reply_count on load', () => {
+    stubThreadDetail({ reply_count: 5 })
+    mount(ThreadView, { global: { stubs: globalStubs } })
+    expect(markSeenMock).toHaveBeenCalledWith(42, 5)
+  })
+
+  it('marks the thread seen again when reply_count grows', async () => {
+    const threadRef = ref({
+      id: 42, board_id: 1, title: 'T', is_locked: false, is_sticky: false, reply_count: 1,
+      bump_at: '', created_at: '', posts: [postFixture],
+    })
+    stubThread({ data: threadRef, isPending: ref(false), isError: ref(false) })
+    mount(ThreadView, { global: { stubs: globalStubs } })
+    markSeenMock.mockClear()
+
+    threadRef.value = { ...threadRef.value, reply_count: 6 }
+    await flushPromises()
+
+    expect(markSeenMock).toHaveBeenCalledWith(42, 6)
   })
 })
