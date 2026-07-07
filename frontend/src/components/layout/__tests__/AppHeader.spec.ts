@@ -46,15 +46,15 @@ beforeEach(() => {
 })
 
 describe('AppHeader', () => {
-  it('shows a mod login link when unauthenticated', () => {
+  it('shows a mod login icon link when unauthenticated', () => {
     const wrapper = mount(AppHeader)
-    expect(wrapper.text()).toContain('Mod login')
+    expect(wrapper.find('a[aria-label="Mod login"]').exists()).toBe(true)
   })
 
-  it('shows the mod panel link when authenticated', () => {
+  it('shows the mod panel icon link when authenticated', () => {
     useAuthStore().login('jwt', 'admin')
     const wrapper = mount(AppHeader)
-    expect(wrapper.text()).toContain('Mod panel')
+    expect(wrapper.find('a[aria-label="Mod panel"]').exists()).toBe(true)
   })
 
   it('shows the ячан wordmark', () => {
