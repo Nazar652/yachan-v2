@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useBoards } from '@/composables/useBoards'
 import { useTheme } from '@/composables/useTheme'
 import BarleyEar from '@/components/brand/BarleyEar.vue'
+import MonogramSeal from '@/components/brand/MonogramSeal.vue'
 import WatcherDropdown from '@/components/layout/WatcherDropdown.vue'
 
 const auth = useAuthStore()
@@ -31,7 +32,9 @@ const isOnBoardPage = computed(
 
 <template>
   <header class="sticky top-0 z-30 border-b border-border bg-surface/90 shadow-card backdrop-blur-md">
-    <div class="mx-auto flex h-[58px] max-w-5xl items-center gap-4 px-4">
+    <div
+      class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:h-[58px] sm:flex-nowrap sm:py-0"
+    >
       <RouterLink to="/" class="flex shrink-0 cursor-pointer items-center gap-2">
         <BarleyEar :height="34" />
         <span class="font-display text-[21px] font-extrabold tracking-tight text-text">
@@ -39,10 +42,10 @@ const isOnBoardPage = computed(
         </span>
       </RouterLink>
 
-      <!-- board tabs — visible on board / thread pages -->
+      <!-- board tabs — visible on board / thread pages; wraps to its own row on mobile -->
       <nav
         v-if="isOnBoardPage && boards?.length"
-        class="flex min-w-0 flex-nowrap gap-1 overflow-x-auto"
+        class="order-last flex w-full flex-nowrap gap-1 overflow-x-auto sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
       >
         <RouterLink
           v-for="board in boards"
@@ -107,9 +110,11 @@ const isOnBoardPage = computed(
 
         <RouterLink
           :to="auth.isAuthenticated ? '/mod' : '/mod/login'"
-          class="text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+          class="grid h-[34px] w-[34px] cursor-pointer place-items-center transition-opacity hover:opacity-80"
+          :title="auth.isAuthenticated ? 'Mod panel' : 'Mod login'"
+          :aria-label="auth.isAuthenticated ? 'Mod panel' : 'Mod login'"
         >
-          {{ auth.isAuthenticated ? 'Mod panel' : 'Mod login' }}
+          <MonogramSeal :size="30" bg="var(--color-surface)" />
         </RouterLink>
       </div>
     </div>
