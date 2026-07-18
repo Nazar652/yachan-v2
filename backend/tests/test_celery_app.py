@@ -20,6 +20,14 @@ def test_beat_scheduled_tasks_are_registered():
     assert "summarize_stale_threads" in celery.tasks
 
 
+def test_beat_schedule_intervals_are_hourly():
+    from src.celery_app import celery
+
+    schedule = celery.conf.beat_schedule
+    assert schedule["expire-bans"]["schedule"] == 3600.0
+    assert schedule["summarize-stale-threads"]["schedule"] == 3600.0
+
+
 def test_before_task_publish_stamps_request_id_onto_headers():
     set_request_id("req-42")
     headers = {"id": "task-1"}

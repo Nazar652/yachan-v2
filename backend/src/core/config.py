@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://yachan:yachan@localhost:5432/yachan"
     db_echo: bool = False
     db_pool_recycle: int = 300
+    # hold no idle connections; prod sets it so the neon compute can scale to zero
+    db_use_null_pool: bool = False
 
     redis_url: str = "redis://localhost:6379/0"
 

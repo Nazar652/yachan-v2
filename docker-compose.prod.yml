@@ -1,5 +1,6 @@
 x-prod-app-env: &prod-app-env
   DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL to the Neon connection string}
+  DB_USE_NULL_POOL: "true"
   S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:?set S3_ENDPOINT_URL to the R2 endpoint}
   S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY to the R2 access key}
   S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY to the R2 secret key}
