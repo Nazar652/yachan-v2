@@ -10,8 +10,6 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![CI](https://github.com/Nazar652/yachan-v2/actions/workflows/tests.yml/badge.svg)
 
-**Live at [yachan.pp.ua](https://yachan.pp.ua)**
-
 ## Features
 
 - **Anonymous posting** — no accounts for posters; per-board sequential post

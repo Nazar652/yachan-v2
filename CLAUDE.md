@@ -135,6 +135,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build \
   needs `?ssl=require` on the url (not `sslmode`). The audit migrations' event
   trigger works on Neon (the default role is in `neon_superuser`) — run migrations
   with that owner role, not a restricted one.
+- **Neon scale to zero.** The prod env sets `DB_USE_NULL_POOL=true` (NullPool —
+  no idle connections held between requests) and the beat tasks run hourly, so
+  the Neon compute can actually suspend between real traffic instead of burning
+  the free compute hours 24/7. Keep new periodic tasks on that hourly cadence.
 - **MinIO → Cloudflare R2.** `S3_ENDPOINT_URL` is the R2 account api url,
   `STORAGE_BASE_URL` is R2's **public** url (r2.dev or a custom domain). Media is
   served straight from R2, so the prod nginx (`nginx.prod.conf`, bind-mounted over

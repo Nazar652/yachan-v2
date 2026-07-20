@@ -28,8 +28,10 @@ celery.conf.update(
     accept_content=["json"],
     timezone="UTC",
     beat_schedule={
-        "expire-bans": {"task": "expire_bans", "schedule": 300.0},
-        "summarize-stale-threads": {"task": "summarize_stale_threads", "schedule": 300.0},
+        # hourly: the prod db (neon) suspends after 5 idle minutes, so more
+        # frequent periodic tasks would keep it awake around the clock
+        "expire-bans": {"task": "expire_bans", "schedule": 3600.0},
+        "summarize-stale-threads": {"task": "summarize_stale_threads", "schedule": 3600.0},
     },
 )
 
