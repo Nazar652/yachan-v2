@@ -23,6 +23,26 @@ _EXTENSIONS: dict[str, tuple[MediaType, str]] = {
 }
 
 
+def _matches_signature(content_type: str, content: bytes) -> bool:
+    """Verify the file's leading bytes match the claimed content type, so a hostile
+    upload cannot pass arbitrary bytes off as an allowed image/video via the header."""
+    header = content[:16]
+    if content_type == "image/jpeg":
+        return header[:3] == b"\xff\xd8\xff"
+    if content_type == "image/png":
+        return header[:8] == b"\x89PNG\r\n\x1a\n"
+    if content_type == "image/gif":
+        return header[:6] in (b"GIF87a", b"GIF89a")
+    if content_type == "image/webp":
+        return header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+    if content_type == "video/webm":
+        return header[:4] == b"\x1a\x45\xdf\xa3"
+    if content_type == "video/mp4":
+        # iso base media: an 'ftyp' box right after its 4-byte size field
+        return header[4:8] == b"ftyp"
+    return False
+
+
 class FileService:
     @inject
     def __init__(self, attachment_repo: AttachmentRepository, storage: Storage) -> None:
@@ -35,6 +55,8 @@ class FileService:
         media_type, extension = self._classify(content_type)
         if len(content) > MAX_UPLOAD_BYTES:
             raise FileTooLargeError(filename)
+        if not _matches_signature(content_type, content):
+            raise UnsupportedMediaTypeError(content_type)
 
         # hashing up to 25 MiB is cpu-bound, so run it off the event loop
         md5 = await anyio.to_thread.run_sync(self._md5, content)

@@ -9,6 +9,13 @@ from botocore.exceptions import ClientError
 from src.core.storage import LocalStorage, S3Storage, build_storage
 
 
+@pytest.mark.parametrize("key", ["../escape.txt", "a/../../escape.txt", "/etc/passwd"])
+async def test_rejects_key_escaping_the_root(tmp_path, key):
+    storage = _storage(tmp_path)
+    with pytest.raises(ValueError, match="invalid storage key"):
+        await storage.save(key, b"x")
+
+
 def _storage(tmp_path):
     settings = SimpleNamespace(storage_dir=str(tmp_path), storage_base_url="/media/")
     return LocalStorage(settings)

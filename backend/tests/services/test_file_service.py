@@ -43,7 +43,7 @@ async def test_store_attachment_saves_new_file():
     storage.save = AsyncMock()
     service = FileService(attachment_repo=attachment_repo, storage=storage)
 
-    await service.store_attachment(5, "cat.png", b"bytes", "image/png")
+    await service.store_attachment(5, "cat.png", _png_bytes(), "image/png")
 
     storage.save.assert_awaited_once()
     attachment_repo.create.assert_awaited_once()
@@ -59,7 +59,7 @@ async def test_store_attachment_dedups_existing_md5():
     storage.save = AsyncMock()
     service = FileService(attachment_repo=attachment_repo, storage=storage)
 
-    await service.store_attachment(5, "dup.png", b"bytes", "image/png")
+    await service.store_attachment(5, "dup.png", _png_bytes(), "image/png")
 
     storage.save.assert_not_awaited()
     attachment_repo.create.assert_awaited_once()
@@ -69,6 +69,16 @@ async def test_store_attachment_rejects_unsupported_type():
     service = FileService(attachment_repo=MagicMock(), storage=MagicMock())
     with pytest.raises(UnsupportedMediaTypeError):
         await service.store_attachment(5, "x.txt", b"data", "text/plain")
+
+
+async def test_store_attachment_rejects_content_type_signature_mismatch():
+    # bytes claiming to be a png but with no png magic header must be rejected, so a
+    # hostile file cannot ride in under an allowed content type
+    attachment_repo = MagicMock()
+    attachment_repo.get_by_md5 = AsyncMock(return_value=None)
+    service = FileService(attachment_repo=attachment_repo, storage=MagicMock())
+    with pytest.raises(UnsupportedMediaTypeError):
+        await service.store_attachment(5, "fake.png", b"not a real png", "image/png")
 
 
 async def test_store_attachment_rejects_too_large():

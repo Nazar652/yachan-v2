@@ -27,12 +27,11 @@ class CaptchaService:
         return token, base64.b64encode(light_image).decode(), base64.b64encode(dark_image).decode()
 
     async def validate(self, token: str, answer: str) -> None:
-        stored = await self.redis.get(self._key(token))
+        # getdel consumes the token on any attempt, so a wrong guess cannot be
+        # brute-forced against the same challenge — the client must fetch a new one
+        stored = await self.redis.getdel(self._key(token))
         if stored is None or stored.upper() != answer.strip().upper():
             raise InvalidCaptchaError()
-
-        # one-time use: a solved captcha cannot be replayed
-        await self.redis.delete(self._key(token))
 
     @staticmethod
     def _key(token: str) -> str:

@@ -2,16 +2,21 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.exceptions import ForbiddenError, SummaryNotConfiguredError, ThreadTooShortForSummaryError
+from src.core.exceptions import (
+    ForbiddenError,
+    RateLimitedError,
+    SummaryNotConfiguredError,
+    ThreadTooShortForSummaryError,
+)
 from src.models.mod_account import ModRole
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
 from src.schemas.mod import BanCreate, BanResponse, ModLogin, TokenResponse
 from src.schemas.report import ReportResponse
 from src.views.mod_view import ModView
-from tests.views._factories import ban_ns, board_ns, post_ns, report_ns, thread_ns
+from tests.views._factories import ban_ns, board_ns, post_ns, report_ns, request_ns, thread_ns
 
 
-def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
+def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None, allowed=True):
     mod = SimpleNamespace(id=99, role=role)
     mod_service = MagicMock()
     mod_service.authenticate = AsyncMock(return_value=("jwt-token", role))
@@ -40,7 +45,9 @@ def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
     summary_service.summarize_thread = AsyncMock()
     events = MagicMock()
     events.publish = AsyncMock()
-    settings = SimpleNamespace(gemini_api_key=gemini_api_key)
+    rate_limiter = MagicMock()
+    rate_limiter.is_allowed = AsyncMock(return_value=allowed)
+    settings = SimpleNamespace(gemini_api_key=gemini_api_key, ip_hash_salt="salt")
     view = ModView(
         mod_service=mod_service,
         board_service=board_service,
@@ -48,6 +55,7 @@ def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
         thread_service=thread_service,
         summary_service=summary_service,
         events=events,
+        rate_limiter=rate_limiter,
         settings=settings,
     )
     return view, SimpleNamespace(
@@ -57,15 +65,23 @@ def build(*, role=ModRole.ADMIN, gemini_api_key="key", posts=None):
         thread_service=thread_service,
         summary_service=summary_service,
         events=events,
+        rate_limiter=rate_limiter,
     )
 
 
 async def test_login_returns_token_and_role():
     view, _ = build(role=ModRole.ADMIN)
-    result = await view.login(ModLogin(username="admin", password="pw"))
+    result = await view.login(ModLogin(username="admin", password="pw"), request_ns())
     assert isinstance(result, TokenResponse)
     assert result.access_token == "jwt-token"
     assert result.role is ModRole.ADMIN
+
+
+async def test_login_rate_limited_before_authenticate():
+    view, mocks = build(allowed=False)
+    with pytest.raises(RateLimitedError):
+        await view.login(ModLogin(username="admin", password="pw"), request_ns())
+    mocks.mod_service.authenticate.assert_not_called()
 
 
 async def test_create_board_admin_only_ok():
