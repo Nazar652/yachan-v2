@@ -46,7 +46,13 @@ class LocalStorage(Storage):
         self.base_url = settings.storage_base_url.rstrip("/")
 
     def _full_path(self, key: str) -> Path:
-        return self.base / key
+        base = self.base.resolve()
+        target = (base / key).resolve()
+        # keep every operation inside the storage root: an absolute or traversal key
+        # ('/etc/passwd', '../../.env') would otherwise escape it
+        if not target.is_relative_to(base):
+            raise ValueError(f"invalid storage key: {key}")
+        return target
 
     def _write(self, key: str, data: bytes) -> None:
         path = self._full_path(key)

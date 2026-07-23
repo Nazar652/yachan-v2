@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from src.bootstrap.container import get_dependency
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
@@ -11,8 +11,12 @@ router = APIRouter(prefix="/mod", tags=["mod"])
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: ModLogin, view: ModView = Depends(lambda: get_dependency(ModView))) -> TokenResponse:
-    return await view.login(data)
+async def login(
+    data: ModLogin,
+    request: Request,
+    view: ModView = Depends(lambda: get_dependency(ModView)),
+) -> TokenResponse:
+    return await view.login(data, request)
 
 
 @router.post("/boards", response_model=BoardResponse, status_code=201)

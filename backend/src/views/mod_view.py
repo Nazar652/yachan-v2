@@ -1,7 +1,13 @@
 from kink import inject
+from starlette.requests import Request
 
 from src.core.config import Settings
-from src.core.exceptions import ForbiddenError, SummaryNotConfiguredError, ThreadTooShortForSummaryError
+from src.core.exceptions import (
+    ForbiddenError,
+    RateLimitedError,
+    SummaryNotConfiguredError,
+    ThreadTooShortForSummaryError,
+)
 from src.models.mod_account import ModAccount, ModRole
 from src.models.thread import Thread
 from src.schemas.board import BoardCreate, BoardReorder, BoardResponse, BoardUpdate
@@ -20,6 +26,11 @@ from src.utils.events import (
     board_channel,
     thread_channel,
 )
+from src.utils.rate_limit import RateLimiter
+from src.views.dependencies import client_ip_hash
+
+LOGIN_RATE_LIMIT = 5
+LOGIN_RATE_WINDOW = 15 * 60
 
 
 class ModView:
@@ -32,6 +43,7 @@ class ModView:
         thread_service: ThreadService,
         summary_service: SummaryService,
         events: EventPublisher,
+        rate_limiter: RateLimiter,
         settings: Settings,
     ) -> None:
         self.mod_service = mod_service
@@ -40,9 +52,16 @@ class ModView:
         self.thread_service = thread_service
         self.summary_service = summary_service
         self.events = events
+        self.rate_limiter = rate_limiter
         self.settings = settings
 
-    async def login(self, data: ModLogin) -> TokenResponse:
+    async def login(self, data: ModLogin, request: Request) -> TokenResponse:
+        # throttle by ip so mod/admin credentials cannot be brute-forced online
+        ip_hash = client_ip_hash(request, self.settings)
+        if not await self.rate_limiter.is_allowed(
+            f"mod_login:{ip_hash}", LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW
+        ):
+            raise RateLimitedError("too many login attempts, slow down")
         token, role = await self.mod_service.authenticate(data.username, data.password)
         return TokenResponse(access_token=token, role=role)
 

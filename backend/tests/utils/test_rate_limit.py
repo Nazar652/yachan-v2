@@ -3,32 +3,27 @@ from unittest.mock import AsyncMock, MagicMock
 from src.utils.rate_limit import RateLimiter
 
 
-def _make_redis(count: int) -> MagicMock:
+def _make_limiter(count: int) -> tuple[RateLimiter, AsyncMock]:
+    script = AsyncMock(return_value=count)
     redis_client = MagicMock()
-    redis_client.incr = AsyncMock(return_value=count)
-    redis_client.expire = AsyncMock()
-    return redis_client
+    redis_client.register_script = MagicMock(return_value=script)
+    return RateLimiter(redis_client), script
 
 
-async def test_first_hit_allowed_and_sets_expiry():
-    redis_client = _make_redis(1)
-    limiter = RateLimiter(redis_client)
+async def test_within_limit_allowed_and_runs_atomic_script():
+    limiter, script = _make_limiter(3)
 
     assert await limiter.is_allowed("k", limit=5, window_seconds=60) is True
-    redis_client.expire.assert_awaited_once_with("k", 60)
+    script.assert_awaited_once_with(keys=["k"], args=[60])
 
 
-async def test_subsequent_hit_within_limit_does_not_reset_expiry():
-    redis_client = _make_redis(3)
-    limiter = RateLimiter(redis_client)
+async def test_first_hit_allowed():
+    limiter, _ = _make_limiter(1)
 
     assert await limiter.is_allowed("k", limit=5, window_seconds=60) is True
-    redis_client.expire.assert_not_called()
 
 
 async def test_over_limit_disallowed():
-    redis_client = _make_redis(6)
-    limiter = RateLimiter(redis_client)
+    limiter, _ = _make_limiter(6)
 
     assert await limiter.is_allowed("k", limit=5, window_seconds=60) is False
-    redis_client.expire.assert_not_called()

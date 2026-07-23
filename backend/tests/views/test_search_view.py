@@ -2,9 +2,12 @@ from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+from src.core.exceptions import RateLimitedError
 from src.models.attachment import ModerationStatus
 from src.schemas.search import SearchResultResponse, SimilarThreadResponse
 from src.views.search_view import SearchView
+from tests.views._factories import request_ns, settings_ns
 
 
 def _post():
@@ -19,11 +22,15 @@ def _post():
     )
 
 
-def _view(search_service=None, board_service=None, storage=None):
+def _view(search_service=None, board_service=None, storage=None, allowed=True):
+    rate_limiter = MagicMock()
+    rate_limiter.is_allowed = AsyncMock(return_value=allowed)
     return SearchView(
         search_service=search_service or MagicMock(),
         board_service=board_service or MagicMock(),
         storage=storage or MagicMock(),
+        rate_limiter=rate_limiter,
+        settings=settings_ns(),
     )
 
 
@@ -32,7 +39,7 @@ async def test_search_maps_hits_to_responses_with_score():
     search_service.search = AsyncMock(return_value=[(_post(), "b", 0.25)])
     view = _view(search_service=search_service)
 
-    results = await view.search("cat", None, 20)
+    results = await view.search("cat", None, 20, request_ns())
 
     assert len(results) == 1
     result = results[0]
@@ -50,7 +57,7 @@ async def test_search_empty_when_no_hits():
     search_service.search = AsyncMock(return_value=[])
     view = _view(search_service=search_service)
 
-    assert await view.search("nothing", "b", 5) == []
+    assert await view.search("nothing", "b", 5, request_ns()) == []
 
 
 def _board(slug: str, is_nsfw: bool = False):
@@ -86,7 +93,7 @@ async def test_similar_threads_maps_matches_with_thumbnail_and_snippet():
     storage.public_url = MagicMock(return_value="https://cdn/thumb.jpg")
     view = _view(search_service=search_service, board_service=board_service, storage=storage)
 
-    results = await view.similar_threads("b", 7)
+    results = await view.similar_threads("b", 7, request_ns())
 
     assert len(results) == 1
     result = results[0]
@@ -112,7 +119,7 @@ async def test_similar_threads_hides_blocked_image_thumbnail():
     board_service.list_boards = AsyncMock(return_value=[_board("b")])
     view = _view(search_service=search_service, board_service=board_service)
 
-    results = await view.similar_threads("b", 7)
+    results = await view.similar_threads("b", 7, request_ns())
 
     assert results[0].thumbnail_url is None
     assert results[0].op_snippet is None
@@ -125,7 +132,7 @@ async def test_similar_threads_empty_when_no_matches():
     board_service.list_boards = AsyncMock(return_value=[])
     view = _view(search_service=search_service, board_service=board_service)
 
-    assert await view.similar_threads("b", 7) == []
+    assert await view.similar_threads("b", 7, request_ns()) == []
 
 
 async def test_similar_threads_for_text_delegates_to_service():
@@ -139,8 +146,14 @@ async def test_similar_threads_for_text_delegates_to_service():
     board_service.list_boards = AsyncMock(return_value=[_board("b")])
     view = _view(search_service=search_service, board_service=board_service)
 
-    results = await view.similar_threads_for_text("b", "duplicate text")
+    results = await view.similar_threads_for_text("b", "duplicate text", request_ns())
 
     assert len(results) == 1
     assert results[0].score == 0.95
     search_service.similar_threads_for_text.assert_awaited_once_with("b", "duplicate text")
+
+
+async def test_search_rate_limited():
+    view = _view(allowed=False)
+    with pytest.raises(RateLimitedError):
+        await view.search("cat", None, 20, request_ns())

@@ -35,10 +35,11 @@ async def list_threads(
 @router.get("/similar", response_model=list[SimilarThreadResponse])
 async def similar_threads_for_text(
     board_slug: str,
+    request: Request,
     q: str = Query(min_length=1, max_length=200),
     view: SearchView = Depends(lambda: get_dependency(SearchView)),
 ) -> list[SimilarThreadResponse]:
-    return await view.similar_threads_for_text(board_slug, q)
+    return await view.similar_threads_for_text(board_slug, q, request)
 
 
 @router.get("/{thread_id}", response_model=ThreadDetailResponse)
@@ -55,9 +56,10 @@ async def get_thread(
 async def similar_threads(
     board_slug: str,
     thread_id: int,
+    request: Request,
     view: SearchView = Depends(lambda: get_dependency(SearchView)),
 ) -> list[SimilarThreadResponse]:
-    return await view.similar_threads(board_slug, thread_id)
+    return await view.similar_threads(board_slug, thread_id, request)
 
 
 @router.post("", response_model=ThreadDetailResponse, status_code=201)
